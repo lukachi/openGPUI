@@ -51,6 +51,16 @@ this checkout, installs it as its own mod (`opengpui-<folder>`), shows the file 
 new Herdr tab, saves a screenshot to `tmp/preview/` and closes the tab. A lock keeps
 previews from several checkouts out of each other's way.
 
+`bun scripts/reference.ts setup` checks out OpenUI at the pin into `.reference/`
+(gitignored) with react-ui's dependencies from upstream's lockfile, a headless Chromium
+and the pinned InterVariable. `bun scripts/reference.ts serve` serves a page that draws
+a `.oui` file with upstream's own `Renderer`, library and `ThemeProvider`, styled as
+OpenUI's docs set it up (Tailwind preflight, react-ui's stylesheet, Inter), on port
+6106. `bun scripts/reference.ts shot <file.oui> --out <file.png> [--mode light|dark]
+[--library openui|chat] [--width px]` saves upstream's render of the file at device
+scale 2, framed like the Herdr body, for side-by-side comparison with
+`scripts/preview.ts`, and prints a URL with the same render live.
+
 Outputs (`dist/`):
 
 - `opengpui.js`: the library for gpui-shell hosts (`gpui-kit` and `gpui-base` stay imports).
