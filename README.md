@@ -172,6 +172,16 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   focusable day buttons. Two deliberate deviations: range ends given as strings are
   read (upstream crashes on them), and re-picking the selected day clears what the
   field shows as well as its value (upstream keeps showing the first pick).
+- **Select:** the menu opens below the trigger and never flips above it; its
+  fade/scale and the chevron's turn aren't animated. The pointer row and the
+  keyboard row are separate highlights (Radix moves focus to the row under the
+  pointer), so both can show at once.
+- **Slider:** thumbs, drag and keyboard are gpui-base's native `Slider`; the fill and
+  dots follow a drag one frame late. `SliderState.new` with some nonzero `min`
+  (500…10000) never returns and stops the pump, so the native slider runs on
+  `0..max-min` with values shifted back and rounded to the step's decimals as Radix
+  does, and it's only made once `max > min` and `step > 0` (props stream in one by
+  one). The value inputs stay left aligned (gpui-base's Input ignores alignment).
 
 ## Status
 
@@ -179,9 +189,10 @@ Ported from react-ui so far: Stack, Card, CardHeader, Tabs/TabItem,
 Accordion/AccordionItem, Steps/StepsItem, Carousel, Modal, TextContent,
 MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Text, BoldText,
 IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
-Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea, DatePicker,
-CheckBoxGroup/CheckBoxItem, RadioGroup/RadioItem, SwitchGroup/SwitchItem,
-Chips/ChipItem, Button, Buttons, IconButton. The rest of OpenUI's ~80 components
+Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
+Select/SelectItem, DatePicker, Slider, CheckBoxGroup/CheckBoxItem,
+RadioGroup/RadioItem, SwitchGroup/SwitchItem, Chips/ChipItem, Button, Buttons,
+IconButton. The rest of OpenUI's ~80 components
 are being ported. Built against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI
 lang-core 1.1.0, Inter 4.1, lucide 0.562.0, and for dates date-fns 4.4.0 and
 react-day-picker 9.14.0 (upstream's lockfile versions).
