@@ -1,4 +1,4 @@
-// The card blocks (registered in components/index.ts under "Card building blocks"):
+// The card blocks (registered in components/index.ts under "Cards"):
 //   SnippetCardBlock, SnippetCardItem      snippet.ts
 //   OverviewCardBlock, OverviewCardItem    overview.ts
 //   ContextCardBlock, ContextCardItem      context.ts

@@ -11,8 +11,8 @@
 // The scope marks everything inside a composite card for its inline markdown rules
 // (`strong`/`em` inherit the slot's font at the medium weight, `code` is code-sm).
 //
-// A clickable card's footer Button fires its own action and, in React, the card's too (the click
-// bubbles). Here the Button's click is its own: the card's action does not fire.
+// A clickable card's footer Button fires its own action and then the card's, as in React (react-ui's
+// Button never stops the click; ours bubbles it: buttons.ts `bubble`).
 import { isElementNode, type ElementNode } from "@openuidev/lang-core";
 import { div, type Element } from "gpui-kit";
 import { withItemContext } from "openui-card-action-utils";

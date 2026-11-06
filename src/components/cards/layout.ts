@@ -60,15 +60,21 @@ export function cardTag(ctx: RenderContext, tag: unknown, suffix: string): Eleme
 
 // ── Layout ──
 
-/** `gap`: a number is px, a string any CSS length; falsy takes the block's default (space-m). */
-function resolveGap(t: Tokens, gap: unknown): number {
-  if (!gap) return t.spaceM;
-  if (typeof gap === "number") return Math.max(0, gap);
-  if (typeof gap !== "string") return 0;
+/**
+ * `gap`: a number is px, a string any CSS length; falsy takes the block's default (space-m). A percentage
+ * is of the block's width for the column gap; the row gap's would be of its (auto) height: 0.
+ */
+function resolveGap(t: Tokens, gap: unknown, width: number): { column: number; row: number } {
+  if (!gap) return { column: t.spaceM, row: t.spaceM };
+  if (typeof gap === "number") return { column: Math.max(0, gap), row: Math.max(0, gap) };
   // `gap: var(--openui-*-card-gap)` is invalid at computed-value time for anything else: gap `normal`.
-  const m = /^\s*(\d*\.?\d+)(px|rem|em)\s*$/i.exec(gap);
-  if (!m) return 0;
-  return Number(m[1]) * (m[2]!.toLowerCase() === "px" ? 1 : 16);
+  const m = typeof gap === "string" ? /^\s*(\d*\.?\d+)(px|rem|em|%)\s*$/i.exec(gap) : null;
+  if (!m) return { column: 0, row: 0 };
+  const unit = m[2]!.toLowerCase();
+  const n = Number(m[1]);
+  if (unit === "%") return { column: (n / 100) * width, row: 0 };
+  const px = n * (unit === "px" ? 1 : 16);
+  return { column: px, row: px };
 }
 
 /** n items in rows of `per` (the responsive grid reflowing to 2 or 1 columns). */
@@ -97,8 +103,8 @@ export interface CardBlockOptions {
 /** CardBlockLayout: the grid of rows (or the carousel) of `card`s. */
 export function cardBlock(ctx: RenderContext, o: CardBlockOptions): Element {
   const t = ctx.t;
-  const gap = resolveGap(t, o.gap);
   const size = ctx.local({ width: 0 }, "block");
+  const gap = resolveGap(t, o.gap, size.width);
   const scroll = ctx.local<CarouselState>({ offset: 0 }, "scroll");
   const root = div()
     .id(ctx.id())
@@ -112,7 +118,7 @@ export function cardBlock(ctx: RenderContext, o: CardBlockOptions): Element {
 
   if (o.layout === "carousel") {
     const width = o.carouselWidth(size.width > 0 && size.width <= CONTAINER_SMALL);
-    const total = o.count > 0 ? o.count * width + (o.count - 1) * gap : 0;
+    const total = o.count > 0 ? o.count * width + (o.count - 1) * gap.column : 0;
     const maxOffset = size.width > 0 ? Math.max(0, total - size.width) : 0;
     const offset = Math.min(Math.max(0, scroll.offset), maxOffset);
     // __carousel: scrolls sideways, clipped; __carousel-track: a row at its content's width, padding 2xs 0.
@@ -122,7 +128,7 @@ export function cardBlock(ctx: RenderContext, o: CardBlockOptions): Element {
       .flex()
       .flex_row()
       .flex_none()
-      .gap(gap)
+      .gap(gap.column)
       .py(t.space2xs)
       .when(maxOffset > 0, (el) => el.left(-offset))
       .children(Array.from({ length: o.count }, (_, i) => div().id(ctx.id(`cell-${i}`)).flex().flex_col().flex_none().w(width).child(o.card(i).flex_grow(1))));
@@ -156,7 +162,7 @@ export function cardBlock(ctx: RenderContext, o: CardBlockOptions): Element {
     div()
       .flex()
       .flex_col()
-      .gap(gap)
+      .gap(gap.row)
       .w_full()
       .children(
         rows.map((perRow, r) => {
@@ -166,7 +172,7 @@ export function cardBlock(ctx: RenderContext, o: CardBlockOptions): Element {
             .id(ctx.id(`row-${r}`))
             .flex()
             .flex_row()
-            .gap(gap)
+            .gap(gap.column)
             .w_full()
             .children(Array.from({ length: perRow }, (_, c) => div().id(ctx.id(`cell-${start + c}`)).flex().flex_col().flex_1().min_w_0().child(o.card(start + c).flex_grow(1))));
         }),

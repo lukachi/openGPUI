@@ -22,7 +22,7 @@ import type { Component, RenderContext } from "../../render/surface.ts";
 import { textStyle, typography, type Tokens } from "../../render/tokens.ts";
 import { cardBlock, cardTag, chevron, elementNodes, pressable, stringProp } from "./layout.ts";
 
-/** What a `--variant-*` card sets: its fill, text color, the title's color and opacity, and its tag's fill and text. */
+/** What a `--variant-*` card sets: its fill, text color, the title's color and opacity, and (image only) its tag's fill and text. */
 interface Look {
   bg?: Color;
   color?: Color;
@@ -32,19 +32,11 @@ interface Look {
   tagColor?: Color;
 }
 
-function variantLook(t: Tokens, variant: string | undefined): Look {
-  const tint = (bg: Color, color: Color): Look => ({ bg, color, titleColor: color, titleOpacity: 0.8, tagBg: t.elevated });
+// genui's `bgColor` enum is ["gray"]; the component's info/success/warning/danger tints can't be reached from OpenUI Lang.
+function variantLook(t: Tokens, variant: "gray" | "image" | undefined): Look {
   switch (variant) {
     case "gray":
       return { bg: t.highlight, color: t.textNeutralPrimary };
-    case "info":
-      return tint(t.infoBackground, t.textInfoPrimary);
-    case "success":
-      return tint(t.successBackground, t.textSuccessPrimary);
-    case "warning":
-      return tint(t.alertBackground, t.textAlertPrimary);
-    case "danger":
-      return tint(t.dangerBackground, t.textDangerPrimary);
     case "image":
       return { color: t.textWhite, titleColor: t.textWhite, titleOpacity: 0.6, tagBg: "#00000066", tagColor: t.textWhite };
     default:
@@ -52,14 +44,12 @@ function variantLook(t: Tokens, variant: string | undefined): Look {
   }
 }
 
-const isBgColor = (v: unknown): v is string => v === "gray" || v === "info" || v === "success" || v === "warning" || v === "danger";
-
 /** `.openui-context-card`. */
 function contextCard(ctx: RenderContext, item: ElementNode, index: number, clickable: boolean, onClick: () => void): Element {
   const t = ctx.t;
   const { title, body, bgColor, bgImageSrc } = item.props;
   const src = typeof bgImageSrc === "string" ? safeUrl(bgImageSrc) : undefined;
-  const look = variantLook(t, src ? "image" : isBgColor(bgColor) ? bgColor : undefined);
+  const look = variantLook(t, src ? "image" : bgColor === "gray" ? "gray" : undefined);
   const size = ctx.local({ width: 0, height: 0 }, `card${index}`);
 
   // __title-text: body small, secondary (the variant's color, dimmed); a tag sits in its own full-width wrapper.

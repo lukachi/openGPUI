@@ -533,7 +533,8 @@ export function markdownInline(
   // gpui can only ellipsize a single run of text, so that holds for a plain string; formatted text wraps.
   const plain = ctx.scope.cardText?.ellipsis ? plainText(tree.children) : null;
   if (plain !== null) {
-    return textStyle(div().min_w_0().max_w_full().overflow_hidden().whitespace_nowrap().text_ellipsis().text_color(root.color), root.font).child(plain);
+    // white-space: nowrap folds a soft line break ("\n") into a space.
+    return textStyle(div().min_w_0().max_w_full().overflow_hidden().whitespace_nowrap().text_ellipsis().text_color(root.color), root.font).child(plain.replace(/\s+/g, " "));
   }
   return div()
     .flex()

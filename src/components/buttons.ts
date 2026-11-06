@@ -104,7 +104,7 @@ function look(t: Tokens, variant: ButtonVariant, destructive: boolean): Look {
   }
 }
 
-function paint(el: Element, l: Look, disabled: boolean, onClick: ((cx: Context) => void) | undefined): Element {
+function paint(el: Element, l: Look, disabled: boolean, onClick: ((cx: Context) => void) | undefined, bubble = false): Element {
   if (disabled) {
     return el
       .bg(l.disabledBg ?? l.bg)
@@ -123,7 +123,7 @@ function paint(el: Element, l: Look, disabled: boolean, onClick: ((cx: Context) 
   });
   if (!onClick) return out;
   return out.on_click((_e, cx) => {
-    cx.stop_propagation();
+    if (!bubble) cx.stop_propagation();
     onClick(cx);
   });
 }
@@ -138,6 +138,8 @@ export interface ButtonOptions {
   /** A lucide icon before the label (Button's `iconLeft`); `& svg { width: 1em }` sizes it to the label text. */
   iconLeft?: string;
   onClick: (cx: Context) => void;
+  /** The click goes on to the parents (react-ui's Button never stops it: a card around it fires its own action too); default: it stops here. */
+  bubble?: boolean;
 }
 
 /** components/Button: the drawn button, shared by Button and other renderers. */
@@ -161,7 +163,7 @@ export function button(ctx: RenderContext, o: ButtonOptions): Element {
   }
   const textSize = typography(t, "label", o.size === "small" || o.size === "extra-small" ? "small" : "default").size;
   const icon = o.iconLeft ? ctx.icon(o.iconLeft, { size: textSize }) : null;
-  return paint(el, look(t, o.variant ?? "primary", !!o.destructive), !!o.disabled, o.onClick)
+  return paint(el, look(t, o.variant ?? "primary", !!o.destructive), !!o.disabled, o.onClick, o.bubble)
     .children(optional(icon))
     .child(o.label);
 }
@@ -195,13 +197,15 @@ export function iconButton(
     iconSize?: number;
     disabled?: boolean;
     onClick: (cx: Context) => void;
+    /** The click goes on to the parents (react-ui's genui IconButton never stops it); default: it stops here. */
+    bubble?: boolean;
   },
 ): Element {
   const t = ctx.t;
   const size = ICON_BUTTON[o.size ?? "medium"];
   let el = div().id(o.id).flex().flex_none().items_center().justify_center().border_1().w(size.box).h(size.box);
   el = o.shape === "circle" ? el.rounded_full() : el.rounded(size.radius(t));
-  return paint(el, look(t, o.variant ?? "primary", false), !!o.disabled, o.onClick).children(
+  return paint(el, look(t, o.variant ?? "primary", false), !!o.disabled, o.onClick, o.bubble).children(
     optional(ctx.icon(o.icon, { category: o.category, size: o.iconSize ?? size.icon })),
   );
 }
@@ -233,6 +237,7 @@ export const Button: Component = {
       destructive: props.type === "destructive",
       size,
       disabled: ctx.streaming,
+      bubble: true,
       onClick: () => {
         const form = ctx.form;
         if (form && variant === "primary" && needsValidation(props.action) && !form.validateForm()) return;
