@@ -22,6 +22,8 @@ export {
   type RetainedSpec,
 } from "./render/surface.ts";
 export { interFace, interFamily, INTER_CUTS, openuiFonts, type Face, type FontResolver } from "./render/fonts.ts";
+export { fitImage, fitRect, type FitRect, type ImageLoader, type ImageState, type LoadedImage, type ObjectFit } from "./render/images.ts";
+export { readImageHeader, type ImageFormat, type ImageHeader } from "./render/imageHeader.ts";
 export {
   alpha,
   resolveTokens,

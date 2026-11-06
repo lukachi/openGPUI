@@ -26,6 +26,7 @@ import {
   type LibraryName,
 } from "../../src/index.ts";
 import { DEMO } from "./demo.ts";
+import { herdrImages } from "./images.ts";
 import { herdrTokens, type Look } from "./theme.ts";
 
 interface SurfaceProps {
@@ -96,6 +97,8 @@ export default class OpenGpui extends View {
       tokens: herdrTokens(this.p.look ?? "herdr"),
       // Asset paths are relative to the Herdr home; scripts/build.ts copies the SVGs here.
       icons: (file) => `mods/opengpui/icons/${file}.svg`,
+      // Remote and data: images are cached under the Herdr home; relative ones resolve against the .oui's folder.
+      images: herdrImages(this.srcPath ? dirname(this.srcPath) : null),
     });
 
     if (!this.srcPath) {
@@ -246,6 +249,7 @@ export default class OpenGpui extends View {
     const label = (el: ReturnType<typeof div>) => textStyle(el, typography(t, "label", "small"));
     return div()
       .id("opengpui-root")
+      .relative()
       .flex()
       .flex_col()
       .size_full()
@@ -268,7 +272,9 @@ export default class OpenGpui extends View {
           label(v_flex().id("opengpui-errors").max_h(120).overflow_y_scrollbar().px(t.spaceM).py(t.spaceXs).gap(t.space3xs).border_t_1().border_color(t.borderDefault).text_color(t.textDangerPrimary))
             .children(errors.map((e) => `${e.code}${e.component ? ` (${e.component})` : ""}: ${e.message}`)),
         ),
-      );
+      )
+      // Modals (RenderContext.overlay) cover the whole pane, the pane being OpenUI's viewport.
+      .children(this.surface.renderOverlays().map((o) => div().absolute().top(0).left(0).size_full().child(o)));
   }
 
   async close(_cx: Context): Promise<void> {

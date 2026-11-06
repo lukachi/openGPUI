@@ -62,7 +62,7 @@ export const MarkDownRenderer: Component = {
 // ── TextBlock (Text, BoldText) ──
 
 /** The TextBlock variants Text and BoldText produce (title-text variants are card-block only). */
-type BlockVariant = "text" | "text-subtext" | "highlight-text" | "highlight-number" | "highlight-text-number-subtext" | "number";
+export type BlockVariant = "text" | "text-subtext" | "highlight-text" | "highlight-number" | "highlight-text-number-subtext" | "number";
 type Typo = readonly [TypographyGroup, string];
 type GapToken = "space3xs" | "spaceXs" | 0;
 
@@ -172,8 +172,8 @@ function secondaryColor(t: Tokens, subtextVariant: unknown, subtext: string): Co
   return t.textNeutralSecondary;
 }
 
-/** components/TextBlock TextBlockView, for the variants Text and BoldText use. */
-function textBlock(ctx: RenderContext, variant: BlockVariant, props: Record<string, unknown>): Element {
+/** components/TextBlock TextBlockView, for the variants Text, BoldText, ImageText and ImageTextLarge use. */
+export function textBlock(ctx: RenderContext, variant: BlockVariant, props: Record<string, unknown>): Element {
   const t = ctx.t;
   const size = String(props.size ?? "sm");
   const number = props.variant === "number";

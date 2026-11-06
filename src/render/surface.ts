@@ -12,6 +12,7 @@ import { div, svg, type Context, type Element, type Task } from "gpui-kit";
 import type { FormValidation, Session } from "../runtime/session.ts";
 import { withScheduler, type Scheduler } from "../upstream/timers.ts";
 import { iconFile } from "./icons.ts";
+import type { ImageLoader, ImageState } from "./images.ts";
 import { ICON_SIZE, lucideFile, type IconPath, type StrokeWidth } from "./lucide.ts";
 import { resolveTokens, type Tokens } from "./tokens.ts";
 
@@ -56,6 +57,9 @@ export class Surface {
   tokens: Tokens;
   readonly components: Components;
   /** @internal */ readonly iconPath: IconPath | null;
+  /** @internal */ readonly imageLoader: ImageLoader | null;
+  /** @internal */ readonly images = new Map<string, ImageState>();
+  /** @internal */ overlays: Element[] = [];
   /** @internal */ retainedEntries = new Map<string, RetainedEntry<any, any>>();
   /** @internal */ wanted = new Map<string, RetainedSpec<any, any>>();
   /** @internal */ deferred: ((cx: Context) => void)[] = [];
@@ -69,12 +73,14 @@ export class Surface {
   /**
    * `tokens`: see resolveTokens(); OpenUI's light theme when omitted.
    * `icons`: where the host keeps lucide's SVGs; omitted, icons are not drawn.
+   * `images`: turns an image `src` into a local asset (render/images.ts); omitted, images fail.
    */
-  constructor(options: { session: Session; components: Components; tokens?: Tokens; icons?: IconPath }) {
+  constructor(options: { session: Session; components: Components; tokens?: Tokens; icons?: IconPath; images?: ImageLoader }) {
     this.session = options.session;
     this.components = options.components;
     this.tokens = options.tokens ?? resolveTokens("light");
     this.iconPath = options.icons ?? null;
+    this.imageLoader = options.images ?? null;
   }
 
   setTokens(tokens: Tokens): void {
@@ -164,11 +170,20 @@ export class Surface {
   /** The response's root, drawn as children for the host's container; empty before one parses. */
   renderContent(): (Element | string)[] {
     this.wanted = new Map();
+    this.overlays = [];
     this.rendered = true;
     const out = new RenderContext(this, "n", {}).children(this.session.root, "root");
     const missing = [...this.wanted.keys()].some((k) => !this.retainedEntries.has(k));
     if (missing || this.deferred.length) this.wake();
     return out;
+  }
+
+  /**
+   * What the last renderContent() asked to draw above everything (RenderContext.overlay):
+   * the host stacks each over its whole area, as CSS `position: fixed` covers the viewport.
+   */
+  renderOverlays(): Element[] {
+    return this.overlays;
   }
 
   /** Stop the pump and release native state. Call from the host's close(). */
@@ -233,6 +248,47 @@ export class RenderContext {
     return svg(path(lucideFile(iconFile(name, options.category), options.stroke)))
       .size(options.size ?? ICON_SIZE)
       .flex_none();
+  }
+
+  /**
+   * An image `src` as the host made it drawable (render/images.ts): "loading"
+   * until the host answers, then "ready" with its path and intrinsic size, or
+   * "failed". The surface redraws when it changes.
+   */
+  image(src: string): ImageState {
+    const surface = this.surface;
+    const known = surface.images.get(src);
+    if (known) return known;
+    const loader = surface.imageLoader;
+    if (!loader || !src.trim()) {
+      const failed: ImageState = { status: "failed", error: loader ? "empty src" : "the host loads no images" };
+      surface.images.set(src, failed);
+      return failed;
+    }
+    const loading: ImageState = { status: "loading" };
+    surface.images.set(src, loading);
+    // Promises only advance inside a task, so the load starts from the pump's cx.
+    this.after((cx) => {
+      cx.spawn(async () => {
+        try {
+          const loaded = await loader(src);
+          surface.images.set(src, { status: "ready", path: loaded.path, width: loaded.width, height: loaded.height });
+        } catch (e) {
+          surface.images.set(src, { status: "failed", error: e instanceof Error ? e.message : String(e) });
+        }
+        surface.wake();
+      });
+    });
+    surface.wake(); // also when drawn outside renderContent (a dialog)
+    return loading;
+  }
+
+  /**
+   * Draw `el` above the whole surface for this frame (a modal: CSS `position: fixed`).
+   * The host stacks it over its full area; ask again on every render it should stay.
+   */
+  overlay(el: Element): void {
+    this.surface.overlays.push(el);
   }
 
   /** A child context, e.g. with a form scope. */
