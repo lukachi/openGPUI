@@ -127,6 +127,14 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 
 ### Where gpui differs from the browser
 
+- **Render budget:** gpui-shell interrupts a JS call that runs about 50 ms in
+  `render` (a task may run a few hundred ms), and Herdr's QuickJS is slow. So a
+  render only describes: strings without markdown skip the parser, longer markdown
+  is parsed in a task in pieces (the same tree as one parse) and shows as its plain
+  source for the first frames, code highlighting lands one block per frame at worst.
+  For now one render formats at most 6,000 characters of markdown, counted per
+  top-level block; a block past that shows as plain text until long markdown is
+  virtualized.
 - **Fonts:** optical sizes come in steps (14, 16, 18, 24, 28, 32) instead of
   following every size, and a size/weight pair without a cut takes the nearest
   cut. Heading large/xl track −0.1px upstream; here they get the −1% of all other text.
