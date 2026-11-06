@@ -9,6 +9,7 @@ import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextConten
 import { DatePicker } from "./datepicker.ts";
 import { Accordion, AccordionItem, Steps, StepsItem, TabItem, Tabs } from "./disclosure.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
+import { Image, ImageBlock, ImageGallery, ImageText, ImageTextLarge } from "./images.ts";
 import { Card, CardHeader, Separator, Stack } from "./layout.ts";
 import {
   CodeBlock,
@@ -44,12 +45,17 @@ export const components: Components = {
   MarkDownRenderer,
   Callout,
   TextCallout,
+  Image,
+  ImageBlock,
+  ImageGallery,
   CodeBlock,
   InlineHeader,
   // Card building blocks
   Text,
   BoldText,
   IconText,
+  ImageText,
+  ImageTextLarge,
   MetricIndicatorInline,
   MetricIndicatorWithStrikethrough,
   // Data display

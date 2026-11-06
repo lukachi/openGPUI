@@ -20,5 +20,6 @@ export const {
   selectionField,
   toggleBoolean,
   dateLogic,
+  readImageHeader,
 } = built as typeof headless;
 export type Session = InstanceType<typeof headless.Session>;

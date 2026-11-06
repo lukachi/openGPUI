@@ -215,8 +215,17 @@ export class Session {
     if (raw === this.raw && streaming === this.streaming) return;
     this.raw = raw;
     this.streaming = streaming;
+    this.revision++;
     this.dirty.parse = true;
     this.onChange();
+  }
+
+  /** Counts setResponse() changes: a new value means new response text (a streamed chunk). */
+  revision = 0;
+
+  /** True while the model is still writing the response (not merely incomplete or invalid). */
+  get isStreaming(): boolean {
+    return this.streaming;
   }
 
   /** True while the response is incomplete: inputs wait and actions are held back. */

@@ -8,30 +8,30 @@
 // Closing (the X button, Escape, a press on the backdrop) writes false; nothing
 // in the modal ever writes true.
 //
-// Upstream portals the dialog into document.body. Here it is drawn in a gpui-base
-// `Popup`, which paints its content in a layer above the whole window and is
-// part of this render: children are rendered with this node's RenderContext,
-// so they redraw with the session, bind to the same form state, trigger through
-// the same session, and keep their retained native state (inputs).
+// Upstream portals the dialog into document.body. Here it is a surface overlay
+// (ctx.overlay), which the host stacks over its whole area, the page: children
+// are rendered with this node's RenderContext, so they redraw with the session,
+// bind to the same form state, trigger through the same session, and keep their
+// retained native state (inputs). Overlays opened inside (an ImageGallery's
+// GalleryModal) stack above it, as later portals do.
 //
 // Where gpui forces a difference:
 // - Not `window.open_dialog`: a window dialog is a separate view, invalidated
 //   separately from the Surface that opened it (so its content would not redraw
 //   when the session changes), it reports no close by Escape or backdrop (so
 //   `open` could not be written back to false), and it draws its own chrome.
-// - The backdrop covers the whole window (all Herdr panes), as the portal covers
-//   the page. Its size is the window's viewport, read during render; 90vw/85vh
-//   are taken from the same viewport.
+// - The backdrop covers the pane (OpenUI's page in Herdr), not the window.
+//   90vw/85vh are 90%/85% of the pane.
 // - box-shadow 0 16px 48px rgba(0,0,0,0.2) maps to gpui's `shadow_2xl` preset.
 // - Animations: the fade-in (0.15s ease-out) is a native opacity transition on
 //   the backdrop and the dialog; the dialog's 2% slide-in is not drawn.
 // - The backdrop stops presses and wheel scrolling from reaching what is under it,
 //   but gpui has no occluding hitbox for scripts, so hover styles below it still react.
 // - Escape is heard while the keyboard is inside the dialog (focused on open, as
-//   upstream focuses the content), not on the whole document.
+//   upstream focuses the content, and again when an overlay above it closes),
+//   not on the whole document.
 // - A press on the backdrop closes on click (press and release on the backdrop), as
 //   upstream's onClick does.
-import { Popup } from "gpui-base";
 import { div, type Element, type FocusHandle } from "gpui-kit";
 import { optional, type Component } from "../render/surface.ts";
 import { shadow, textStyle, typography } from "../render/tokens.ts";
@@ -51,28 +51,25 @@ export const Modal: Component = {
     const t = ctx.t;
     const field = ctx.field<unknown>("open", props.open);
     const isOpen = field.value === true || field.value === "true";
-    const local = ctx.local({ focused: false, shown: false, pressed: false });
-    // An absolute, empty anchor: like upstream's portal, the modal takes no place in the flow.
-    const anchor = Popup.new(ctx.id("modal"), div()).absolute().top(0).left(0).size_0();
+    const local = ctx.local({ shown: false, pressed: false });
+    // Like upstream's portal, the modal takes no place in the flow.
     if (!isOpen) {
-      local.focused = false;
       local.shown = false;
       local.pressed = false;
-      return anchor;
+      return null;
     }
+    // Reserved before the children render, so overlays they open stack above this one.
+    const slot = ctx.overlay();
 
     // handleOpenChange(false): only closing writes the field.
     const close = () => field.setValue(false);
 
+    // The surface moves the keyboard here when this becomes the topmost overlay.
     const focus = ctx.retained<FocusHandle, null>(ctx.id("focus"), {
       kind: "modal-focus",
       meta: null,
       create: (_entry, cx) => cx.focus_handle(),
     });
-    if (focus && !local.focused) {
-      local.focused = true;
-      ctx.after(() => focus.focus());
-    }
     // First open frame draws transparent; the next one fades in.
     const opacity = local.shown ? 1 : 0;
     if (!local.shown) {
@@ -82,7 +79,6 @@ export const Modal: Component = {
 
     const size = (props.size as string | undefined) ?? "md";
     const width = WIDTHS[size];
-    const viewport = window.viewport_size();
 
     const title = textStyle(div().flex_1().min_w(0), typography(t, "body", "heavy")).child(String(props.title ?? ""));
     const closeButton = div()
@@ -128,7 +124,7 @@ export const Modal: Component = {
       .id(ctx.id("content"))
       .flex()
       .flex_col()
-      .max_h(viewport.height * 0.85)
+      .max_h("85%")
       .bg(t.foreground)
       .text_color(t.textNeutralPrimary)
       .border_1()
@@ -154,7 +150,7 @@ export const Modal: Component = {
       .child(header)
       .child(body);
     content = shadow(content, "2xl");
-    if (width !== undefined) content = content.w(width).max_w(viewport.width * 0.9);
+    if (width !== undefined) content = content.w(width).max_w("90%");
     if (focus) content = content.track_focus(focus);
 
     const backdrop = textStyle(
@@ -164,8 +160,7 @@ export const Modal: Component = {
         .flex()
         .items_center()
         .justify_center()
-        .w(viewport.width)
-        .h(viewport.height)
+        .size_full()
         .cursor_default()
         .text_color(t.textNeutralPrimary),
       typography(t, "body", "default"),
@@ -194,6 +189,7 @@ export const Modal: Component = {
       .on_mouse_down("right", (_e, cx) => cx.stop_propagation())
       .on_scroll_wheel((_e, cx) => cx.stop_propagation());
 
-    return anchor.anchor("top_left").content(backdrop);
+    slot(backdrop, focus);
+    return null;
   },
 };

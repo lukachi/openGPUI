@@ -172,7 +172,7 @@ function secondaryColor(t: Tokens, subtextVariant: unknown, subtext: string): Co
   return t.textNeutralSecondary;
 }
 
-/** components/TextBlock TextBlockView, for the variants Text and BoldText use. */
+/** components/TextBlock TextBlockView, for the variants Text, BoldText, IconText, ImageText and ImageTextLarge use. */
 export function textBlock(ctx: RenderContext, variant: BlockVariant, props: Record<string, unknown>): Element {
   const t = ctx.t;
   const size = String(props.size ?? "sm");
