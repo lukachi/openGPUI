@@ -3,6 +3,18 @@
 import type { Components } from "../render/surface.ts";
 import { Button, Buttons } from "./buttons.ts";
 import { Carousel } from "./carousel.ts";
+import {
+  CompositeCardBlock,
+  CompositeCardItem,
+  ContextCardBlock,
+  ContextCardItem,
+  OverviewCardBlock,
+  OverviewCardItem,
+  SnippetCardBlock,
+  SnippetCardItem,
+  VisualCardBlock,
+  VisualCardItem,
+} from "./cards/index.ts";
 import { AreaChart, BarChart, HorizontalBarChart, LineChart, RadarChart, Series } from "./charts/index.ts";
 import { CheckBoxGroup, CheckBoxItem, ChipItem, Chips, RadioGroup, RadioItem, SwitchGroup, SwitchItem } from "./choice.ts";
 import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
@@ -50,6 +62,17 @@ export const components: Components = {
   ImageGallery,
   CodeBlock,
   InlineHeader,
+  // Cards
+  SnippetCardBlock,
+  SnippetCardItem,
+  OverviewCardBlock,
+  OverviewCardItem,
+  ContextCardBlock,
+  ContextCardItem,
+  CompositeCardBlock,
+  CompositeCardItem,
+  VisualCardBlock,
+  VisualCardItem,
   // Card building blocks
   Text,
   BoldText,

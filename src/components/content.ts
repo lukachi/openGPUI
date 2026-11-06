@@ -179,11 +179,17 @@ export function textBlock(ctx: RenderContext, variant: BlockVariant, props: Reco
   const number = props.variant === "number";
   const gapToken = blockRule(variant, size, number, "gap");
   const subtext = props.subtext == null || props.subtext === "" ? "" : String(props.subtext);
+  // components/SnippetCardBlock: its label (lhs) text block is `width: 100%` and clips; the value (rhs)
+  // one is `align-items: flex-end; width: auto; max-width: 100%`, clipped, right-aligned (ctx.scope.cardText).
+  const card = ctx.scope.cardText;
   return div()
     .flex()
     .flex_col()
-    .items_start()
     .gap(typeof gapToken === "string" ? t[gapToken] : 0)
+    .when(!card?.end, (el) => el.items_start())
+    .when(!!card?.end, (el) => el.items_end().max_w_full().text_right())
+    .when(!!card?.ellipsis && !card?.end, (el) => el.w_full())
+    .when(!!card?.ellipsis, (el) => el.min_w_0().overflow_hidden())
     .child(textLine(ctx, "primary", String(props.value ?? ""), t.textNeutralPrimary, style(t, blockRule(variant, size, number, "primary"))))
     .when(subtext !== "", (el) =>
       el.child(textLine(ctx, "secondary", subtext, secondaryColor(t, props.subtextVariant, subtext), style(t, blockRule(variant, size, number, "secondary")))),
