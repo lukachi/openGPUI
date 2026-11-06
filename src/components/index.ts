@@ -6,6 +6,16 @@ import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextConten
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
 import { Card, CardHeader, Separator, Stack } from "./layout.ts";
 import { Col, Table } from "./tables.ts";
+import {
+  CodeBlock,
+  IconButton,
+  IconText,
+  InlineHeader,
+  MetricIndicatorInline,
+  MetricIndicatorWithStrikethrough,
+  TagBlock,
+  TextCallout,
+} from "./misc.ts";
 
 export const components: Components = {
   // Layout
@@ -17,10 +27,17 @@ export const components: Components = {
   TextContent,
   MarkDownRenderer,
   Callout,
+  TextCallout,
+  CodeBlock,
+  InlineHeader,
   // Card building blocks
   Text,
   BoldText,
+  IconText,
+  MetricIndicatorInline,
+  MetricIndicatorWithStrikethrough,
   // Data display
+  TagBlock,
   Tag,
   Icon,
   // Tables
@@ -35,4 +52,5 @@ export const components: Components = {
   // Buttons
   Button,
   Buttons,
+  IconButton,
 };

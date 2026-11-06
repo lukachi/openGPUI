@@ -114,13 +114,28 @@ function highlight(code: string, language: string): Segment[] {
 const px = (value: string | undefined): number | undefined => (value?.endsWith("px") ? parseFloat(value) : undefined);
 const families = (value: string | undefined) => (value ?? "monospace").split(",").map((f) => f.trim().replace(/^["']|["']$/g, ""));
 
+/** What differs between CodeBlock inside MarkDownRenderer and CodeBlock on its own (genui-lib/CodeBlock). */
+export interface CodeBlockOptions {
+  /** The theme: MarkDownRenderer passes oneLight or vscDarkPlus by mode; a bare CodeBlock always gets vscDarkPlus. */
+  theme?: "mode" | "dark";
+  /** The box padding: markDownRenderer.scss forces 25px; a bare CodeBlock keeps its theme's (`1em`). */
+  padding?: "markdown" | "theme";
+}
+
 /**
  * The CodeBlock for `code`. `inheritedSize` is the font size the block sits in
  * (a theme without a font size inherits it).
  */
-export function codeBlock(ctx: RenderContext, part: string, code: string, language: string, inheritedSize: number): Element {
+export function codeBlock(
+  ctx: RenderContext,
+  part: string,
+  code: string,
+  language: string,
+  inheritedSize: number,
+  options: CodeBlockOptions = {},
+): Element {
   const t = ctx.t;
-  const theme = (t.mode === "dark" ? vscDarkPlus : oneLight) as Theme;
+  const theme = (options.theme === "dark" || t.mode === "dark" ? vscDarkPlus : oneLight) as Theme;
   const pre = theme['pre[class*="language-"]'] ?? {};
   const codeTag = { ...theme['code[class*="language-"]'], ...theme[`code[class*="language-${language}"]`] };
   const local = ctx.local({ hovered: false, copied: false, waiting: false }, part);
@@ -167,6 +182,8 @@ export function codeBlock(ctx: RenderContext, part: string, code: string, langua
       if (piece) lines.at(-1)!.push(span(piece, style));
     });
   }
+  // A browser draws no empty line after a final newline.
+  if (code.endsWith("\n") && lines.length > 1) lines.pop();
   const regular = face(400);
   let body = div()
     .flex_none()
@@ -179,23 +196,27 @@ export function codeBlock(ctx: RenderContext, part: string, code: string, langua
   if (regular) body = body.font_family(regular.family).font_weight(regular.weight);
 
   // An inline theme radius beats codeBlock.scss's 0.5rem; vscDarkPlus sets none.
-  const radius = pre.borderRadius?.endsWith("em") ? parseFloat(pre.borderRadius) * preSize : (px(pre.borderRadius) ?? 8);
+  const length = (value: string | undefined): number | undefined =>
+    value?.endsWith("em") ? parseFloat(value) * preSize : px(value);
+  const radius = length(pre.borderRadius) ?? 8;
   const background: Color = cssColor(pre.background ?? pre.backgroundColor ?? "") ?? t.sunk;
   const highlighter = div()
     .id(ctx.id(`${part}-pre`))
     .flex()
     .flex_row()
     .overflow_x_scroll()
-    .p(25)
+    .p(options.padding === "theme" ? (length(pre.padding) ?? 0) : 25)
     .rounded(radius)
     .bg(background)
     .child(body);
 
+  // CodeBlock.tsx draws lucide's `<Copy />` at its default size 24; the 16px `.openui-icon-button-icon`
+  // span squeezes the svg (a flex item) to 16, as the reference renderer measures.
   const copy = iconButton(ctx, {
     id: ctx.id(`${part}-copy`),
     icon: local.copied ? "CheckCheck" : "Copy",
-    size: "small",
     variant: "secondary",
+    size: "small",
     onClick: (cx) => {
       cx.write_to_clipboard(code);
       local.copied = true;
