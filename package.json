@@ -14,7 +14,9 @@
     "install-herdr": "bun scripts/build.ts && bun scripts/install-herdr.ts"
   },
   "dependencies": {
+    "date-fns": "4.4.0",
     "html-url-attributes": "3.0.1",
+    "react-day-picker": "9.14.0",
     "react-syntax-highlighter": "16.1.1",
     "refractor": "5.0.0",
     "remark-breaks": "4.0.0",

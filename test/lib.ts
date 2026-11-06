@@ -19,5 +19,6 @@ export const {
   booleanAggregate,
   selectionField,
   toggleBoolean,
+  dateLogic,
 } = built as typeof headless;
 export type Session = InstanceType<typeof headless.Session>;

@@ -58,3 +58,9 @@ declare module "opengpui-prism-all" {
   import type { Syntax } from "refractor/core";
   export const syntaxes: Syntax[];
 }
+
+// react-ui components/DatePicker/helpers/utils/helperFn.tsx: the shown value's text.
+declare module "openui-datepicker-helpers" {
+  export function formatSingleDate(date: Date | undefined): string;
+  export function formatDateRange(range: { from?: Date; to?: Date } | undefined): string;
+}

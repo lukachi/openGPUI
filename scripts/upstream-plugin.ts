@@ -42,6 +42,14 @@ export function upstreamPlugin(): BunPlugin {
       }));
       // The pure selection helpers Chips and OptionCards share (single/multiple normalizing and toggling).
       build.onResolve({ filter: /^openui-selection-utils$/ }, () => ({ path: join(GENUI, "selectionFieldUtils.ts") }));
+      // DatePicker's value formatting (plain TypeScript over date-fns), and react-day-picker's
+      // React-free modules (its export map only offers the React entry): `openui-rdp/<path under dist/esm>`.
+      build.onResolve({ filter: /^openui-datepicker-helpers$/ }, () => ({
+        path: join(REACT_UI, "components", "DatePicker", "helpers", "utils", "helperFn.tsx"),
+      }));
+      build.onResolve({ filter: /^openui-rdp\// }, (args) => ({
+        path: join(root, "node_modules", "react-day-picker", "dist", "esm", args.path.slice("openui-rdp/".length)),
+      }));
 
       // micromark decodes character references through the DOM in browser builds;
       // gpui-shell has no DOM, so take the package's table-based build.
@@ -49,11 +57,11 @@ export function upstreamPlugin(): BunPlugin {
         path: join(root, "node_modules", "decode-named-character-reference", "index.js"),
       }));
 
-      // Bare imports from upstream sources: zod and the unist walker are real,
-      // everything else (react, lucide, …) is a stub.
+      // Bare imports from upstream sources: zod, the unist walker and date-fns (DatePicker's
+      // helperFn.tsx) are real, everything else (react, lucide, …) is a stub.
       build.onResolve({ filter: /^[^./]/ }, (args) => {
         if (!isUnder(args.importer, UP)) return undefined;
-        if (/^(zod|unist-util-visit)(\/|$)/.test(args.path)) return undefined;
+        if (/^(zod|unist-util-visit|date-fns)(\/|$)/.test(args.path)) return undefined;
         if (args.path.startsWith("@openuidev/")) return undefined;
         return { path: args.path, namespace: "opengpui-stub" };
       });

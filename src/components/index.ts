@@ -5,6 +5,7 @@ import { Button, Buttons } from "./buttons.ts";
 import { Carousel } from "./carousel.ts";
 import { CheckBoxGroup, CheckBoxItem, ChipItem, Chips, RadioGroup, RadioItem, SwitchGroup, SwitchItem } from "./choice.ts";
 import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
+import { DatePicker } from "./datepicker.ts";
 import { Accordion, AccordionItem, Steps, StepsItem, TabItem, Tabs } from "./disclosure.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
 import { Card, CardHeader, Separator, Stack } from "./layout.ts";
@@ -61,6 +62,7 @@ export const components: Components = {
   Label,
   Input,
   TextArea,
+  DatePicker,
   CheckBoxGroup,
   CheckBoxItem,
   RadioGroup,
