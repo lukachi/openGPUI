@@ -12,6 +12,7 @@ import { EditableTable } from "./editable-table.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
 import { Image, ImageBlock, ImageGallery, ImageText, ImageTextLarge } from "./images.ts";
 import { Card, CardHeader, Separator, Stack } from "./layout.ts";
+import { EntityList, FollowUpBlock, FollowUpItem, ListBlock, ListItem, SectionBlock, SectionItem } from "./lists.ts";
 import {
   CodeBlock,
   IconButton,
@@ -23,6 +24,7 @@ import {
   TextCallout,
 } from "./misc.ts";
 import { Modal } from "./modal.ts";
+import { OptionCard, OptionCards } from "./option-cards.ts";
 import { Select, SelectItem } from "./select.ts";
 import { Slider } from "./slider.ts";
 import { Col, Table } from "./tables.ts";
@@ -63,6 +65,9 @@ export const components: Components = {
   TagBlock,
   Tag,
   Icon,
+  EntityList,
+  ListBlock,
+  ListItem,
   // Tables
   Table,
   Col,
@@ -74,6 +79,12 @@ export const components: Components = {
   RadarChart,
   HorizontalBarChart,
   Series,
+  // Lists & follow-ups (chat library)
+  FollowUpBlock,
+  FollowUpItem,
+  // Sections (chat library)
+  SectionBlock,
+  SectionItem,
   // Forms
   Form,
   FormControl,
@@ -92,6 +103,8 @@ export const components: Components = {
   SwitchItem,
   Chips,
   ChipItem,
+  OptionCards,
+  OptionCard,
   // Buttons
   Button,
   Buttons,

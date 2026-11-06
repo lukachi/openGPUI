@@ -13,4 +13,8 @@ const stub = new Proxy(function OpenGpuiStub() {}, {
   apply: () => stub,
   construct: () => stub,
 });
+// A bundler's CommonJS interop copies a module's own keys, so a named import (`import { createContext }`)
+// of anything not owned by the target is `undefined`. components/Sources/SourceContext.tsx, compiled for
+// real, calls `createContext(...)` at load: that name is owned here, and still answers with the stub.
+Object.defineProperty(stub, "createContext", { value: stub, enumerable: true });
 module.exports = stub;

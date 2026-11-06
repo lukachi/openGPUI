@@ -5,7 +5,7 @@
 // icon-name resolver compiles for real, against the name → SVG file table
 // scripts/assets.ts generates in place of lucide-react's import map.
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import type { BunPlugin } from "bun";
 
 const root = join(import.meta.dir, "..");
@@ -122,13 +122,20 @@ export function upstreamPlugin(): BunPlugin {
         return { path: target, namespace: "opengpui-stub" };
       });
 
-      // A stubbed directory that holds a schema module keeps that module's real exports.
+      // A stubbed directory that holds a schema module keeps that module's real exports; so does
+      // components/Sources, whose `CardSourceSchema` (in SourceContext.tsx) the chat library's Card
+      // takes as `z.array(CardSourceSchema)` at load, where the stub would be undefined.
       // (Bun does not hand pluginData to onLoad, so the schema is looked up here.)
       build.onLoad({ filter: /.*/, namespace: "opengpui-stub" }, (args) => {
         const stubPath = JSON.stringify(join(SHIM, "stub.cjs"));
-        const schema = args.path.startsWith("/")
-          ? [join(args.path, "schema.ts"), join(args.path, "schema.tsx")].find(existsSync)
-          : undefined;
+        const candidates = args.path.startsWith("/")
+          ? [
+              join(args.path, "schema.ts"),
+              join(args.path, "schema.tsx"),
+              ...(basename(args.path) === "Sources" ? [join(args.path, "SourceContext.tsx")] : []),
+            ]
+          : [];
+        const schema = candidates.find(existsSync);
         const contents = schema
           ? `const stub = require(${stubPath});
              const real = require(${JSON.stringify(schema)});
