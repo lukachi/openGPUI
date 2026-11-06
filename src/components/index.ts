@@ -20,6 +20,8 @@ import {
   TextCallout,
 } from "./misc.ts";
 import { Modal } from "./modal.ts";
+import { Select, SelectItem } from "./select.ts";
+import { Slider } from "./slider.ts";
 import { Col, Table } from "./tables.ts";
 
 export const components: Components = {
@@ -62,7 +64,10 @@ export const components: Components = {
   Label,
   Input,
   TextArea,
+  Select,
+  SelectItem,
   DatePicker,
+  Slider,
   CheckBoxGroup,
   CheckBoxItem,
   RadioGroup,
