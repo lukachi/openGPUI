@@ -34,6 +34,15 @@ declare module "openui-remark-citations" {
   export const remarkCitations: () => (tree: Root) => void;
 }
 
+// react-ui genui-lib/selectionFieldUtils.ts: normalize, default and toggle a single/multiple selection.
+declare module "openui-selection-utils" {
+  export type SelectionType = "single" | "multiple";
+  export type SelectionDefaultValue = string | string[] | undefined;
+  export function normalizeSelection(type: SelectionType, storedValue: unknown, defaultValue: SelectionDefaultValue): string[];
+  export function getStoredDefaultValue(type: SelectionType, defaultValue: SelectionDefaultValue): string | string[] | undefined;
+  export function toggleSelection(type: SelectionType, selection: string[], itemValue: string): string[];
+}
+
 // The Prism themes react-ui's markdown code blocks use (plain style objects).
 declare module "react-syntax-highlighter/dist/esm/styles/prism/one-light.js" {
   const style: Record<string, Record<string, string>>;

@@ -40,6 +40,8 @@ export function upstreamPlugin(): BunPlugin {
       build.onResolve({ filter: /^openui-remark-citations$/ }, () => ({
         path: join(REACT_UI, "components", "_shared", "remark", "remarkCitations.ts"),
       }));
+      // The pure selection helpers Chips and OptionCards share (single/multiple normalizing and toggling).
+      build.onResolve({ filter: /^openui-selection-utils$/ }, () => ({ path: join(GENUI, "selectionFieldUtils.ts") }));
 
       // micromark decodes character references through the DOM in browser builds;
       // gpui-shell has no DOM, so take the package's table-based build.

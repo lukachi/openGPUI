@@ -14,3 +14,10 @@ export {
   type SessionOptions,
   type Tools,
 } from "./runtime/session.ts";
+export {
+  booleanAggregate,
+  selectionField,
+  toggleBoolean,
+  type FieldContext,
+  type SelectionField,
+} from "./components/selection.ts";
