@@ -46,10 +46,11 @@ bun run test           # build, then session/library/token tests against the bui
 bun run install-herdr  # copy the mod into ~/.config/herdr-app/mods/opengpui, link `opengpui` into ~/.local/bin
 ```
 
-`bun scripts/preview.ts file.oui [--look openui|herdr] [--wait ms] [--keep]` builds
-this checkout, installs it as its own mod (`opengpui-<folder>`), shows the file in a
-new Herdr tab, saves a screenshot to `tmp/preview/` and closes the tab. A lock keeps
-previews from several checkouts out of each other's way.
+`bun scripts/preview.ts file.oui... [--mode light|dark|light,dark] [--look openui|herdr]
+[--wait ms] [--keep]` builds this checkout, installs it as its own mod
+(`opengpui-<folder>`) in a background Herdr window of the checkout's own, shows each file
+in a new tab, saves a screenshot to `tmp/preview/` once the window has stopped changing,
+and closes the tab. Checkouts never wait for each other.
 
 `bun scripts/reference.ts setup` checks out OpenUI at the pin into `.reference/`
 (gitignored) with react-ui's dependencies from upstream's lockfile, a headless Chromium
