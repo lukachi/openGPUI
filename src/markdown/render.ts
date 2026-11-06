@@ -26,16 +26,41 @@
 // Math stays TeX in a code block, which is what upstream shows until KaTeX loads.
 //
 // gpui-shell interrupts a long JS call (budget.ts): a text not parsed yet draws as
-// its plain source text until a task has parsed it, and once one render has drawn
-// FORMATTED_CHARS of markdown formatted, top-level blocks that don't fit in what is
-// left draw as their plain text (temporary, until long markdown is virtualized).
-import type { Element as HastElement, ElementContent, Root, RootContent } from "hast";
+// its plain source text until a task has parsed it. A long block (blocks.ts
+// virtualDecision) is drawn through gpui-kit's lazy `list` (virtualBlock): one row
+// per top-level piece, a long list's items, a long fence's line groups and a long
+// table's row groups, built only while on screen. The list is a scroll region as
+// tall as the host's viewport, with its own scrollbar; the wheel scrolls the region
+// and passes to the page at the region's ends. A row allows no handlers, so there
+// links are gpui-base Links (only the word under the pointer underlines), code blocks
+// have no copy button, and tables take column widths measured by a hidden, handled
+// draw (of a long table, its first rows; its other rows' widths are estimated from
+// their text). A fence or table cut into groups scrolls sideways one group at a time.
+// A row whose source still passes ROW_CHARS (one huge paragraph or item) draws as
+// its plain text. Past the per-render ceiling, a block too short to go virtual draws
+// as its plain source text (blocks.ts RENDER_CHARS).
+import type { ElementContent, Element as HastElement, Root, RootContent } from "hast";
 import { div, type Color, type Element } from "gpui-kit";
-import { tableText, tableView, type TableCell } from "../components/tables.ts";
+import { Link } from "gpui-base";
+import { tableText, tableView, type StaticTable, type TableCell } from "../components/tables.ts";
 import type { RenderContext } from "../render/surface.ts";
 import { alpha, restyle, textStyle, typography, type TextStyle } from "../render/tokens.ts";
-import { codeBlock, codeBlockLanguage, textOf } from "./code.ts";
-import { formattedBlocks, markdownTree } from "./budget.ts";
+import {
+  BLOCK,
+  blockItems,
+  codeBlockLanguage,
+  isElement,
+  listItems,
+  rowChars,
+  tableRows,
+  textOf,
+  virtualRows,
+  type BlockItem,
+  type VirtualRow,
+} from "./blocks.ts";
+import { codeBlock } from "./code.ts";
+import { blockDraw, markdownTree } from "./budget.ts";
+import { edge, lazyRows } from "./lazy.ts";
 import type { MarkdownProfile } from "./parse.ts";
 
 /** What a run of text is drawn with: the inherited CSS that matters here. */
@@ -69,15 +94,22 @@ type Piece =
   | { kind: "break"; css: Css }
   | { kind: "block"; el: Element };
 
-const BLOCK = new Set(["p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "pre", "blockquote", "hr", "table", "section", "div"]);
+/** Set when the pieces are drawn in a lazy list's row; `unmeasured` is told when a table there lacks its column widths. */
+interface Row {
+  unmeasured: () => void;
+}
+
 const HEADING = /^h[1-6]$/;
 const QUOTES = [
   ["\u201C", "\u201D"],
   ["\u2018", "\u2019"],
 ] as const;
+const WEB = /^https?:\/\//i;
+/** The scope of a block's top-level children. */
+const TOP: Scope = { inList: false, inLi: false };
 
-const isElement = (n: RootContent | ElementContent): n is HastElement => n.type === "element";
-const isBlank = (n: RootContent | ElementContent) => n.type === "text" && n.value.trim() === "";
+/** li::marker: a disc, or the item's number counted from the list's `start`. */
+const listMarker = (node: HastElement, index: number) => (node.tagName === "ol" ? `${Number(node.properties.start ?? 1) + index}.\u00a0` : "\u2022\u00a0");
 
 class Markdown {
   private n = 0;
@@ -90,6 +122,8 @@ class Markdown {
     private readonly profile: MarkdownProfile,
     /** `--openui-text-body-default` in this renderer: TextContent's size points it elsewhere. */
     private readonly body: TextStyle,
+    /** Drawn in a lazy list's row: no handlers (virtualBlock). */
+    private readonly row: Row | null = null,
   ) {
     this.hover = ctx.local<{ link: string | null }>({ link: null }, `${part}-hover`);
   }
@@ -106,37 +140,21 @@ class Markdown {
 
   /** A column of block children, spaced by collapsed margins. */
   blocks(nodes: ElementContent[], css: Css, scope: Scope, marks?: { open?: string; close?: string }): { els: Element[]; mt: number; mb: number } {
-    const items: ({ kind: "inline"; nodes: ElementContent[] } | { kind: "block"; node: HastElement })[] = [];
-    let run: ElementContent[] = [];
-    const flush = () => {
-      if (run.some((n) => !isBlank(n))) items.push({ kind: "inline", nodes: run });
-      run = [];
-    };
-    for (const node of nodes) {
-      if (isElement(node) && BLOCK.has(node.tagName)) {
-        flush();
-        items.push({ kind: "block", node });
-      } else run.push(node);
-    }
-    flush();
-
-    const elements = items.flatMap((it) => (it.kind === "block" ? [it.node] : []));
-    let at = -1;
-    const laid: Laid[] = items.map((it, i) => {
-      const open = i === 0 ? marks?.open : undefined;
-      const close = i === items.length - 1 ? marks?.close : undefined;
-      if (it.kind === "inline") return { el: this.flow(it.nodes, css, { open, close }), mt: 0, mb: 0 };
-      at++;
-      const next = elements[at + 1]?.tagName;
-      const last = at === elements.length - 1;
-      return this.block(it.node, css, scope, { next, last, open, close });
-    });
-
+    const items = blockItems(nodes);
+    const laid = items.map((it, i) =>
+      this.item(it, css, scope, { open: i === 0 ? marks?.open : undefined, close: i === items.length - 1 ? marks?.close : undefined }),
+    );
     const els = laid.map((b, i) => {
       const gap = i === 0 ? 0 : Math.max(laid[i - 1]!.mb, b.mt);
       return gap > 0 ? b.el.mt(gap) : b.el;
     });
     return { els, mt: laid[0]?.mt ?? 0, mb: laid.at(-1)?.mb ?? 0 };
+  }
+
+  /** One piece of a column (blocks.ts blockItems) with its own margins, before they collapse with its neighbours'. */
+  item(it: BlockItem, css: Css, scope: Scope, marks: { open?: string; close?: string } = {}): Laid {
+    if (it.kind === "inline") return { el: this.flow(it.nodes, css, marks), mt: 0, mb: 0 };
+    return this.block(it.node, css, scope, { next: it.next, last: it.last, ...marks });
   }
 
   private column(els: Element[]): Element {
@@ -178,7 +196,7 @@ class Markdown {
       const language = code?.tagName === "code" ? codeBlockLanguage(code) : null;
       if (code && language !== null) {
         // The highlighter's `margin-top: 8px !important` collapses out through the wrapper and pre.
-        const el = codeBlock(this.ctx, this.key("code"), textOf(code).trim(), language, css.font.size);
+        const el = codeBlock(this.ctx, this.key("code"), textOf(code).trim(), language, css.font.size, { static: !!this.row });
         return { el, ...own(8, 0) };
       }
       return { el: this.flow(node.children, css, at), ...own(0, 0) };
@@ -211,11 +229,9 @@ class Markdown {
 
   /** ul/ol: 20px padding-left, disc or decimal markers in body text, neutral secondary. */
   private list(node: HastElement, css: Css, scope: Scope): { el: Element; mt: number; mb: number } {
-    const ordered = node.tagName === "ol";
-    let number = Number(node.properties.start ?? 1);
-    const items = node.children.filter(isElement).filter((c) => c.tagName === "li");
+    const items = listItems(node);
     const laid = items.map((li, i) => {
-      const marker = ordered ? `${number++}.\u00a0` : "\u2022\u00a0";
+      const marker = listMarker(node, i);
       const item = this.listItem(li, css, { inList: true, inLi: scope.inLi }, marker);
       // li: margin-bottom 8 (none for the last child), `li li` margin-top 8.
       return { el: item.el, mt: Math.max(scope.inLi ? 8 : 0, item.mt), mb: i === items.length - 1 ? 0 : Math.max(8, item.mb) };
@@ -225,6 +241,13 @@ class Markdown {
       return gap > 0 ? b.el.mt(gap) : b.el;
     });
     return { el: div().w_full().flex().flex_col().pl(20).children(els), mt: laid[0]?.mt ?? 0, mb: laid.at(-1)?.mb ?? 0 };
+  }
+
+  /** Item `index` of a top-level ul/ol as a column of its own (a row of virtualBlock): the list's padding and marker. */
+  listRow(node: HastElement, index: number, css: Css): Element {
+    const reset: Css = { ...css, font: this.body, color: this.t.textNeutralPrimary, italic: false }; // block()'s reset(this.body), outside a quote
+    const item = this.listItem(listItems(node)[index]!, reset, { inList: true, inLi: false }, listMarker(node, index));
+    return div().w_full().flex().flex_col().pl(20).child(item.el);
   }
 
   private listItem(li: HastElement, css: Css, scope: Scope, marker: string): { el: Element; mt: number; mb: number } {
@@ -243,29 +266,45 @@ class Markdown {
     return { el, mt: inner.mt, mb: inner.mb };
   }
 
+  /** A table row's cells: react-ui's TableHead/TableCell, content on one line. */
+  private cells(tr: HastElement, head: boolean): TableCell[] {
+    const text = tableText(this.t, head);
+    return tr.children
+      .filter(isElement)
+      .filter((c) => c.tagName === "th" || c.tagName === "td")
+      .map((c) => {
+        const align = c.properties.align;
+        return {
+          content: this.words(this.pieces(c.children, this.css(text.style, text.color), []), true),
+          align: align === "left" || align === "center" || align === "right" ? align : undefined,
+        };
+      });
+  }
+
   /** A markdown table: react-ui's Table parts (no ScrollableTable controls), cells on one line. */
   private table(node: HastElement): Element {
-    const t = this.t;
-    const rows = node.children
-      .filter(isElement)
-      .flatMap((section) => (section.tagName === "tr" ? [section] : section.children.filter(isElement).filter((r) => r.tagName === "tr")));
-    const cells = (tr: HastElement, head: boolean): TableCell[] =>
-      tr.children
-        .filter(isElement)
-        .filter((c) => c.tagName === "th" || c.tagName === "td")
-        .map((c) => {
-          const text = tableText(t, head);
-          const align = c.properties.align;
-          return {
-            content: this.words(this.pieces(c.children, this.css(text.style, text.color), []), true),
-            align: align === "left" || align === "center" || align === "right" ? align : undefined,
-          };
-        });
-    const [head, ...body] = rows;
+    const [head, ...body] = tableRows(node);
     return tableView(this.ctx, this.key("table"), {
-      header: head ? cells(head, true) : [],
-      rows: body.map((tr) => cells(tr, false)),
+      header: head ? this.cells(head, true) : [],
+      rows: body.map((tr) => this.cells(tr, false)),
       controls: false,
+      static: this.row ? { unmeasured: this.row.unmeasured } : undefined,
+    });
+  }
+
+  /**
+   * Body rows `from`–`to` of a long table (a row of virtualBlock), drawn static (`fixed`) or,
+   * to measure its widths, the header and first `measured` rows drawn with handlers. Every
+   * group and the measuring draw share the table's state through one Markdown part.
+   */
+  tableGroup(node: HastElement, from: number, to: number, fixed: StaticTable | null, measured: number): Element {
+    const [head, ...body] = tableRows(node);
+    const rows = fixed ? body.slice(from, to) : body.slice(0, measured);
+    return tableView(this.ctx, this.key("table"), {
+      header: head ? this.cells(head, true) : [],
+      rows: rows.map((tr) => this.cells(tr, false)),
+      controls: false,
+      static: fixed ?? undefined,
     });
   }
 
@@ -337,7 +376,7 @@ class Markdown {
         case "code": {
           const language = codeBlockLanguage(node);
           if (language !== null) {
-            out.push({ kind: "block", el: codeBlock(this.ctx, this.key("code"), textOf(node).trim(), language, css.font.size) });
+            out.push({ kind: "block", el: codeBlock(this.ctx, this.key("code"), textOf(node).trim(), language, css.font.size, { static: !!this.row }) });
             break;
           }
           out.push({ kind: "atom", el: this.inlineCode(textOf(node), css) });
@@ -417,16 +456,21 @@ class Markdown {
   }
 
   private span(text: string, css: Css): Element {
-    let el = textStyle(div().whitespace_nowrap().text_color(css.color), css.font).child(text);
+    const link = css.link;
+    // One key per link word in either mode, so a row's tables and code keep the keys of a handled draw.
+    const id = link ? this.ctx.id(this.key(`${link.key}-w`)) : "";
+    // In a row (no handlers), gpui-base's Link opens an http(s) address itself.
+    const native = !!this.row && !!link && WEB.test(link.href);
+    let el = textStyle((native ? Link.new(id) : div()).whitespace_nowrap().text_color(css.color), css.font).child(text);
     if (css.lineHeight) el = el.line_height(css.lineHeight);
     if (css.italic) el = el.italic();
     if (css.strike) el = el.line_through();
-    const link = css.link;
-    if (!link) return el;
+    if (native) return el.href(link!.href).cursor_pointer().hover((s) => s.underline());
+    if (!link || this.row) return el;
     // :hover underlines the whole link, however many words it spans.
     if (this.hover.link === link.key) el = el.underline();
     return el
-      .id(this.ctx.id(this.key(`${link.key}-w`)))
+      .id(id)
       .cursor_pointer()
       .on_hover((hovered, cx) => {
         const next = hovered ? link.key : this.hover.link === link.key ? null : this.hover.link;
@@ -502,32 +546,166 @@ export function markdownBlock(
   o: { profile: "plain" | "content"; body?: TextStyle },
 ): Element {
   const body = o.body ?? typography(ctx.t, "body", "default");
+  const color = ctx.t.textNeutralPrimary;
   const tree = markdownTree(ctx, part, text, o.profile);
-  // Until a long text is parsed (markdown/budget.ts): the text itself, in the block's style.
-  if (!tree) return textStyle(div().w_full().flex().flex_col().text_color(ctx.t.textNeutralPrimary), body).child(div().child(text));
+  // Until a long text is parsed (markdown/budget.ts), and for a short block past the render's
+  // ceiling (blocks.ts RENDER_CHARS): the text itself, in the block's style.
+  const draw = tree ? blockDraw(ctx, text.length) : "plain";
+  if (!tree || draw === "plain") return textStyle(div().w_full().flex().flex_col().text_color(color), body).child(div().child(text));
+  if (draw === "virtual") return virtualBlock(ctx, part, tree, o.profile, body, color);
   const md = new Markdown(ctx, part, o.profile, body);
-  const css = md.css(body, ctx.t.textNeutralPrimary);
-  // Blocks past what one render can draw formatted (markdown/budget.ts, temporary) draw as their text.
-  const nodes = tree.children;
-  const formatted = formattedBlocks(ctx, nodes, (n) => (n.type === "doctype" ? 0 : textOf(n).length));
-  if (formatted.every(Boolean)) {
-    // `> *:first-child { margin-top: 0 }`, `> *:last-child { margin-bottom: 0 }`
-    const inner = md.blocks(nodes as ElementContent[], css, { inList: false, inLi: false });
-    return textStyle(div().w_full().flex().flex_col().text_color(css.color), body).children(inner.els);
+  const css = md.css(body, color);
+  // `> *:first-child { margin-top: 0 }`, `> *:last-child { margin-bottom: 0 }`
+  const inner = md.blocks(tree.children as ElementContent[], css, { inList: false, inLi: false });
+  return textStyle(div().w_full().flex().flex_col().text_color(css.color), body).children(inner.els);
+}
+
+/** Where a host never told its viewport height (Surface.setViewportHeight), a long block's region is this tall. */
+const DEFAULT_VIEWPORT = 600;
+/** How many frames a row's tables get to be measured before the row stops asking for redraws. */
+const MEASURE_TRIES = 4;
+/** How far a long block's rows may draw past its left side (the host's padding): a list clips its rows at its bounds. */
+const BLEED = 16;
+/**
+ * A row with more source than this still (one huge paragraph or list item: the cuts in
+ * blocks.ts virtualRows can't split it) draws as its plain text: built in full it would
+ * cost a render's whole budget (about 2.7 ms per kilobyte) in one call.
+ */
+const ROW_CHARS = 12_000;
+/**
+ * Body rows of a long table its handled draw measures (in the render, about 8 ms); the
+ * widths of the others are estimated from their text.
+ */
+const MEASURE_ROWS = 25;
+
+/** Words enough for a line wider than any pane: a virtual block's intrinsic width hint. */
+const WIDE_TEXT = "wide ".repeat(800);
+
+/** A tree's rows (blocks.ts virtualRows), kept with the tree. */
+const treeRows = new WeakMap<Root, VirtualRow[]>();
+/** Per long table, a content width per column for the rows past MEASURE_ROWS: their longest text at about 0.6em a character. */
+const tableEstimates = new WeakMap<HastElement, number[]>();
+
+function tableEstimate(ctx: RenderContext, table: HastElement): number[] {
+  let estimate = tableEstimates.get(table);
+  if (estimate) return estimate;
+  const em = tableText(ctx.t, false).style.size;
+  estimate = [];
+  for (const tr of tableRows(table).slice(1 + MEASURE_ROWS)) {
+    tr.children.filter(isElement).forEach((cell, ci) => (estimate![ci] = Math.max(estimate![ci] ?? 0, textOf(cell).length * em * 0.6)));
   }
-  // Runs of formatted and plain blocks, in order, a paragraph's margin (18px) apart.
-  const runs: { formatted: boolean; nodes: Root["children"] }[] = [];
-  nodes.forEach((node, i) => {
-    const last = runs.at(-1);
-    if (last && (last.formatted === formatted[i] || isBlank(node))) last.nodes.push(node);
-    else runs.push({ formatted: formatted[i]!, nodes: [node] });
+  tableEstimates.set(table, estimate);
+  return estimate;
+}
+
+interface VirtualState {
+  /** Rows (by key) that lack table measurements: the frame that asked, and how many frames measured them. */
+  measure: Map<string, { frame: number; tries: number }>;
+  /** The tree the rows were last taken from. */
+  tree: Root | null;
+}
+
+/**
+ * A long markdown block: its rows (blocks.ts virtualRows) in gpui-kit's lazy `list`, built
+ * only while on screen, in a scroll region as tall as the host's viewport (the page still
+ * reads top to bottom: the region fills the pane when scrolled to). Margins collapse
+ * between rows as blocks() collapses them. Rows run in layout, with no handlers: a table
+ * there takes column widths from a handled draw of its row, made clipped to nothing behind
+ * the list for the frames it is missing them.
+ */
+function virtualBlock(ctx: RenderContext, part: string, tree: Root, profile: "plain" | "content", body: TextStyle, color: Color): Element {
+  let rows = treeRows.get(tree);
+  if (!rows) treeRows.set(tree, (rows = virtualRows(tree, profile)));
+  const pieces = rows;
+  const local = ctx.local<VirtualState>({ measure: new Map(), tree: null }, `${part}-virtual`);
+  if (local.tree !== tree) {
+    // A new tree (the text grew): forget the state of rows that are gone.
+    if (local.tree) {
+      const keys = new Set(pieces.flatMap((r) => (r.kind === "table" ? [r.key, r.part] : [r.key])));
+      ctx.pruneLocals(`${part}-`, (rest) => {
+        const row = /^(?:\d+-\d+|i\d+)(?:-(?:li|c|t)\d+)?/.exec(rest)?.[0];
+        return row === undefined || keys.has(row) || keys.has(row.replace(/-(?:li|c|t)\d+$/, ""));
+      });
+      for (const key of local.measure.keys()) if (!keys.has(key)) local.measure.delete(key);
+    }
+    local.tree = tree;
+  }
+
+  const askMeasure = (key: string) => {
+    const asked = local.measure.get(key);
+    // A table measured a while ago and missing widths again (its sizes were replaced) starts over.
+    const tries = asked && asked.frame >= ctx.frame - 2 ? asked.tries : 0;
+    local.measure.set(key, { frame: ctx.frame, tries });
+    if (tries < MEASURE_TRIES) ctx.wake();
+  };
+  /** Row `k`, static (in the list) or with handlers (the measuring draw). */
+  const draw = (k: number, fixed: boolean): Element => {
+    const r = pieces[k]!;
+    const ask: Row | null = fixed ? { unmeasured: () => askMeasure(r.key) } : null;
+    if (rowChars(r) > ROW_CHARS) {
+      const node = r.kind === "li" ? listItems(r.node)[r.index]! : r.kind === "item" && r.item.kind === "block" ? r.item.node : null;
+      const text = node ? textOf(node) : r.kind === "item" && r.item.kind === "inline" ? r.item.nodes.map(textOf).join("") : "";
+      return div().w_full().child(text);
+    }
+    if (r.kind === "code") return codeBlock(ctx, `${part}-${r.key}`, r.code, r.language, body.size, { static: true, edges: { top: r.first, bottom: r.last } });
+    if (r.kind === "table") {
+      const md = new Markdown(ctx, `${part}-${r.part}`, profile, body, ask);
+      const groupOf: StaticTable | null = ask ? { unmeasured: ask.unmeasured, from: r.from, count: r.count, measured: MEASURE_ROWS, estimate: tableEstimate(ctx, r.node) } : null;
+      return md.tableGroup(r.node, r.from, r.to, groupOf, MEASURE_ROWS);
+    }
+    const md = new Markdown(ctx, `${part}-${r.key}`, profile, body, ask);
+    const css = md.css(body, color);
+    return r.kind === "li" ? md.listRow(r.node, r.index, css) : md.item(r.item, css, TOP).el;
+  };
+
+  const n = pieces.length;
+  const lazy = lazyRows(ctx, part, {
+    count: n,
+    key: (k) => pieces[k]!.key,
+    left: BLEED,
+    row: (k) => {
+      const gap = k > 0 ? Math.max(pieces[k - 1]!.margins.mb, pieces[k]!.margins.mt) : 0;
+      // The list reaches BLEED past the block's left side (rows padded back in), so what a full draw
+      // lets overflow there, such as an ordered list's wide markers, isn't clipped.
+      return textStyle(div().w_full().flex().flex_col().pl(BLEED).text_color(color), body)
+        .when(gap > 0, (row) => row.pt(gap))
+        .child(edge(draw(k, true), k, n));
+    },
   });
-  const els = runs.flatMap((run): Element[] => {
-    if (run.formatted) return [div().w_full().flex().flex_col().children(md.blocks(run.nodes as ElementContent[], css, { inList: false, inLi: false }).els)];
-    const plain = run.nodes.flatMap((n) => (n.type === "doctype" || isBlank(n) ? [] : [textOf(n)]));
-    return plain.length ? [div().w_full().child(plain.join("\n\n"))] : [];
-  });
-  return textStyle(div().w_full().flex().flex_col().text_color(css.color), body).children(els.map((el, i) => (i ? el.mt(18) : el)));
+
+  // Rows that asked last frame get their handled draw, which measures their tables.
+  const measuring: Element[] = [];
+  if (local.measure.size) {
+    const index = new Map(pieces.map((r, k) => [r.key, k]));
+    for (const [key, asked] of local.measure) {
+      const k = index.get(key);
+      if (k === undefined || asked.frame < ctx.frame - 1 || asked.tries >= MEASURE_TRIES) continue;
+      asked.tries++;
+      measuring.push(draw(k, false));
+    }
+  }
+
+  // Callers style the block (MarkDownRenderer's card variant pads it): the region lives in its content box.
+  const region = div()
+    .relative()
+    .flex_1()
+    .min_h(0)
+    .w_full()
+    .child(lazy[0]!)
+    .when(measuring.length > 0, (el) =>
+      el.child(div().absolute().top(0).left(0).w_full().h(0).overflow_hidden().child(div().w_full().flex().flex_col().children(measuring))),
+    )
+    .children(lazy.slice(1));
+  // The region's content is out of flow (the list, the measuring draw), so it has no width of its own.
+  // A caller that sizes it to its content (Steps' details: an auto width in a column whose width
+  // comes from its content) gets a long paragraph's intrinsic widths from a clipped line of
+  // words (as wide as the container allows, a word at least), and self_stretch fills a column.
+  return textStyle(
+    div().id(ctx.id(`${part}-virtual`)).w_full().self_stretch().h(ctx.viewportHeight ?? DEFAULT_VIEWPORT).flex().flex_col().text_color(color),
+    body,
+  )
+    .child(div().w_full().h(0).overflow_hidden().child(WIDE_TEXT))
+    .child(region);
 }
 
 /** The text of nodes that are only text (inside a paragraph, which InlineMarkdownRenderer unwraps), else null. */

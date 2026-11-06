@@ -140,22 +140,59 @@ const HTML_SPANS: [RegExp, RegExp][] = [
   [/^ {0,3}<!\[CDATA\[/, /\]\]>/],
 ];
 
+/** How the pieces on both sides of a cut join: as blocks, or inside one list or table. */
+export type CutJoin = "block" | "list" | "table";
+
+export interface Cut {
+  at: number;
+  join: CutJoin;
+  /** Text the piece after the cut is parsed behind: a table's header and delimiter rows. */
+  prefix?: string;
+}
+
+const MARKER = /^([-+*]|\d{1,9}[.)])([ \t]|\r?$)/;
+/** A list marker's kind: the bullet, or an ordered list's delimiter. Items of one kind continue a list. */
+const markerKind = (line: string) => {
+  const m = MARKER.exec(line)?.[1];
+  return m === undefined ? null : /\d/.test(m) ? m.at(-1)! : m;
+};
+const DELIMITER_ROW = /^ {0,3}\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*\r?$/;
+/** A table row's cells, as GFM splits them: at pipes that are not escaped, outer pipes dropped. */
+const cellCount = (line: string) => line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "").split(/(?<!\\)\|/).length;
+/** A link reference definition on one line, with nothing that could continue it on the next. */
+const DEFINITION = /^ {0,3}\[(?!\^)((?:[^\]\\\n]|\\.)+)\]:[ \t]*(?:<[^>\n]*>|\S+)(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?[ \t]*\r?$/;
+
 /**
- * Where `text` may be cut into pieces that parse, in `profile`, to the same blocks on
- * their own: at the start of a run of blank lines followed by a line that starts with
- * neither whitespace nor a list marker (either could continue a block above), outside
- * fenced code, `$$` math (TextContent only: the other renderers have no math) and the
- * HTML blocks that span blank lines.
+ * Where `text` may be cut into pieces that parse, in `profile`, to the same blocks on their
+ * own, and the link definitions every piece needs.
  *
- * Where the structure can't be told line by line, cutting stops (the rest is one piece):
- * at a fence inside a list item or quote that its container may have ended, and at a
- * fence-like line inside what may be an HTML block. A text with a line, outside code,
- * that may be a link or footnote definition (`]:`, which reaches the whole document) or
- * with lone CR line endings is not cut at all. test/markdown.test.ts pins the cuts.
+ * - Between blocks: at the start of a run of blank lines followed by a line that starts
+ *   with neither whitespace nor a list marker (either could continue a block above),
+ *   outside fenced code, `$$` math (TextContent only: the other renderers have no math)
+ *   and the HTML blocks that span blank lines.
+ * - Inside a tight top-level list: before each column-0 item of the list's marker kind,
+ *   when every line of the list is such an item or indented, nothing before it may
+ *   continue a list, and nothing after it does (a blank line inside or a continuation
+ *   after would make it loose, and a piece's list would not be). The joined trees merge
+ *   the two lists.
+ * - Inside a GFM table (TextContent and Text): before each body row that starts with a
+ *   pipe; the piece after is parsed behind the header and delimiter rows (`prefix`), and
+ *   its body rows join the table.
+ *
+ * Link definitions (`[label]: url`, one line, not inside a paragraph) reach the whole
+ * document: their lines come back in `definitions`, which every piece is parsed with
+ * (they draw nothing). Where the structure can't be told line by line, cutting stops (the
+ * rest is one piece): at a fence inside a list item or quote that its container may have
+ * ended, and at a fence-like line inside what may be an HTML block. A text with any other
+ * `]:` line outside code (a footnote, a definition that may span lines or repeats a label)
+ * or with lone CR line endings is not cut at all. test/markdown.test.ts pins the cuts.
  */
-export function markdownCuts(text: string, profile: MarkdownProfile): number[] {
-  if (/\r(?!\n)/.test(text)) return [];
-  const cuts: number[] = [];
+export function markdownSplit(text: string, profile: MarkdownProfile): { cuts: Cut[]; definitions: string } {
+  const whole = { cuts: [], definitions: "" };
+  if (/\r(?!\n)/.test(text)) return whole;
+  const cuts: Cut[] = [];
+  const definitions: string[] = [];
+  const labels = new Set<string>();
   // An open fence: its marks, the column they start at, and the quote marks before them.
   // A fence inside a list item or quote (`nested`, anything not at column 0) closes only
   // at its own column and quote depth; any other closer-like line, or a less indented or
@@ -166,8 +203,15 @@ export function markdownCuts(text: string, profile: MarkdownProfile): number[] {
   // fence-like line may be HTML text or a real fence: past that, nothing is cut.
   let htmlUntilBlank = false;
   let blank = -1;
+  // The run of non-blank lines being read: if it is a list or table that may be cut
+  // inside, the list's marker kind or the table's header and delimiter rows, and the
+  // list's cuts, which hold only once its end shows it was tight.
+  let run: { line: number; list: string | null; table: string | null; pending: Cut[]; listy: boolean } | null = null;
+  const stop = (from: number) => (text.includes("]:", from) ? whole : { cuts, definitions: definitions.join("\n") });
+  const lines = text.split("\n");
   let at = 0;
-  for (const line of text.split("\n")) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
     const start = at;
     at += line.length + 1;
     if (fence) {
@@ -175,11 +219,11 @@ export function markdownCuts(text: string, profile: MarkdownProfile): number[] {
       const quotes = lead.split(">").length - 1;
       // A blank line, or in a quoted fence a line of only its quote marks.
       const blankLine = /^[ \t>]*\r?$/.test(line) && quotes >= fence.quotes;
-      if (fence.nested && !blankLine && (lead.length < fence.col || quotes < fence.quotes)) return stopped(cuts, text, start);
+      if (fence.nested && !blankLine && (lead.length < fence.col || quotes < fence.quotes)) return stop(start);
       const close = /^[ \t>]*(`{3,}|~{3,}|\${2,})[ \t]*\r?$/.exec(line)?.[1];
       if (!close || close[0] !== fence.char || close.length < fence.size) continue;
       if (fence.nested ? lead.length === fence.col && quotes === fence.quotes : lead.length <= 3 && quotes === 0) fence = null;
-      else if (fence.nested) return stopped(cuts, text, start);
+      else if (fence.nested) return stop(start);
       continue;
     }
     if (html) {
@@ -191,18 +235,56 @@ export function markdownCuts(text: string, profile: MarkdownProfile): number[] {
       htmlUntilBlank = false;
       continue;
     }
-    if (line.includes("]:")) return [];
-    if (blank > 0 && !/^(\s|[-+*](\s|$)|\d{1,9}[.)](\s|$))/.test(line)) cuts.push(blank);
+    const kind = markerKind(line);
+    const runStart = i === 0 || blank >= 0;
+    if (runStart) {
+      // A list's cuts hold if what follows its blank lines doesn't continue it (loosely).
+      if (run?.list && !/^\s/.test(line) && kind !== run.list) cuts.push(...run.pending);
+      const previousListy = run?.listy ?? false;
+      run = { line: i, list: null, table: null, pending: [], listy: false };
+      if (kind && !previousListy) run.list = kind;
+      else if (profile !== "plain" && !kind && line.includes("|") && !/^[\s>]/.test(line)) {
+        const delimiter = lines[i + 1];
+        if (delimiter !== undefined && DELIMITER_ROW.test(delimiter) && cellCount(delimiter) === cellCount(line)) run.table = `${line}\n${delimiter}\n`;
+      }
+    } else if (run?.list) {
+      // An item of the list may start a piece; an indented line continues an item; anything else: no cuts here.
+      if (kind === run.list) run.pending.push({ at: start, join: "list" });
+      else if (!/^\s/.test(line)) {
+        run.list = null;
+        run.pending = [];
+      }
+    } else if (run?.table) {
+      // A body row after the first may start a piece; a line without a leading pipe may end the table.
+      const row = i - run.line - 2;
+      if (!line.startsWith("|")) run.table = null;
+      else if (row >= 1) cuts.push({ at: start, join: "table", prefix: run.table });
+    }
+    if (run && (/^\s/.test(line) || kind)) run.listy = true;
+    if (line.includes("]:")) {
+      const def = DEFINITION.exec(line);
+      const label = def?.[1]!.toLowerCase().replace(/\s+/g, " ").trim();
+      const alone = runStart || DEFINITION.test(lines[i - 1] ?? "");
+      if (!def || !alone || /^\s*["'(]/.test(lines[i + 1] ?? "") || labels.has(label!)) return whole;
+      labels.add(label!);
+      definitions.push(line.replace(/\r$/, ""));
+    }
+    if (blank > 0 && !/^(\s|[-+*](\s|$)|\d{1,9}[.)](\s|$))/.test(line)) cuts.push({ at: blank, join: "block" });
     blank = -1;
     // Fences, after any list markers and quote marks: backticks with no backtick after them,
     // tildes, and in TextContent `$$` with no `$` after it.
     const open = /^((?:[ \t>]|(?:[-+*]|\d{1,9}[.)])(?=[ \t]))*)(`{3,}[^`]*|~{3,}.*|\${2,}[^$]*)$/.exec(line);
     if (open && (open[2]![0] !== "$" || profile === "content")) {
-      if (htmlUntilBlank) return stopped(cuts, text, start);
+      if (htmlUntilBlank) return stop(start);
       const marks = /^(`+|~+|\$+)/.exec(open[2]!)![1]!;
       const prefix = open[1]!;
       // Only a fence at column 0 is surely outside every list item.
       fence = { char: marks[0]!, size: marks.length, col: prefix.length, quotes: prefix.split(">").length - 1, nested: prefix !== "" };
+      if (run) {
+        // A fence in a list or table run: cut around it, not inside.
+        run.list = run.table = null;
+        run.pending = [];
+      }
       continue;
     }
     const span = HTML_SPANS.find(([opens]) => opens.test(line));
@@ -210,15 +292,17 @@ export function markdownCuts(text: string, profile: MarkdownProfile): number[] {
       if (!span[1].test(line.replace(span[0], ""))) html = span[1];
     } else if (/^ {0,3}<[/A-Za-z]/.test(line)) htmlUntilBlank = true;
   }
-  return cuts;
+  if (run?.list) cuts.push(...run.pending);
+  cuts.sort((a, b) => a.at - b.at);
+  return { cuts, definitions: definitions.join("\n") };
 }
 
-/** The cuts before an unclear line at `from`, unless a later line may be a definition (which reaches back). */
-function stopped(cuts: number[], text: string, from: number): number[] {
-  return text.includes("]:", from) ? [] : cuts;
+/** Where markdownSplit cuts `text`. */
+export function markdownCuts(text: string, profile: MarkdownProfile): number[] {
+  return markdownSplit(text, profile).cuts.map((c) => c.at);
 }
 
-/** Characters a piece holds at most, where markdownCuts allows (a single block may be longer). */
+/** Characters a piece holds at most, where markdownSplit allows (a single block may be longer). */
 const PIECE_CHARS = 2000;
 
 const pieces = new Map<string, Root>();
@@ -226,14 +310,16 @@ const PIECE_CACHE_SIZE = 400;
 
 /**
  * parseMarkdown in steps that each parse a bounded piece: the text is cut where
- * markdownCuts allows (into pieces of about PIECE_CHARS), each piece runs the pipeline
- * on its own, and the trees are joined with positions moved to the whole text's. The
- * result equals parseMarkdown's and lands in its cache. Pieces are cached too, so a
- * response that grows while streaming parses only its new end.
+ * markdownSplit allows (into pieces of about PIECE_CHARS), each piece runs the pipeline
+ * on its own (behind a table's header rows, with the document's link definitions), and
+ * the trees are joined with positions moved to the whole text's, a list or table cut in
+ * two merged back into one. The result equals parseMarkdown's and lands in its cache.
+ * Pieces are cached too, so a response that grows while streaming parses only its new end.
  */
 export class MarkdownParse {
   readonly key: string;
-  private readonly starts: number[];
+  private readonly starts: Cut[];
+  private readonly definitions: string;
   private readonly trees: Root[] = [];
   private result: Root | null = null;
 
@@ -244,13 +330,15 @@ export class MarkdownParse {
     pieceChars = PIECE_CHARS,
   ) {
     this.key = `${profile}\u0000${text}`;
-    const starts = [0];
-    let previous = 0;
-    for (const cut of [...markdownCuts(text, profile), text.length]) {
-      if (cut - starts.at(-1)! > pieceChars && previous > starts.at(-1)!) starts.push(previous);
+    const split = markdownSplit(text, profile);
+    const starts: Cut[] = [{ at: 0, join: "block" }];
+    let previous: Cut | null = null;
+    for (const cut of [...split.cuts, { at: text.length, join: "block" as const }]) {
+      if (cut.at - starts.at(-1)!.at > pieceChars && previous && previous.at > starts.at(-1)!.at) starts.push(previous);
       previous = cut;
     }
     this.starts = starts;
+    this.definitions = starts.length > 1 ? split.definitions : "";
   }
 
   /** The parsed tree once every piece is in. */
@@ -258,11 +346,39 @@ export class MarkdownParse {
     return this.result ?? cache.get(this.key) ?? null;
   }
 
+  private piece(i: number): string {
+    const cut = this.starts[i]!;
+    const body = this.text.slice(cut.at, this.starts[i + 1]?.at ?? this.text.length);
+    return `${cut.prefix ?? ""}${body}${this.definitions ? `\n\n${this.definitions}\n` : ""}`;
+  }
+
   /** Characters the next step parses (0 when done). */
   get nextSize(): number {
     if (this.tree) return 0;
     const i = this.trees.length;
-    return (this.starts[i + 1] ?? this.text.length) - this.starts[i]!;
+    return (this.starts[i + 1]?.at ?? this.text.length) - this.starts[i]!.at;
+  }
+
+  /**
+   * What the next step costs, in characters of prose: lines of fenced code count a
+   * fiftieth (the parser only scans them), so a long fence doesn't look like a long text.
+   */
+  get nextCost(): number {
+    if (this.tree) return 0;
+    const i = this.trees.length;
+    let cost = 0;
+    let fence: string | null = null;
+    for (const line of this.text.slice(this.starts[i]!.at, this.starts[i + 1]?.at ?? this.text.length).split("\n")) {
+      const mark = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+      if (fence && mark && mark[0] === fence[0] && mark.length >= fence.length) fence = null;
+      else if (!fence && mark) fence = mark;
+      else if (fence) {
+        cost += (line.length + 1) / 50;
+        continue;
+      }
+      cost += line.length + 1;
+    }
+    return cost;
   }
 
   /** Parse the next piece; after the last, join them. Returns the tree when done. */
@@ -270,8 +386,8 @@ export class MarkdownParse {
     const done = this.tree;
     if (done) return done;
     const i = this.trees.length;
-    const piece = this.text.slice(this.starts[i], this.starts[i + 1] ?? this.text.length);
     const single = this.starts.length === 1;
+    const piece = single ? this.text : this.piece(i);
     const pieceKey = `${this.profile}\u0000${piece}`;
     let tree = single ? undefined : pieces.get(pieceKey);
     if (!tree) {
@@ -292,18 +408,41 @@ export class MarkdownParse {
     const children: Root["children"] = [];
     let line = 0;
     let prev = 0;
-    let end: Point = { line: 1, column: 1, offset: 0 };
     this.trees.forEach((tree, i) => {
-      const start = this.starts[i]!;
-      for (let k = prev; k < start; k++) if (this.text.charCodeAt(k) === 10) line++;
-      prev = start;
-      const moved = shifted(tree, line, start);
-      if (children.length && moved.children.length) children.push({ type: "text", value: "\n" });
-      children.push(...moved.children);
-      if (moved.position) end = moved.position.end;
+      const cut = this.starts[i]!;
+      for (let k = prev; k < cut.at; k++) if (this.text.charCodeAt(k) === 10) line++;
+      prev = cut.at;
+      const prefix = cut.prefix ?? "";
+      const moved = shifted(tree, line - (prefix.split("\n").length - 1), cut.at - prefix.length);
+      let rest = moved.children;
+      const last = children.at(-1);
+      const first = rest[0];
+      if (cut.join === "list" && last?.type === "element" && first?.type === "element" && last.tagName === first.tagName && /^[uo]l$/.test(last.tagName)) {
+        // Items of one list: the first piece's list (its `start`) takes the next one's items.
+        children[children.length - 1] = mergeChildren(last, first);
+        rest = rest.slice(1);
+      } else if (cut.join === "table" && last?.type === "element" && first?.type === "element" && last.tagName === "table" && first.tagName === "table") {
+        const body = (t: typeof last) => t.children.find((c) => c.type === "element" && c.tagName === "tbody");
+        const into = body(last);
+        const from = body(first);
+        if (into?.type === "element" && from?.type === "element") {
+          const tbody = mergeChildren(into, from);
+          children[children.length - 1] = { ...last, children: last.children.map((c) => (c === into ? tbody : c)), position: last.position && first.position && { start: last.position.start, end: first.position.end } };
+          rest = rest.slice(1);
+        }
+      } else if (children.length && rest.length) children.push({ type: "text", value: "\n" });
+      children.push(...rest);
     });
+    // The root ends where the text does (pieces carry the definitions after their own text).
+    const lines = this.text.split("\n");
+    const end: Point = { line: lines.length, column: lines.at(-1)!.length + 1, offset: this.text.length };
     return { type: "root", children, position: { start: { line: 1, column: 1, offset: 0 }, end } };
   }
+}
+
+/** `a` with `b`'s children after its own (both start and end with a "\n" text: one is dropped), ending where `b` does. */
+function mergeChildren<T extends Extract<Nodes, { type: "element" }>>(a: T, b: T): T {
+  return { ...a, children: [...a.children, ...b.children.slice(1)], position: a.position && b.position && { start: a.position.start, end: b.position.end } };
 }
 
 /** A copy of `node` (properties shared) with every position `lines` lines and `offset` characters further on. */

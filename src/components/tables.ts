@@ -15,7 +15,9 @@
 // owns: the wheel and trackpad move it, and ScrollableTable's chevron controls
 // step it column by column with a sliding transition, like upstream's smooth
 // `scrollTo`. The first frame of new rows is drawn before they are measured,
-// with columns of equal width.
+// with columns of equal width. In a long markdown block's lazy list rows, which
+// allow no handlers, a table takes the widths an earlier handled draw measured and
+// scrolls sideways natively (tableView `static`).
 import { isElementNode } from "@openuidev/lang-core";
 import { div, type Color, type Context, type Element, type ScrollWheelEvent } from "gpui-kit";
 import type { Component, RenderContext } from "../render/surface.ts";
@@ -68,14 +70,33 @@ function columnWidths(content: number[], viewport: number): { widths: number[]; 
 }
 
 /**
+ * A table drawn without handlers, for a lazy list's row (gpui-kit `list` allows none
+ * there), possibly as one group of its rows. Column widths come from the content widths
+ * a handled draw of the same `part` measured (`unmeasured` is called while some are
+ * missing, and the columns are equal meanwhile); flex growth in proportion to them fills
+ * a wider container as columnWidths does, and a narrower one scrolls natively. Every
+ * group takes the same widths, so the groups line up; each scrolls sideways on its own.
+ */
+export interface StaticTable {
+  unmeasured: () => void;
+  /** This group's first body row in the table, and the table's body rows (default: `rows` alone). */
+  from?: number;
+  count?: number;
+  /** Body rows the handled draw measured, from the first (default: all); `estimate` covers the rest. */
+  measured?: number;
+  /** Per column, a content width estimated for the unmeasured rows, px. */
+  estimate?: number[];
+}
+
+/**
  * components/Table: header row, rows, the bordered container. `controls` adds
  * ScrollableTable's chevrons. `rowsKey` names the rows shown (a page): new rows
- * are measured afresh and scroll back to the start.
+ * are measured afresh and scroll back to the start. `static`: see StaticTable.
  */
 export function tableView(
   ctx: RenderContext,
   part: string,
-  o: { header: TableCell[]; rows: TableCell[][]; controls: boolean; rowsKey?: string },
+  o: { header: TableCell[]; rows: TableCell[][]; controls: boolean; rowsKey?: string; static?: StaticTable },
 ): Element {
   const t = ctx.t;
   const local = ctx.local<ViewState>({ sizes: {}, viewport: 0, offset: 0, smooth: false, rowsKey: "" }, part);
@@ -87,31 +108,30 @@ export function tableView(
     local.smooth = false;
   }
   const columns = o.header.length;
+  const fixed = o.static;
+  const from = fixed?.from ?? 0;
+  const count = fixed?.count ?? o.rows.length;
 
-  // Layout from last frame's measurements of exactly the cells on screen now.
+  // Layout from last frame's measurements of exactly the cells on screen now (static: of the measured rows).
   const pad = 2 * t.spaceM;
-  const keys = Array.from({ length: columns }, (_, ci) => [`h${ci}`, ...o.rows.map((_, ri) => `r${ri}c${ci}`)]);
-  const measured = local.viewport > 0 && keys.every((col) => col.every((k) => local.sizes[k] !== undefined));
-  const layout = measured
-    ? columnWidths(
-        keys.map((col) => Math.ceil(Math.max(...col.map((k) => local.sizes[k]!))) + pad),
-        local.viewport,
-      )
-    : null;
+  const measuredRows = fixed ? Math.min(fixed.measured ?? count, count) : o.rows.length;
+  const keys = Array.from({ length: columns }, (_, ci) => [`h${ci}`, ...Array.from({ length: measuredRows }, (_, ri) => `r${ri}c${ci}`)]);
+  const sized = keys.every((col) => col.every((k) => local.sizes[k] !== undefined));
+  const content = sized ? keys.map((col, ci) => Math.ceil(Math.max(fixed?.estimate?.[ci] ?? 0, ...col.map((k) => local.sizes[k]!))) + pad) : null;
+  if (fixed && !sized) fixed.unmeasured();
+  const measured = !fixed && local.viewport > 0 && sized;
+  const layout = measured && content ? columnWidths(content, local.viewport) : null;
   const tableWidth = layout ? layout.widths.reduce((a, b) => a + b, 0) : 0;
   const maxOffset = layout?.scrollable ? tableWidth - local.viewport : 0;
   const offset = Math.min(Math.max(0, local.offset), maxOffset);
   const lefts = layout ? layout.widths.map((_, i) => layout.widths.slice(0, i).reduce((a, b) => a + b, 0)) : [];
 
-  /** Content that reports its natural width under `key`. */
-  const measure = (key: string, content: (Element | string)[]) =>
-    div()
+  /** Content that reports its natural width under `key` (static: the same box, unreported). */
+  const measure = (key: string, content: (Element | string)[]) => {
+    const box = div().flex().flex_row().flex_none().items_center().whitespace_nowrap();
+    if (fixed) return box.children(content);
+    return box
       .id(ctx.id(`${part}-m-${key}`))
-      .flex()
-      .flex_row()
-      .flex_none()
-      .items_center()
-      .whitespace_nowrap()
       .on_size_change((size, cx) => {
         if (local.sizes[key] !== size.width) {
           local.sizes[key] = size.width;
@@ -119,12 +139,14 @@ export function tableView(
         }
       })
       .children(content);
+  };
 
   // .openui-table-cell / -head: padding m on every side, no wrapping; align-* justifies.
   const cell = (ci: number, c: TableCell | undefined, key: string, head: boolean): Element => {
     const text = tableText(t, head);
     let el = textStyle(div().flex().flex_row().items_center().overflow_hidden().p(t.spaceM).text_color(text.color), text.style);
-    el = layout ? el.flex_none().w(layout.widths[ci]!) : el.flex_1().min_w_0();
+    if (fixed && content) el = el.flex_basis(content[ci]!).flex_grow(content[ci]!).flex_shrink(0);
+    else el = layout ? el.flex_none().w(layout.widths[ci]!) : el.flex_1().min_w_0();
     if (c?.align === "right") el = el.justify_end();
     else if (c?.align === "center") el = el.justify_center();
     return el.child(measure(key, c?.content ?? []));
@@ -137,14 +159,35 @@ export function tableView(
     .border_color(t.borderDefault)
     .children(o.header.map((c, ci) => cell(ci, c, `h${ci}`, true)));
 
-  const rows = o.rows.map((row, ri) =>
-    div()
+  const rows = o.rows.map((row, i) => {
+    const ri = from + i;
+    return div()
       .flex()
       .flex_row()
       .when(ri % 2 === 1, (el) => el.bg(t.highlightSubtle)) // tbody tr:nth-child(even)
-      .when(ri < o.rows.length - 1, (el) => el.border_b_1().border_color(t.borderDefault))
-      .children(Array.from({ length: columns }, (_, ci) => cell(ci, row[ci], `r${ri}c${ci}`, false))),
-  );
+      .when(ri < count - 1, (el) => el.border_b_1().border_color(t.borderDefault))
+      .children(Array.from({ length: columns }, (_, ci) => cell(ci, row[ci], `r${ri}c${ci}`, false)));
+  });
+
+  if (fixed) {
+    // The container (border default, radius 2xl) scrolls natively, its bar hidden as upstream's.
+    // A group draws the top edge and header only first, the bottom edge only last.
+    const total = content ? content.reduce((a, b) => a + b, 0) : 0;
+    const top = from === 0;
+    const bottom = from + o.rows.length >= count;
+    let box = div().id(ctx.id(`${part}-scroll-${from}`)).w_full().overflow_x_scroll().border_l_1().border_r_1().border_color(t.borderDefault);
+    if (top) box = box.border_t_1().rounded_t(t.radius2xl);
+    if (bottom) box = box.border_b_1().rounded_b(t.radius2xl);
+    return box.child(
+      div()
+        .flex()
+        .flex_col()
+        .w_full()
+        .when(total > 0, (el) => el.min_w(total))
+        .when(top, (el) => el.child(header))
+        .children(rows),
+    );
+  }
 
   const scrollTo = (next: number, smooth: boolean, cx: Context) => {
     local.offset = Math.min(Math.max(0, next), maxOffset);

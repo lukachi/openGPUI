@@ -76,6 +76,8 @@ export type OverlaySlot = (el: Element, focus?: FocusHandle | null) => void;
 const STABLE_MS = 150;
 /** What a src that waits for its string to settle draws as. */
 const WAITING: ImageState = { status: "loading" };
+/** How long one pump resume runs deferred work before leaving the rest to the next (a resume is interrupted at about 300–600 ms). */
+const DEFERRED_MS = 150;
 
 export class Surface {
   readonly session: Session;
@@ -94,6 +96,7 @@ export class Surface {
   /** @internal */ local = new Map<string, object>();
   /** @internal */ renderStarted = 0;
   /** @internal */ frame = 0;
+  /** @internal */ viewportHeight: number | null = null;
   private rendered = false;
   private closed = false;
   private pending = false;
@@ -115,6 +118,15 @@ export class Surface {
 
   setTokens(tokens: Tokens): void {
     this.tokens = tokens;
+  }
+
+  /**
+   * The height of the host's scrolling area that shows the content, inside its padding:
+   * a long markdown block is a scroll region this tall (markdown/render.ts). Hosts that
+   * don't tell get a default.
+   */
+  setViewportHeight(height: number): void {
+    this.viewportHeight = height;
   }
 
   /** Start the pump. Call once from the host view's init(). */
@@ -190,11 +202,20 @@ export class Surface {
       for (const src of this.images.keys()) if (!this.imagesSeen.has(src)) this.images.delete(src);
       for (const src of this.imagesWaiting.keys()) if (!this.imagesSeen.has(src)) this.imagesWaiting.delete(src);
     }
+    // Deferred work (native state updates, chart layouts computed in the pump) runs until
+    // DEFERRED_MS of this resume have passed; the rest waits for the next one, so several
+    // heavy computes queued together don't add up to one call past gpui-shell's budget.
+    const started = Date.now();
     const deferred = this.deferred;
     this.deferred = [];
-    for (const fn of deferred) {
+    for (let i = 0; i < deferred.length; i++) {
+      if (i > 0 && Date.now() - started > DEFERRED_MS) {
+        this.deferred = deferred.slice(i).concat(this.deferred);
+        this.wake();
+        break;
+      }
       try {
-        fn(cx);
+        deferred[i]!(cx);
       } catch (e) {
         console.log(`[opengpui] deferred work failed: ${e}`);
       }
@@ -296,6 +317,20 @@ export class RenderContext {
   /** Which render this is: a count that grows by one per Surface.renderContent(). */
   get frame(): number {
     return this.surface.frame;
+  }
+
+  /** The host's content viewport height (Surface.setViewportHeight), or null when the host never told. */
+  get viewportHeight(): number | null {
+    return this.surface.viewportHeight;
+  }
+
+  /**
+   * Ask the pump to run soon, and so redraw. For code that runs outside render and
+   * outside a handler: a lazy list's row builder (gpui-kit `list`), which runs in
+   * layout after the render and may not notify. Work queued with after() there needs it.
+   */
+  wake(): void {
+    this.surface.wake();
   }
 
   /**
@@ -462,6 +497,15 @@ export class RenderContext {
   /** Work that needs a live phase (native state updates, timers): runs in the pump with its cx. */
   after(fn: (cx: Context) => void): void {
     this.surface.deferred.push(fn);
+  }
+
+  /**
+   * Drop this node's locals whose part starts with `prefix` and whose rest `keep` rejects:
+   * the state of pieces that are gone (a long markdown block's rows while it streams).
+   */
+  pruneLocals(prefix: string, keep: (rest: string) => boolean): void {
+    const head = `${this.key}:${prefix}`;
+    for (const key of this.surface.local.keys()) if (key.startsWith(head) && !keep(key.slice(head.length))) this.surface.local.delete(key);
   }
 
   /** Per-node UI state that survives renders: a table's page, an open accordion. `part` keeps several apart. */

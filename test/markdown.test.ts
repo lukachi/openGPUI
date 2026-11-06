@@ -157,6 +157,19 @@ describe("MarkdownParse (a long text parsed in pieces)", () => {
     `${Array.from({ length: 3 }, (_, i) => section(i)).join("")}[ref]: https://example.com\n\nSee [ref].`,
     // Fences inside list items: cut after one that closes at its column; after one that may not, nothing is cut.
     "1. Run:\n   ```bash\n   npm i\n\n   npm t\n   ```\n\nnext\n\n- ```\n  x\n\n```\nreal fence\n\nstill\n```\n\nend",
+    // Tight top-level lists are cut between items, and the pieces' lists merge back (an ordered one keeps its start).
+    "Intro\n\n- a **b**\n- c\n  continued\n  - nested\n- d\n\nafter",
+    "5. five\n6. six\n7. seven\n\n8) other list\n9) more\n\nend",
+    "- x\n- y\n* other bullet\n* z\n\n- loose\n\n- items\n- here\n\ntail",
+    "- a\n- b\n  ```\n  code\n  ```\n- c\n\n  indented after blank\n- d",
+    // Table bodies are cut between rows; each piece is parsed behind the header and delimiter rows.
+    "| h | i |\n|:--|--:|\n| 1 | **2** |\n| 3 | `4` |\n| 5 | 6 |\n| 7 | 8 |\n\nafter the table\n\n| x |\n|---|\n| y |\nlazy row\n| z |",
+    "| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |\n> quote ends it\n| 5 | 6 |",
+    // Link definitions go with every piece; footnotes and repeated labels keep the text whole.
+    "See [one] and [two][t].\n\n- [one] in a list\n- and [two][t]\n\n| [one] | x |\n|---|---|\n| [two][t] | y |\n| z | w |\n\n[one]: https://one.example\n[t]: https://two.example \"Two\"\n\nLast [one].",
+    "Text [^1] here.\n\nMore.\n\n[^1]: A footnote.",
+    "[a]: https://first\n\nUse [a].\n\n[A]: https://second",
+    "para\n[x]: not-a-definition\n\n[x] stays text",
   ];
 
   test("cut at every place it may, the joined tree equals parsing the whole text", () => {
@@ -174,8 +187,9 @@ describe("MarkdownParse (a long text parsed in pieces)", () => {
     const firstLines = (text: string, profile: (typeof PROFILES)[number]) =>
       markdownCuts(text, profile).map((at) => text.slice(at).trimStart().split("\n")[0]);
     expect(markdownCuts(docs[0]!, "content").length).toBeGreaterThan(20);
-    expect(markdownCuts(docs[3]!, "content")).toEqual([]);
-    expect(markdownCuts(docs[12]!, "content")).toEqual([]);
+    // One-line definitions after a blank line don't keep a document whole.
+    expect(firstLines(docs[3]!, "content")).toEqual(["Later.", "[ref]: https://example.com"]);
+    expect(markdownCuts(docs[12]!, "content").length).toBeGreaterThan(10);
     expect(markdownCuts(docs[5]!, "content")).toEqual([]);
     // Never before a list item or indented line, which could continue the block above.
     expect(firstLines(docs[1]!, "content")).toEqual(["after", "end"]);
@@ -187,5 +201,22 @@ describe("MarkdownParse (a long text parsed in pieces)", () => {
     // Code holding `<` lines or `]:` is still cut around; HTML kinds 1–5 are not cut inside.
     expect(firstLines(docs[9]!, "plain")).toEqual(["```tsx", "middle", "```ts", "end"]);
     expect(firstLines(docs[10]!, "plain")).toEqual(["<pre>", "b", "<!-- a", "c", "<?php", "d"]);
+    // Inside tight top-level lists, before each item of the list's marker kind; not in a loose list or one an indented block follows.
+    expect(firstLines(docs[14]!, "content")).toEqual(["- c", "- d", "after"]);
+    // A list right after another list's blank lines may continue it: not cut inside.
+    expect(firstLines(docs[15]!, "content")).toEqual(["6. six", "7. seven", "end"]);
+    // A second list in the same run (another bullet) stops the cuts; a loose list is not cut.
+    expect(firstLines(docs[16]!, "content")).toEqual(["tail"]);
+    expect(markdownCuts(docs[17]!, "content")).toEqual([]);
+    // Table rows from the second body row, up to a line without a leading pipe; no table rows in MarkDownRenderer.
+    expect(firstLines(docs[18]!, "content")).toEqual(["| 3 | `4` |", "| 5 | 6 |", "| 7 | 8 |", "after the table", "| x |"]);
+    expect(firstLines(docs[18]!, "plain")).toEqual(["after the table", "| x |"]);
+    expect(firstLines(docs[19]!, "content")).toEqual(["| 3 | 4 |"]);
+    // A document with one-line definitions is cut anyway (the equality test above parses it in pieces).
+    expect(markdownCuts(docs[20]!, "content").length).toBeGreaterThan(3);
+    // Footnotes, a repeated label, and a `]:` line inside a paragraph keep the text whole.
+    expect(markdownCuts(docs[21]!, "content")).toEqual([]);
+    expect(markdownCuts(docs[22]!, "content")).toEqual([]);
+    expect(markdownCuts(docs[23]!, "content")).toEqual([]);
   });
 });
