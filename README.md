@@ -211,7 +211,11 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   no chart has met yet holds the plot back one frame. Hover followers glide on native
   springs tuned to upstream's presets (active dots in a straight line, not along the
   curve); there are no round line caps; RadarChart's hover reacts inside the series
-  polygons only.
+  polygons only. Pie, Radial, SingleStackedBar and Scatter hit-test their geometry
+  (gpui paths take no pointer events); the hovered wedge's `brightness` switches at
+  once. Scatter draws each dot as two boxes up to 1000 visible dots and as two cached
+  paths per dataset beyond that, so overlapping dots then show their rings over each
+  other's fills. Stacked legends scroll by their own offset.
 
 ## Status
 
@@ -224,8 +228,9 @@ Icon, EntityList, ListBlock/ListItem, Separator, Table/Col, EditableTable, Form,
 FormControl, Label, Input, TextArea, Select/SelectItem, DatePicker, Slider,
 CheckBoxGroup/CheckBoxItem, RadioGroup/RadioItem, SwitchGroup/SwitchItem,
 Chips/ChipItem, OptionCards/OptionCard, Button, Buttons, IconButton, BarChart,
-LineChart, AreaChart, HorizontalBarChart, RadarChart, Series; in the chat library
-also FollowUpBlock/FollowUpItem and SectionBlock/SectionItem.
+LineChart, AreaChart, HorizontalBarChart, RadarChart, Series, PieChart, RadialChart,
+SingleStackedBarChart, Slice, ScatterChart, ScatterSeries, Point; in the chat
+library also FollowUpBlock/FollowUpItem and SectionBlock/SectionItem.
 The rest of OpenUI's ~80 components are being ported. Built against herdr-app 0.1.13
 (gpui-shell 0.7.1), OpenUI lang-core 1.1.0, Inter 4.1, lucide 0.562.0, and at
 upstream's lockfile versions date-fns 4.4.0, react-day-picker 9.14.0, d3-scale
