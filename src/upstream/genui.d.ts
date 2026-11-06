@@ -27,3 +27,25 @@ declare module "openui-icons" {
 declare module "openui-icon-fallbacks" {
   export function getFallbackIconName(category?: string): string;
 }
+
+// react-ui components/_shared/remark/remarkCitations.ts: `[1][2]` → citation spans.
+declare module "openui-remark-citations" {
+  import type { Root } from "mdast";
+  export const remarkCitations: () => (tree: Root) => void;
+}
+
+// The Prism themes react-ui's markdown code blocks use (plain style objects).
+declare module "react-syntax-highlighter/dist/esm/styles/prism/one-light.js" {
+  const style: Record<string, Record<string, string>>;
+  export default style;
+}
+declare module "react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js" {
+  const style: Record<string, Record<string, string>>;
+  export default style;
+}
+
+// refractor/all's grammars in its registration order, unregistered (scripts/upstream-plugin.ts).
+declare module "opengpui-prism-all" {
+  import type { Syntax } from "refractor/core";
+  export const syntaxes: Syntax[];
+}

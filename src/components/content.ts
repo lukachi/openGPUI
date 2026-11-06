@@ -9,46 +9,45 @@
 //   Tag               genui-lib/Tag/index.tsx, components/Tag/*
 //   Icon              genui-lib/Icon/index.tsx, components/_shared/icons/IconWrapper.tsx
 //
-// Markdown goes through gpui's TextView, which has its own element styles:
-// upstream's per-element markdown CSS (heading sizes, list spacing, code chips)
-// is not reproduced. Text/BoldText lines render as plain text, not inline markdown.
-import { TextView } from "gpui-base";
+// Markdown is drawn by src/markdown (react-markdown's tree, react-ui's markdown
+// styles); its file header lists where that differs from a browser.
 import { div, type Color, type Element } from "gpui-kit";
+import { markdownBlock, markdownInline } from "../markdown/render.ts";
 import { optional, type Component, type RenderContext } from "../render/surface.ts";
-import { textStyle, typography, type TextStyle, type Tokens, type TypographyGroup } from "../render/tokens.ts";
+import { restyle, textStyle, typography, type TextStyle, type Tokens, type TypographyGroup } from "../render/tokens.ts";
 
-/** Upstream markdown block: body default in neutral primary around a TextView. */
-function markdown(ctx: RenderContext, id: string, text: string, style: TextStyle): Element {
-  return textStyle(div().w_full().text_color(ctx.t.textNeutralPrimary), style).child(
-    TextView.markdown(ctx.id(id), text).selectable(true),
-  );
-}
-
+/**
+ * genui TextContent points `--openui-text-body-default` at the chosen size. The
+ * "wght" axis stays the Regular variation (font-variation-settings outlives the
+ * font shorthand), so the heavy sizes draw at Regular weight in a browser too.
+ */
 const BODY_SIZES = {
-  small: ["body", "small"],
-  default: ["body", "default"],
-  large: ["body", "large"],
-  "small-heavy": ["body", "small-heavy"],
-  "large-heavy": ["body", "large-heavy"],
+  small: "small",
+  default: "default",
+  large: "large",
+  "small-heavy": "small-heavy",
+  "large-heavy": "large-heavy",
 } as const;
 
 export const TextContent: Component = {
   render(props, ctx) {
-    const [group, variant] = BODY_SIZES[props.size as keyof typeof BODY_SIZES] ?? BODY_SIZES.default;
+    const t = ctx.t;
+    const size = BODY_SIZES[props.size as keyof typeof BODY_SIZES] ?? "default";
+    const body = restyle(t, typography(t, "body", size), { weight: typography(t, "body", "default").weight });
     const text = props.text == null ? "" : String(props.text);
     // TextContentWrapper: a column (gap xl) holding the markdown renderer.
     return div()
       .flex()
       .flex_col()
-      .gap(ctx.t.spaceXl)
-      .child(markdown(ctx, "md", text, typography(ctx.t, group, variant)));
+      .gap(t.spaceXl)
+      .child(markdownBlock(ctx, "md", text, { profile: "content", body }));
   },
 };
 
 export const MarkDownRenderer: Component = {
   render(props, ctx) {
     const t = ctx.t;
-    const md = markdown(ctx, "md", String(props.textMarkdown ?? ""), typography(t, "body", "default"));
+    const md = markdownBlock(ctx, "md", String(props.textMarkdown ?? ""), { profile: "plain" });
     switch (props.variant) {
       case "card":
         return md.bg(t.foreground).rounded(8).p(16);
@@ -185,12 +184,15 @@ function textBlock(ctx: RenderContext, variant: BlockVariant, props: Record<stri
     .flex_col()
     .items_start()
     .gap(typeof gapToken === "string" ? t[gapToken] : 0)
-    .child(textStyle(div().text_color(t.textNeutralPrimary), style(t, blockRule(variant, size, number, "primary"))).child(String(props.value ?? "")))
+    .child(textLine(ctx, "primary", String(props.value ?? ""), t.textNeutralPrimary, style(t, blockRule(variant, size, number, "primary"))))
     .when(subtext !== "", (el) =>
-      el.child(
-        textStyle(div().text_color(secondaryColor(t, props.subtextVariant, subtext)), style(t, blockRule(variant, size, number, "secondary"))).child(subtext),
-      ),
+      el.child(textLine(ctx, "secondary", subtext, secondaryColor(t, props.subtextVariant, subtext), style(t, blockRule(variant, size, number, "secondary")))),
     );
+}
+
+/** A TextBlock line: InlineMarkdownRenderer in the line's font and color; nothing for empty content. */
+function textLine(ctx: RenderContext, part: string, text: string, color: Color, font: TextStyle): Element {
+  return textStyle(div().text_color(color), font).children(text ? [markdownInline(ctx, part, text, { font, color })] : []);
 }
 
 export const Text: Component = {
@@ -261,7 +263,8 @@ export const Callout: Component = {
       .border_l(2)
       .border_color(border)
       .when(!!props.title, (el) => el.child(textStyle(div().text_color(title), typography(t, "body", "heavy")).child(String(props.title))))
-      .when(!!props.description, (el) => el.child(markdown(ctx, "desc", String(props.description), typography(t, "body", "default"))));
+      // .openui-callout-description: body default, neutral primary, around a MarkDownRenderer.
+      .when(!!props.description, (el) => el.child(markdownBlock(ctx, "desc", String(props.description), { profile: "plain" })));
   },
 };
 

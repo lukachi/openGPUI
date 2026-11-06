@@ -11,7 +11,7 @@
 import { $ } from "bun";
 import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { INTER_CUTS, INTER_TRACKING_EM, interFamily } from "../src/render/fonts.ts";
+import { INTER_CUTS, INTER_ITALIC_CUTS, INTER_TRACKING_EM, interFamily } from "../src/render/fonts.ts";
 import { LUCIDE_STROKE_WIDTHS, lucideFile } from "../src/render/lucide.ts";
 
 const root = join(import.meta.dir, "..");
@@ -137,17 +137,18 @@ async function run(cmd: string[]): Promise<void> {
 }
 
 /** Rename to the cut's own family and tighten every advance by `trackingUnits`. */
-function editTables(ttx: string, opsz: number, weight: number, trackingUnits: number): string {
+function editTables(ttx: string, opsz: number, weight: number, italic: boolean, trackingUnits: number): string {
   const family = interFamily(opsz);
-  const id = `OpenGPUIInter${opsz}-W${weight}`;
+  const style = italic ? " Italic" : "";
+  const id = `OpenGPUIInter${opsz}-W${weight}${italic ? "Italic" : ""}`;
   const names: [number, string][] = [
     [1, family],
-    [2, "Regular"],
+    [2, italic ? "Italic" : "Regular"],
     [3, `${id};${pins.inter.version}`],
-    [4, `${family} W${weight}`],
+    [4, `${family} W${weight}${style}`],
     [6, id],
     [16, family],
-    [17, `W${weight}`],
+    [17, `W${weight}${style}`],
   ];
   const replaced = new Set([1, 2, 3, 4, 6, 16, 17, 21, 22, 25]);
   const records = names
@@ -161,8 +162,9 @@ function editTables(ttx: string, opsz: number, weight: number, trackingUnits: nu
     );
 }
 
-async function cut(variable: string, dir: string, opsz: number, weight: number): Promise<void> {
-  const base = join(cache, `cut-${opsz}-${weight}`);
+async function cut(variable: string, dir: string, opsz: number, weight: number, italic: boolean): Promise<void> {
+  const name = `OpenGPUIInter${opsz}-W${weight}${italic ? "Italic" : ""}`;
+  const base = join(cache, `cut-${name}`);
   await run([...fonttools("fonttools"), "varLib.instancer", variable, `wght=${weight}`, `opsz=${opsz}`, "-q", "-o", `${base}-instance.ttf`]);
   await run([
     ...fonttools("fonttools"),
@@ -178,26 +180,42 @@ async function cut(variable: string, dir: string, opsz: number, weight: number):
   const ttx = await Bun.file(`${base}.ttx`).text();
   const upem = Number(/<unitsPerEm value="(\d+)"\/>/.exec(ttx)?.[1]);
   if (!upem) throw new Error(`no unitsPerEm in ${base}.ttx`);
-  await Bun.write(`${base}.ttx`, editTables(ttx, opsz, weight, Math.round(INTER_TRACKING_EM * upem)));
-  await run([...fonttools("ttx"), "-q", "-m", `${base}-subset.ttf`, "-o", join(dir, `OpenGPUIInter${opsz}-W${weight}.ttf`), `${base}.ttx`]);
+  await Bun.write(`${base}.ttx`, editTables(ttx, opsz, weight, italic, Math.round(INTER_TRACKING_EM * upem)));
+  await run([...fonttools("ttx"), "-q", "-m", `${base}-subset.ttf`, "-o", join(dir, `${name}.ttf`), `${base}.ttx`]);
   for (const suffix of ["-instance.ttf", "-subset.ttf", ".ttx"]) rmSync(base + suffix, { force: true });
 }
 
 async function fonts(): Promise<void> {
-  const stamp = { inter: pins.inter.version, fonttools: pins.fonttools, cuts: INTER_CUTS, tracking: INTER_TRACKING_EM, UNICODES, v: 1 };
+  const stamp = {
+    inter: pins.inter.version,
+    fonttools: pins.fonttools,
+    cuts: INTER_CUTS,
+    italic: INTER_ITALIC_CUTS,
+    tracking: INTER_TRACKING_EM,
+    UNICODES,
+    v: 1,
+  };
   const dir = join(out, "fonts");
   if (!(await stale(dir, stamp))) return;
   if (!Bun.which("uvx")) throw new Error("cutting fonts needs `uvx`: install uv (https://docs.astral.sh/uv/)");
 
   const zip = await fetchPinned(pins.inter.url, `Inter-${pins.inter.version}.zip`, { sha256: pins.inter.sha256 });
   const work = join(cache, `inter-${pins.inter.version}`);
-  await $`unzip -q -o ${zip} InterVariable.ttf LICENSE.txt -d ${work}`;
-  const variable = join(work, "InterVariable.ttf");
+  await $`unzip -q -o ${zip} InterVariable.ttf InterVariable-Italic.ttf LICENSE.txt -d ${work}`;
 
-  const jobs = Object.entries(INTER_CUTS).flatMap(([opsz, weights]) => weights.map((weight) => [Number(opsz), weight] as const));
+  const jobs = [
+    ...Object.entries(INTER_CUTS).flatMap(([opsz, weights]) => weights.map((weight) => [Number(opsz), weight, false] as const)),
+    ...Object.entries(INTER_ITALIC_CUTS).flatMap(([opsz, weights]) => weights.map((weight) => [Number(opsz), weight, true] as const)),
+  ];
   // A few cuts at a time: each is CPU-bound in its own process.
   for (let i = 0; i < jobs.length; i += 4) {
-    await Promise.all(jobs.slice(i, i + 4).map(([opsz, weight]) => cut(variable, dir, opsz, weight)));
+    await Promise.all(
+      jobs
+        .slice(i, i + 4)
+        .map(([opsz, weight, italic]) =>
+          cut(join(work, italic ? "InterVariable-Italic.ttf" : "InterVariable.ttf"), dir, opsz, weight, italic),
+        ),
+    );
   }
   await Bun.write(join(dir, "LICENSE-Inter.txt"), Bun.file(join(work, "LICENSE.txt")));
   await stampDone(dir, stamp);

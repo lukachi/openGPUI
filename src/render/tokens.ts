@@ -77,6 +77,40 @@ export function toHex(value: string): Color {
   return `#${linear.map((x) => byte(gamma(x))).join("")}${byte(A)}`;
 }
 
+const hexByte = (x: number) => Math.round(Math.max(0, Math.min(255, x))).toString(16).padStart(2, "0");
+
+/**
+ * A CSS color as gpui takes it: hex (3/4/6/8 digits), rgb()/rgba(), hsl()/hsla(),
+ * oklch() or `transparent`. Null for anything else (keywords such as `inherit`).
+ */
+export function cssColor(value: string): Color | null {
+  const v = value.trim().toLowerCase();
+  if (v === "transparent") return "#00000000";
+  if (v.startsWith("oklch(")) return toHex(v);
+  const hex = /^#([0-9a-f]{3,8})$/.exec(v)?.[1];
+  if (hex) {
+    if (hex.length === 3 || hex.length === 4) return `#${[...hex].map((c) => c + c).join("")}`;
+    if (hex.length === 6 || hex.length === 8) return `#${hex}`;
+    return null;
+  }
+  const fn = /^(rgba?|hsla?)\(([^)]*)\)$/.exec(v);
+  if (!fn) return null;
+  const parts = fn[2]!.split(/[\s,/]+/).filter(Boolean);
+  if (parts.length < 3) return null;
+  const num = (p: string, scale: number) => (p.endsWith("%") ? (parseFloat(p) / 100) * scale : parseFloat(p));
+  const a = parts[3] === undefined ? 1 : num(parts[3], 1);
+  if (fn[1]!.startsWith("rgb")) {
+    return `#${hexByte(num(parts[0]!, 255))}${hexByte(num(parts[1]!, 255))}${hexByte(num(parts[2]!, 255))}${hexByte(a * 255)}`;
+  }
+  // hsl: saturation and lightness are percentages, with or without the sign.
+  const h = (((parseFloat(parts[0]!) % 360) + 360) % 360) / 360;
+  const s = parseFloat(parts[1]!) / 100;
+  const l = parseFloat(parts[2]!) / 100;
+  const k = (n: number) => (n + h * 12) % 12;
+  const f = (n: number) => l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return `#${hexByte(f(0) * 255)}${hexByte(f(8) * 255)}${hexByte(f(4) * 255)}${hexByte(a * 255)}`;
+}
+
 /** "500 14px/1.5 \"Inter\", sans-serif" → TextStyle. */
 function toTextStyle(font: string): TextStyle {
   const m = /^(\d+)\s+([\d.]+)px\/([\d.]+)\s+(.+)$/.exec(font.trim());
@@ -210,6 +244,14 @@ export function typography<G extends TypographyGroup>(t: Tokens, group: G, varia
 export function textStyle<E extends Element>(el: E, style: TextStyle): E {
   const sized = el.text_size(style.size).line_height(style.lineHeight).font_weight(style.weight);
   return style.face ? sized.font_family(style.face) : sized;
+}
+
+/** `style` at another size or weight, its face resolved again (a variable axis or `font-size: smaller`). */
+export function restyle(t: Tokens, style: TextStyle, patch: { size?: number; weight?: number }): TextStyle {
+  const size = patch.size ?? style.size;
+  const weight = patch.weight ?? style.weight;
+  const face = t.fonts?.(style.families, size, weight);
+  return face ? { ...style, size, weight: face.weight, face: face.family } : { ...style, size, weight, face: undefined };
 }
 
 /** Apply one of gpui's shadow presets. */

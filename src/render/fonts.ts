@@ -30,6 +30,17 @@ export const INTER_CUTS: Readonly<Record<number, readonly number[]>> = {
   32: [600, 700],
 };
 
+/**
+ * Italic cuts, from Inter's italic variable font: body text in `em` and in
+ * blockquotes (`font-style: italic`), and the 16–18px headings a blockquote
+ * slants. They share the upright cut's family, so `.italic()` picks them.
+ */
+export const INTER_ITALIC_CUTS: Readonly<Record<number, readonly number[]>> = {
+  14: [420, 440, 560],
+  16: [420, 440, 560, 600],
+  18: [420, 440, 560, 600],
+};
+
 /** The family name a cut is installed under. Never plain "Inter": that may be installed already. */
 export function interFamily(opsz: number): string {
   return `OpenGPUI Inter ${opsz}`;

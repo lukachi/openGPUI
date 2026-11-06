@@ -25,6 +25,7 @@ flowchart LR
 |---|---|
 | `src/runtime/` | `Session`: one response's parse, `$state` store, queries/mutations, forms, validation, actions, errors. Framework-free port of react-lang's state hook. |
 | `src/render/` | `Surface`: draws a session with gpui-kit; owns the pump task that creates retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. `fonts.ts`: the Inter cuts and how a stack resolves to them. `icons.ts`/`lucide.ts`: upstream's lucide lookup and the SVG layout a host ships. |
+| `src/markdown/` | Markdown as react-ui draws it: react-markdown's own pipeline (unified, remark, the plugins each renderer passes) into an HTML tree, drawn with react-ui's markdown styles; code blocks highlighted by the same Prism grammars and themes. |
 | `src/components/` | One renderer per OpenUI component. Missing ones draw a "not supported yet" box and are left out of prompts. |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries, and `subsetLibrary()` to prompt only what is implemented. |
 | `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js`); `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
@@ -57,15 +58,23 @@ The mod also ships `fonts/` and `icons/` (copied from `.upstream/assets` at buil
   style, its optical size follows the font size, and text is tracked −1%. gpui
   applies no variable axes and has no letter spacing, so `scripts/assets.ts` cuts
   static Inter fonts. It makes one per (optical size, weight) pair OpenUI's
-  typography uses (`INTER_CUTS` in `src/render/fonts.ts`), bakes the tracking
-  into the glyph advances, and subsets to Latin, Greek and Cyrillic. Herdr loads
-  a mod's fonts at start and on a look change; `install-herdr` reloads the look
-  when they change. A host without them keeps its own UI font.
+  typography uses (`INTER_CUTS`, and `INTER_ITALIC_CUTS` for `em` and blockquotes,
+  in `src/render/fonts.ts`), bakes the tracking into the glyph advances, and
+  subsets to Latin, Greek and Cyrillic. Herdr loads a mod's fonts at start and on
+  a look change; `install-herdr` reloads the look when they change. gpui keeps
+  the faces it first found for a family, so changed cuts of an installed font
+  need a Herdr restart (the installer says so). A host without them keeps its
+  own UI font.
 - **Icons:** lucide SVGs at the version react-ui depends on. The tarballs are
   checked against upstream's lockfile and `upstream.json`. Names resolve
   through upstream's own lookup (fuzzy matching, category fallbacks), compiled
   from the pin. There is one SVG set per stroke width react-ui gives icons
   (`LUCIDE_STROKE_WIDTHS`).
+
+Markdown dependencies are pinned to the versions upstream's lockfile resolves
+(unified 11, remark-parse 11, remark-gfm 4, remark-math 6, remark-breaks 4,
+remark-rehype 11, refractor 5, react-syntax-highlighter 16 for its two Prism
+themes), so a markdown string parses to the tree react-ui renders.
 
 ### Updating OpenUI
 
@@ -108,9 +117,15 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   cut. Heading large/xl track −0.1px upstream; here they get the −1% of all other text.
 - **Shadows:** OpenUI's custom shadows map to gpui's presets (`shadow-m` → `shadow_sm`, …):
   gpui-shell exposes only presets, not gpui's `BoxShadow`.
-- **Markdown:** TextContent, MarkDownRenderer and Callout descriptions use gpui's
-  `TextView`, with its own element styles, not upstream's markdown CSS. Text and
-  BoldText lines are plain text rather than inline markdown.
+- **Markdown:** gpui has no inline text layout, so a paragraph is a wrapping row
+  of words, one element per word in its own style. Such text can't be selected,
+  and a word may wrap one space earlier than in a browser (the trailing space
+  counts). An inline code chip doesn't break across lines. Images show their alt
+  text (gpui loads only local files). Math stays TeX in a code block, as upstream
+  shows it until KaTeX loads; KaTeX isn't ported. A task list's checkbox
+  imitates the browser's native one. Code highlighting needs refractor's ~300
+  grammars, which gpui-shell can't register at load: the first code block starts
+  registering them a couple per frame, and code shows unhighlighted for about 3 s.
 - **Tables:** column widths come from measuring each cell, so a new page is drawn
   once with equal columns before they settle. The sideways scroll is the
   table's own offset (gpui-kit cannot scroll a div from code): wheel, trackpad

@@ -313,12 +313,13 @@ export class RenderContext {
     this.surface.deferred.push(fn);
   }
 
-  /** Per-node UI state that survives renders: a table's page, an open accordion. */
-  local<T extends object>(initial: T): T {
-    let state = this.surface.local.get(this.key) as T | undefined;
+  /** Per-node UI state that survives renders: a table's page, an open accordion. `part` keeps several apart. */
+  local<T extends object>(initial: T, part = ""): T {
+    const key = part ? `${this.key}:${part}` : this.key;
+    let state = this.surface.local.get(key) as T | undefined;
     if (!state) {
       state = { ...initial };
-      this.surface.local.set(this.key, state);
+      this.surface.local.set(key, state);
     }
     return state;
   }

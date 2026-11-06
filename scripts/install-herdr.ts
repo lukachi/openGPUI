@@ -2,7 +2,8 @@
 //   bun run build && bun scripts/install-herdr.ts
 // Herdr hot-reloads the mod in place; open surfaces pick up the new build.
 // Herdr loads a mod's fonts at start and on a look change, so new fonts are
-// followed by a switch to the layout already showing.
+// followed by a switch to the layout already showing. gpui keeps the faces it
+// first found for a family, so changed cuts of fonts already loaded need a restart.
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -15,6 +16,7 @@ const to = join(herdrHome, "mods", "opengpui");
 if (!existsSync(join(from, "main.js"))) throw new Error("herdr/mods/opengpui/main.js is missing: bun run build first");
 mkdirSync(to, { recursive: true });
 for (const file of ["mod.json", "main.js"]) cpSync(join(from, file), join(to, file));
+const hadFonts = existsSync(join(to, "fonts")) && readdirSync(join(to, "fonts")).some((f) => f.endsWith(".ttf"));
 const fontsChanged = !sameFiles(join(from, "fonts"), join(to, "fonts"));
 for (const dir of ["fonts", "icons"]) {
   rmSync(join(to, dir), { recursive: true, force: true });
@@ -26,7 +28,9 @@ if (fontsChanged) {
   const shared = join(herdrHome, "shared.json");
   const layout = existsSync(shared) ? (JSON.parse(readFileSync(shared, "utf8")).layout ?? "main") : "main";
   const proc = Bun.spawnSync(["herdr-app", "do", "layout.switch", JSON.stringify({ name: layout })], { stdout: "ignore", stderr: "pipe" });
-  console.log(proc.exitCode === 0 ? `fonts    loaded (look of "${layout}" reloaded)` : `fonts    copied; restart Herdr to load them`);
+  if (proc.exitCode !== 0) console.log("fonts    copied; restart Herdr to load them");
+  else if (hadFonts) console.log("fonts    changed; restart Herdr: it keeps the faces it already loaded");
+  else console.log(`fonts    loaded (look of "${layout}" reloaded)`);
 }
 
 const binDir = process.env.OPENGPUI_BIN_DIR ?? join(homedir(), ".local", "bin");

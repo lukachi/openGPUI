@@ -36,11 +36,22 @@ export function upstreamPlugin(): BunPlugin {
       // Lucide icon lookup by name, with upstream's fuzzy matching and category fallbacks.
       build.onResolve({ filter: /^openui-icons$/ }, () => ({ path: join(ICONS, "dynamicIconImports.ts") }));
       build.onResolve({ filter: /^openui-icon-fallbacks$/ }, () => ({ path: join(ICONS, "categoryFallbacks.ts") }));
+      // The remark plugin react-ui's markdown renderers share (citation markers).
+      build.onResolve({ filter: /^openui-remark-citations$/ }, () => ({
+        path: join(REACT_UI, "components", "_shared", "remark", "remarkCitations.ts"),
+      }));
 
-      // Bare imports from upstream sources: zod is real, everything else (react, lucide, …) is a stub.
+      // micromark decodes character references through the DOM in browser builds;
+      // gpui-shell has no DOM, so take the package's table-based build.
+      build.onResolve({ filter: /^decode-named-character-reference$/ }, () => ({
+        path: join(root, "node_modules", "decode-named-character-reference", "index.js"),
+      }));
+
+      // Bare imports from upstream sources: zod and the unist walker are real,
+      // everything else (react, lucide, …) is a stub.
       build.onResolve({ filter: /^[^./]/ }, (args) => {
         if (!isUnder(args.importer, UP)) return undefined;
-        if (/^zod(\/|$)/.test(args.path)) return undefined;
+        if (/^(zod|unist-util-visit)(\/|$)/.test(args.path)) return undefined;
         if (args.path.startsWith("@openuidev/")) return undefined;
         return { path: args.path, namespace: "opengpui-stub" };
       });
@@ -88,6 +99,31 @@ export function upstreamPlugin(): BunPlugin {
           .replace(/\bclearInterval\(/g, "ogpuiClearInterval(");
         const header = `import { ogpuiSetInterval, ogpuiClearInterval } from ${JSON.stringify(join(SHIM, "timers.ts"))};\n`;
         return { contents: header + source, loader: "ts" };
+      });
+
+      // mdast-util-to-hast copies node data with structuredClone, which gpui-shell lacks.
+      build.onLoad({ filter: /node_modules\/mdast-util-to-hast\/lib\/.*\.js$/ }, (args) => {
+        const source = readFileSync(args.path, "utf8");
+        if (!source.includes("structuredClone(")) return undefined;
+        const header = `import { ogpuiStructuredClone } from ${JSON.stringify(join(SHIM, "clone.ts"))};\n`;
+        return { contents: header + source.replace(/\bstructuredClone\(/g, "ogpuiStructuredClone("), loader: "js" };
+      });
+
+      // refractor/all registers ~300 Prism grammars at import, too slow for gpui-shell
+      // to load a mod. This lists the same grammars in the same order (later ones
+      // extend earlier ones), for opengpui to register in the background.
+      build.onResolve({ filter: /^opengpui-prism-all$/ }, () => ({
+        path: join(root, "node_modules", "refractor", "lib", "all.js"),
+        namespace: "opengpui-prism-all",
+      }));
+      build.onLoad({ filter: /.*/, namespace: "opengpui-prism-all" }, (args) => {
+        const source = readFileSync(args.path, "utf8");
+        const order = [...source.matchAll(/^refractor\.register\((\S+)\)$/gm)].map((m) => m[1]!);
+        if (order.length < 200) throw new Error(`unexpected refractor/lib/all.js (${order.length} registrations)`);
+        const imports = [...source.matchAll(/^import (\S+) from '\.\.\/lang\/([^']+)'$/gm)].map(
+          (m) => `import ${m[1]} from ${JSON.stringify(join(dirname(args.path), "..", "lang", m[2]!))};`,
+        );
+        return { contents: `${imports.join("\n")}\nexport const syntaxes = [${order.join(", ")}];\n`, loader: "js" };
       });
     },
   };

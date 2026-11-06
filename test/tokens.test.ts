@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { interFace, openuiFonts, resolveTokens, toHex, typography } from "./lib.ts";
+import { cssColor, interFace, openuiFonts, resolveTokens, toHex, typography } from "./lib.ts";
 
 const channels = (hex: string) => [1, 3, 5, 7].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
@@ -13,6 +13,20 @@ describe("toHex", () => {
   ])("%s -> %s", (oklch, hex) => {
     const got = channels(toHex(oklch));
     channels(hex).forEach((c, i) => expect(Math.abs(got[i]! - c)).toBeLessThanOrEqual(1));
+  });
+});
+
+describe("cssColor", () => {
+  test.each([
+    ["hsl(0, 100%, 50%)", "#ff0000ff"],
+    ["hsl(120, 100%, 25%)", "#008000ff"],
+    ["hsla(230, 8%, 24%, 0.5)", "#383a4280"],
+    ["#d4d4d4", "#d4d4d4"],
+    ["#abc", "#aabbcc"],
+    ["rgba(0, 0, 0, 0.2)", "#00000033"],
+    ["inherit", null],
+  ])("%s -> %s", (css, hex) => {
+    expect(cssColor(css)).toBe(hex as never);
   });
 });
 
