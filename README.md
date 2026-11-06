@@ -216,22 +216,30 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   once. Scatter draws each dot as two boxes up to 1000 visible dots and as two cached
   paths per dataset beyond that, so overlapping dots then show their rings over each
   other's fills. Stacked legends scroll by their own offset.
+- **Card blocks:** carousels scroll by an offset the block owns, with no scrollbar and
+  no edge fade; container queries read the block's measured width, so a block is drawn
+  once in the wide layout before it settles. A clickable card's hover
+  `scale(0.995)` and its 2px focus ring aren't drawn. Snippet labels and values end
+  in "…" only as plain text (gpui ellipsizes one run of text) and have no truncation
+  tooltip. Context and Visual card pictures keep square corners where the card is
+  rounded and get no backdrop blur behind tags.
 
 ## Status
 
-Ported from react-ui so far: Stack, Card, CardHeader, Tabs/TabItem,
-Accordion/AccordionItem, Steps/StepsItem, Carousel, Modal, TextContent,
-MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Image, ImageBlock,
-ImageGallery, Text, BoldText, IconText, ImageText, ImageTextLarge,
-MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
-Icon, EntityList, ListBlock/ListItem, Separator, Table/Col, EditableTable, Form,
-FormControl, Label, Input, TextArea, Select/SelectItem, DatePicker, Slider,
-CheckBoxGroup/CheckBoxItem, RadioGroup/RadioItem, SwitchGroup/SwitchItem,
-Chips/ChipItem, OptionCards/OptionCard, Button, Buttons, IconButton, BarChart,
-LineChart, AreaChart, HorizontalBarChart, RadarChart, Series, PieChart, RadialChart,
-SingleStackedBarChart, Slice, ScatterChart, ScatterSeries, Point; in the chat
-library also FollowUpBlock/FollowUpItem and SectionBlock/SectionItem.
-The rest of OpenUI's ~80 components are being ported. Built against herdr-app 0.1.13
+Every component of OpenUI's `openui` and `chat` libraries (86) is ported from
+react-ui: Stack, Card, CardHeader, Tabs/TabItem, Accordion/AccordionItem,
+Steps/StepsItem, Carousel, Separator, Modal; TextContent, MarkDownRenderer, Callout,
+TextCallout, InlineHeader, CodeBlock, Image, ImageBlock, ImageGallery; Table/Col,
+EditableTable; BarChart, LineChart, AreaChart, HorizontalBarChart, RadarChart,
+Series, PieChart, RadialChart, SingleStackedBarChart, Slice, ScatterChart,
+ScatterSeries, Point; Form, FormControl, Label, Input, TextArea, Select/SelectItem,
+DatePicker, Slider, CheckBoxGroup/CheckBoxItem, RadioGroup/RadioItem,
+SwitchGroup/SwitchItem, Chips/ChipItem, OptionCards/OptionCard; Button, Buttons,
+IconButton; Tag, TagBlock, Icon, EntityList, ListBlock/ListItem; the Snippet,
+Overview, Context, Visual and Composite card blocks with their items, Text,
+BoldText, IconText, ImageText, ImageTextLarge, MetricIndicatorInline,
+MetricIndicatorWithStrikethrough; and in the chat library FollowUpBlock/FollowUpItem
+and SectionBlock/SectionItem. Built against herdr-app 0.1.13
 (gpui-shell 0.7.1), OpenUI lang-core 1.1.0, Inter 4.1, lucide 0.562.0, and at
 upstream's lockfile versions date-fns 4.4.0, react-day-picker 9.14.0, d3-scale
 4.0.2 and d3-shape 3.2.0.
