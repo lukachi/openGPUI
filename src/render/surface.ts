@@ -92,6 +92,8 @@ export class Surface {
   /** @internal */ wanted = new Map<string, RetainedSpec<any, any>>();
   /** @internal */ deferred: ((cx: Context) => void)[] = [];
   /** @internal */ local = new Map<string, object>();
+  /** @internal */ renderStarted = 0;
+  /** @internal */ frame = 0;
   private rendered = false;
   private closed = false;
   private pending = false;
@@ -205,6 +207,8 @@ export class Surface {
     this.overlays = [];
     this.imagesSeen = new Set();
     this.rendered = true;
+    this.renderStarted = Date.now();
+    this.frame++;
     const out = new RenderContext(this, "n", {}).children(this.session.root, "root");
     // The keyboard follows the topmost overlay that has a focus handle: to it when
     // it opens, back to the one below when it closes.
@@ -279,6 +283,19 @@ export class RenderContext {
   /** A stable element id for a part of this node. */
   id(part = ""): string {
     return part ? `${this.key}:${part}` : this.key;
+  }
+
+  /**
+   * Milliseconds since this render began. gpui-shell interrupts a call that runs about
+   * 50 ms; work that can wait (markdown/budget.ts) moves to a task once a render ran long.
+   */
+  get renderTime(): number {
+    return Date.now() - this.surface.renderStarted;
+  }
+
+  /** Which render this is: a count that grows by one per Surface.renderContent(). */
+  get frame(): number {
+    return this.surface.frame;
   }
 
   /**

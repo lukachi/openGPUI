@@ -35,7 +35,7 @@ import type { Component, Props } from "../../render/surface.ts";
 import { typography, type Tokens } from "../../render/tokens.ts";
 import { horizontalGrid, numericXAxis, textItems, verticalGrid, yAxisTicks, type TextItem } from "./axes.ts";
 import { chartTooltip, legendStrings, legendView } from "./chrome.ts";
-import { keyedSeriesModel, memo, type SeriesModel } from "./data.ts";
+import { keyedSeriesModel, memo, memoInPump, type SeriesModel } from "./data.ts";
 import { hoverState, trackWidth, withHover } from "./hover.ts";
 import { Measurer } from "./measure.ts";
 import { circle, layer, type Painted } from "./paint.ts";
@@ -83,6 +83,22 @@ function datasets(props: Props): Dataset[] | null {
     };
   });
   return data.length ? data : null;
+}
+
+/**
+ * datasets() and its JSON (the memo key), kept per evaluated `datasets` value: for
+ * thousands of points both cost several milliseconds, on every hover redraw, of the
+ * ~50 ms gpui-shell lets a render run. The session evaluates a new value when its data changes.
+ */
+const parsed = new WeakMap<object, { data: Dataset[] | null; dataJson: string }>();
+function parsedDatasets(props: Props): { data: Dataset[] | null; dataJson: string } {
+  const source: unknown = props.datasets;
+  const cached = typeof source === "object" && source !== null ? parsed.get(source) : undefined;
+  if (cached) return cached;
+  const data = datasets(props);
+  const entry = { data, dataJson: data ? JSON.stringify(data) : "" };
+  if (typeof source === "object" && source !== null) parsed.set(source, entry);
+  return entry;
 }
 
 /** A visible, finite dot: where it is in the plot, and what it says. */
@@ -193,7 +209,7 @@ function computeLayout(t: Tokens, data: Dataset[], m: SeriesModel, measurer: Mea
 
 export const ScatterChart: Component = {
   render(props, ctx) {
-    const data = datasets(props);
+    const { data, dataJson } = parsedDatasets(props);
     if (!data) return null;
     const t = ctx.t;
     const m = keyedSeriesModel(
@@ -206,7 +222,6 @@ export const ScatterChart: Component = {
     const measurer = new Measurer(ctx, typography(t, "label", "extra-small"));
 
     // What the layout measures: the y ticks useScatterChartOrchestrator sizes the axis for, and the legend.
-    const dataJson = JSON.stringify(data);
     const wanted = memo(ctx, "wanted", dataJson, () => {
       let yMin = Infinity;
       let yMax = -Infinity;
@@ -224,13 +239,15 @@ export const ScatterChart: Component = {
     })!;
     measurer.want(wanted).want(legendStrings(m.legendItems));
 
-    const layout = memo(
-      ctx,
-      "layout",
-      `${dataJson}|${[...m.hidden].join("\u0000")}|${size.width}|${widthsVersion()}|${t.mode}|${t.borderDefault}|${t.foreground}`,
-      () => computeLayout(t, data, m, measurer, size.width),
-      measurer.charsReady && size.width > 0,
-    );
+    // Laying out and building paths for thousands of dots, on top of drawing them, ran past
+    // the ~50 ms gpui-shell lets a render run (scatter-3k was interrupted): past DOT_BOXES_MAX
+    // dots it happens in the pump, and meanwhile the previous layout shows only if it is
+    // of the same data (another width, hidden set or theme). Smaller charts lay out here.
+    const layoutKey = `${dataJson}|${[...m.hidden].join("\u0000")}|${size.width}|${widthsVersion()}|${t.mode}|${t.borderDefault}|${t.foreground}`;
+    const layoutReady = measurer.charsReady && size.width > 0;
+    const compute = () => computeLayout(t, data, m, measurer, size.width);
+    const large = data.reduce((n, ds) => n + ds.data.length, 0) > DOT_BOXES_MAX;
+    const layout = large ? memoInPump(ctx, "layout-pump", layoutKey, dataJson, compute, layoutReady) : memo(ctx, "layout", layoutKey, compute, layoutReady);
 
     let svg: Element = div().relative().w_full().h(DEFAULT_CHART_HEIGHT).flex_none();
     if (layout) {

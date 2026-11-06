@@ -4,7 +4,8 @@
 // react itself) becomes an inert stub that is never called. Upstream's lucide
 // icon-name resolver compiles for real, against the name → SVG file table
 // scripts/assets.ts generates in place of lucide-react's import map.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import type { BunPlugin } from "bun";
 
@@ -34,6 +35,41 @@ const isUnder = (path: string, dir: string) => path === dir || path.startsWith(d
 const REAL_BARE_IMPORTS = ["zod", "unist-util-visit", "date-fns", "d3-scale", "d3-shape", "@openuidev/[^/]+"];
 /** Any other bare specifier: `^` then a negative lookahead over REAL_BARE_IMPORTS. */
 const REAL_BARE_FILTER = new RegExp(`^(?!(?:${REAL_BARE_IMPORTS.join("|")})(?:/|$))[^./]`);
+
+let aliasTable: Promise<Record<string, string>> | undefined;
+
+/**
+ * dynamicIconImports.ts's permutation aliases, from running the module itself under Bun
+ * (its catalog import pointed at LUCIDE_MAP): each key the merged table has beyond the
+ * catalog, mapped to the catalog key whose import it holds.
+ */
+function iconAliases(path: string, source: string): Promise<Record<string, string>> {
+  aliasTable ??= (async () => {
+    const runnable = source
+      .replace(/(["'])\.\/lucide\/lucideDynamicImports\.mjs\1/, JSON.stringify(LUCIDE_MAP))
+      .replace(/(["'])\.\/iconNames\1/, JSON.stringify(join(dirname(path), "iconNames.ts")));
+    if (runnable.includes("./lucide/") || runnable.includes('"./iconNames"')) throw new Error(`unexpected imports in ${path}`);
+    const dir = mkdtempSync(join(tmpdir(), "opengpui-icons-"));
+    try {
+      const copy = join(dir, "dynamicIconImports.ts");
+      writeFileSync(copy, runnable);
+      const merged = (await import(copy)).dynamicIconImports as Record<string, unknown>;
+      const catalog = (await import(LUCIDE_MAP)).default as Record<string, unknown>;
+      const keyOf = new Map(Object.keys(catalog).map((key) => [catalog[key], key]));
+      const aliases: Record<string, string> = {};
+      for (const key of Object.keys(merged)) {
+        if (Object.hasOwn(catalog, key)) continue;
+        const target = keyOf.get(merged[key]);
+        if (!target) throw new Error(`icon alias ${key} holds no catalog import`);
+        aliases[key] = target;
+      }
+      return aliases;
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  })();
+  return aliasTable;
+}
 
 export function upstreamPlugin(): BunPlugin {
   if (!existsSync(GENUI)) throw new Error("Run `bun run sync` first: .upstream/openui is missing");
@@ -184,6 +220,29 @@ export function upstreamPlugin(): BunPlugin {
           return patched === source ? undefined : { contents: patched, loader: "js" };
         },
       );
+
+      // dynamicIconImports.ts builds its word-permutation table (≈9,000 aliases) at import,
+      // about 40 ms of the mod's load in gpui-shell's engine, which interrupts calls near
+      // 50 ms. The module's own code computes the table here at build time; the bundle
+      // carries it as alias → catalog key, parsed on the first lookup an exact key misses.
+      build.onLoad({ filter: /components\/_shared\/icons\/dynamicIconImports\.ts$/ }, async (args) => {
+        const source = readFileSync(args.path, "utf8");
+        const table = /const permutationIconImports = [\s\S]*?export const dynamicIconImports: Record<string, IconImport> = Object\.assign\(\s*permutationIconImports,\s*exactDynamicIconImports,\s*\);/;
+        if (!table.test(source)) throw new Error(`unexpected ${args.path}: no permutation table to precompute`);
+        const aliases = JSON.stringify(await iconAliases(args.path, source));
+        const lazy = `const permutationAliasesJson = ${JSON.stringify(aliases)};
+let permutationAliases: Record<string, string> | undefined;
+export const dynamicIconImports: Record<string, IconImport> = new Proxy(exactDynamicIconImports, {
+  get(target, key) {
+    if (typeof key !== "string") return undefined;
+    const exact = target[key];
+    if (exact) return exact;
+    permutationAliases ??= JSON.parse(permutationAliasesJson) as Record<string, string>;
+    return Object.hasOwn(permutationAliases, key) ? target[permutationAliases[key]!] : undefined;
+  },
+});`;
+        return { contents: source.replace(table, lazy), loader: "ts" };
+      });
 
       // refractor/all registers ~300 Prism grammars at import, too slow for gpui-shell
       // to load a mod. This lists the same grammars in the same order (later ones

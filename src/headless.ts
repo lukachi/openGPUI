@@ -4,7 +4,7 @@
 export { libraries, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
 export * as dateLogic from "./components/date-logic.ts";
 export * as editableTableModel from "./components/editable-table-model.ts";
-export { parseMarkdown, type MarkdownProfile } from "./markdown/parse.ts";
+export { MarkdownParse, markdownCuts, parseMarkdown, plainParagraph, runPipeline, type MarkdownProfile } from "./markdown/parse.ts";
 export { interFace, openuiFonts, type Face, type FontResolver } from "./render/fonts.ts";
 export { readImageHeader, type ImageFormat, type ImageHeader } from "./render/imageHeader.ts";
 export { cssColor, resolveTokens, toHex, typography, type TextStyle, type Tokens } from "./render/tokens.ts";

@@ -160,3 +160,35 @@ export function memo<T>(ctx: RenderContext, part: string, key: string, compute: 
   }
   return slot.value;
 }
+
+/**
+ * memo() for work too long for a render: gpui-shell interrupts a render after about
+ * 50 ms, while a task (the surface's pump, ctx.after) may run several hundred. The
+ * value is computed in the pump, which redraws. Until then this returns the last value
+ * only if it was computed for the same `reuse` key (e.g. the same data at another
+ * width), else null. A compute that throws throws again in render for its key, so the
+ * component reports its error as when it computed in render.
+ */
+export function memoInPump<T>(ctx: RenderContext, part: string, key: string, reuse: string, compute: () => T, ready = true): T | null {
+  const slot = ctx.local<{ key: string | null; reuse: string | null; value: T | null; pending: string | null; failed: { key: string; error: unknown } | null }>(
+    { key: null, reuse: null, value: null, pending: null, failed: null },
+    part,
+  );
+  if (slot.failed?.key === key) throw slot.failed.error;
+  if (slot.key !== key && ready && slot.pending !== key) {
+    slot.pending = key;
+    ctx.after(() => {
+      if (slot.pending !== key) return;
+      slot.pending = null;
+      try {
+        slot.value = compute();
+        slot.key = key;
+        slot.reuse = reuse;
+        slot.failed = null;
+      } catch (error) {
+        slot.failed = { key, error };
+      }
+    });
+  }
+  return slot.key === key || slot.reuse === reuse ? slot.value : null;
+}

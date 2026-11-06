@@ -12,8 +12,10 @@
 // refractor/all registers its ~300 grammars at import; gpui-shell's engine
 // interrupts that while loading a mod. They are registered in the same order
 // (a grammar may extend earlier ones), two per frame, by the task of a view
-// that shows a code block; until all are in (about 3 s), code shows
-// unhighlighted, then redraws.
+// that shows a code block; until all are in (about 3 s, 8 s measured in a
+// fresh Herdr window), code shows unhighlighted, then redraws. Past HIGHLIGHT_MS of
+// a render, code not highlighted before waits a frame, except one block per render,
+// so a page of many blocks highlights over a few frames instead of one long one.
 import type { Element as HastElement, ElementContent, RootContent } from "hast";
 import { div, type Color, type Context, type Element } from "gpui-kit";
 import { syntaxes } from "opengpui-prism-all";
@@ -94,12 +96,31 @@ function flatten(nodes: (ElementContent | RootContent)[], classes: string[], out
 const highlighted = new Map<string, Segment[]>();
 const plain = (code: string): Segment[] => [{ text: code, classes: [] }];
 
-/** getCodeTree: refractor's tokens for a known language, plain text otherwise. Cached once grammars are in. */
-function highlight(code: string, language: string): Segment[] {
+/**
+ * Past this much of a render, code not highlighted before waits for a later frame (see
+ * budget.ts), except the first such block of each render: every render highlights at
+ * least one, so a page whose render is always long still finishes, a block per frame.
+ */
+const HIGHLIGHT_MS = 20;
+/** Per view, the render that last highlighted new code. */
+const highlightedIn = new WeakMap<RenderContext["session"], number>();
+
+/**
+ * getCodeTree: refractor's tokens for a known language, plain text otherwise. Kept per
+ * block (`mine`, its ctx.local) and in a shared cache, so a page with more blocks than
+ * the cache holds never highlights the same block twice.
+ */
+function highlight(ctx: RenderContext, mine: { key: string; segments: Segment[] | null }, code: string, language: string): Segment[] {
   if (!language || language === "text" || !highlightingReady()) return plain(code);
   const key = `${language}\u0000${code}`;
+  if (mine.key === key && mine.segments) return mine.segments;
   let segments = highlighted.get(key);
   if (!segments) {
+    if (ctx.renderTime > HIGHLIGHT_MS && highlightedIn.get(ctx.session) === ctx.frame) {
+      ctx.after(() => {}); // the pump redraws, and the next render highlights more
+      return plain(code);
+    }
+    highlightedIn.set(ctx.session, ctx.frame);
     try {
       segments = flatten(refractor.highlight(code, language).children, [], []);
     } catch {
@@ -108,6 +129,8 @@ function highlight(code: string, language: string): Segment[] {
     highlighted.set(key, segments);
     if (highlighted.size > 100) highlighted.delete(highlighted.keys().next().value!);
   }
+  mine.key = key;
+  mine.segments = segments;
   return segments;
 }
 
@@ -138,7 +161,7 @@ export function codeBlock(
   const theme = (options.theme === "dark" || t.mode === "dark" ? vscDarkPlus : oneLight) as Theme;
   const pre = theme['pre[class*="language-"]'] ?? {};
   const codeTag = { ...theme['code[class*="language-"]'], ...theme[`code[class*="language-${language}"]`] };
-  const local = ctx.local({ hovered: false, copied: false, waiting: false }, part);
+  const local = ctx.local({ hovered: false, copied: false, waiting: false, highlight: { key: "", segments: null as Segment[] | null } }, part);
   if (language && language !== "text" && !highlightingReady() && !local.waiting) {
     local.waiting = true;
     ctx.after((cx) => {
@@ -175,7 +198,7 @@ export function codeBlock(
 
   // One row per line; an empty line keeps its height.
   const lines: Element[][] = [[]];
-  for (const seg of highlight(code, language)) {
+  for (const seg of highlight(ctx, local.highlight, code, language)) {
     const style = tokenStyle(seg.classes, theme);
     seg.text.split("\n").forEach((piece, i) => {
       if (i > 0) lines.push([]);
