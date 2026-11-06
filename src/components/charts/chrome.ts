@@ -47,6 +47,8 @@ export function legendView(
     yAxisLabel?: string;
     /** Reports the legend's height, for charts that fit it into theirs. */
     onHeight?: (height: number, cx: Context) => void;
+    /** No padding above the legend (SegmentedBar's `paddingTop: 0`). */
+    flush?: boolean;
   },
 ): Element {
   const t = ctx.t;
@@ -136,16 +138,18 @@ export function legendView(
   let legend = h_flex().w_full().justify_center().gap(t.spaceM);
   legend = state.expanded || !hasMoreItems ? legend.flex_wrap() : legend.overflow_hidden();
 
+  const paddingTop = o.flush ? 0 : t.spaceM;
   let container = v_flex()
     .id(ctx.id("legend"))
     .w_full()
     .items_center()
     .justify_center()
     .gap(t.spaceS)
-    .pt(t.spaceM);
+    .pt(paddingTop);
   if (o.onHeight) {
+    // useLegendHeight observes the content box (ResizeObserver's contentRect), which leaves out the top padding.
     const report = o.onHeight;
-    container = container.on_size_change((size, cx) => report(size.height, cx));
+    container = container.on_size_change((size, cx) => report(size.height - paddingTop, cx));
   }
   return container
     .children(captions.length ? [h_flex().justify_center().flex_wrap().gap(t.spaceM).children(captions)] : [])

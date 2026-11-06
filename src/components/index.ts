@@ -3,7 +3,21 @@
 import type { Components } from "../render/surface.ts";
 import { Button, Buttons } from "./buttons.ts";
 import { Carousel } from "./carousel.ts";
-import { AreaChart, BarChart, HorizontalBarChart, LineChart, RadarChart, Series } from "./charts/index.ts";
+import {
+  AreaChart,
+  BarChart,
+  HorizontalBarChart,
+  LineChart,
+  PieChart,
+  Point,
+  RadarChart,
+  RadialChart,
+  ScatterChart,
+  ScatterSeries,
+  Series,
+  SingleStackedBarChart,
+  Slice,
+} from "./charts/index.ts";
 import { CheckBoxGroup, CheckBoxItem, ChipItem, Chips, RadioGroup, RadioItem, SwitchGroup, SwitchItem } from "./choice.ts";
 import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
 import { DatePicker } from "./datepicker.ts";
@@ -66,6 +80,15 @@ export const components: Components = {
   RadarChart,
   HorizontalBarChart,
   Series,
+  // Charts (1D)
+  PieChart,
+  RadialChart,
+  SingleStackedBarChart,
+  Slice,
+  // Charts (Scatter)
+  ScatterChart,
+  ScatterSeries,
+  Point,
   // Forms
   Form,
   FormControl,
