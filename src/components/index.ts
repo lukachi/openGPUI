@@ -5,6 +5,8 @@ import { Button, Buttons } from "./buttons.ts";
 import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
 import { Card, CardHeader, Separator, Stack } from "./layout.ts";
+import { Select, SelectItem } from "./select.ts";
+import { Slider } from "./slider.ts";
 import { Col, Table } from "./tables.ts";
 
 export const components: Components = {
@@ -32,6 +34,9 @@ export const components: Components = {
   Label,
   Input,
   TextArea,
+  Select,
+  SelectItem,
+  Slider,
   // Buttons
   Button,
   Buttons,

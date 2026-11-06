@@ -38,7 +38,8 @@ export interface RetainedSpec<S extends { release?(): unknown }, M> {
   kind: string;
   /** Current props for handlers; refreshed on every render. */
   meta: M;
-  create(entry: RetainedEntry<S, M>): S;
+  /** `cx` is the pump's: native state that needs a live host call (a focus handle) is made with it. */
+  create(entry: RetainedEntry<S, M>, cx: Context): S;
 }
 
 export interface RetainedEntry<S, M> {
@@ -138,7 +139,7 @@ export class Surface {
     for (const [key, spec] of this.wanted) {
       if (this.retainedEntries.has(key)) continue;
       const entry: RetainedEntry<any, any> = { kind: spec.kind, meta: spec.meta, state: null };
-      entry.state = spec.create(entry);
+      entry.state = spec.create(entry, cx);
       this.retainedEntries.set(key, entry);
     }
     // Release what the last render no longer drew. Values live in the session's
