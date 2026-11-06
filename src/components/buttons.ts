@@ -3,7 +3,7 @@
 // Ported from react-ui at the pinned commit:
 //   Button      genui-lib/Button/index.tsx, components/Button/{Button.tsx,button.scss}
 //   Buttons     genui-lib/Buttons/index.tsx, components/Buttons/{Buttons.tsx,buttons.scss}
-//   IconButton  components/IconButton/{IconButton.tsx,iconButton.scss} (not an OpenUI component itself)
+//   IconButton  components/IconButton/{IconButton.tsx,iconButton.scss}; genui-lib/IconButton is in misc.ts
 import { ACTION_STEPS } from "@openuidev/lang-core";
 import { div, type Color, type Context, type Element } from "gpui-kit";
 import { optional, type Component, type RenderContext } from "../render/surface.ts";
@@ -171,24 +171,32 @@ const ICON_BUTTON: Record<IconButtonSize, { box: number; icon: number; radius: (
   large: { box: 40, icon: 16, radius: (t) => t.radiusL },
 };
 
-/** components/IconButton, square shape: a lucide `icon` sized by the button (.openui-icon-button-icon). */
+/**
+ * components/IconButton: a lucide `icon` in a square or circle button. Upstream's
+ * `.openui-icon-button-icon` sizes only the span around the svg, so the icon keeps the size
+ * its caller gave it: `iconSize`, or (callers that pass none) the span's size.
+ */
 export function iconButton(
   ctx: RenderContext,
-  o: { id: string; icon: string; variant?: ButtonVariant; size?: IconButtonSize; disabled?: boolean; onClick: (cx: Context) => void },
+  o: {
+    id: string;
+    icon: string;
+    category?: string;
+    variant?: ButtonVariant;
+    size?: IconButtonSize;
+    shape?: "square" | "circle";
+    iconSize?: number;
+    disabled?: boolean;
+    onClick: (cx: Context) => void;
+  },
 ): Element {
   const t = ctx.t;
   const size = ICON_BUTTON[o.size ?? "medium"];
-  const el = div()
-    .id(o.id)
-    .flex()
-    .flex_none()
-    .items_center()
-    .justify_center()
-    .border_1()
-    .w(size.box)
-    .h(size.box)
-    .rounded(size.radius(t));
-  return paint(el, look(t, o.variant ?? "primary", false), !!o.disabled, o.onClick).children(optional(ctx.icon(o.icon, { size: size.icon })));
+  let el = div().id(o.id).flex().flex_none().items_center().justify_center().border_1().w(size.box).h(size.box);
+  el = o.shape === "circle" ? el.rounded_full() : el.rounded(size.radius(t));
+  return paint(el, look(t, o.variant ?? "primary", false), !!o.disabled, o.onClick).children(
+    optional(ctx.icon(o.icon, { category: o.category, size: o.iconSize ?? size.icon })),
+  );
 }
 
 /** genui Button: primary buttons validate their form first when the action leaves the UI. */
