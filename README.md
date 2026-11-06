@@ -138,6 +138,12 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   focus, keyboard and disabled state; the indicators are drawn from upstream's sizes
   (the checkmark is a path without round caps). There is no focus ring and no
   `overflow-wrap: anywhere`: a word longer than its row isn't broken.
+- **Modal:** drawn in a gpui-base `Popup` layer sized to the window rather than a
+  window dialog (a dialog is a separate view that wouldn't redraw with the session
+  and reports no Escape or backdrop close). In Herdr the backdrop covers the whole
+  window, as upstream's portal covers the page. Hover styles under the backdrop
+  still react (gpui gives scripts no occluding hitbox); Escape is heard while the
+  keyboard is in the dialog, which takes focus on open; the slide-in isn't drawn.
 - **Markdown:** gpui has no inline text layout, so a paragraph is a wrapping row
   of words, one element per word in its own style. Such text can't be selected,
   and a word may wrap one space earlier than in a browser (the trailing space
@@ -155,7 +161,7 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 
 ## Status
 
-Ported from react-ui so far: Stack, Card, CardHeader, TextContent,
+Ported from react-ui so far: Stack, Card, CardHeader, Modal, TextContent,
 MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Text, BoldText,
 IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
 Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
