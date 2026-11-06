@@ -133,9 +133,17 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   render only describes: strings without markdown skip the parser, longer markdown
   is parsed in a task in pieces (the same tree as one parse) and shows as its plain
   source for the first frames, code highlighting lands one block per frame at worst.
-  For now one render formats at most 6,000 characters of markdown, counted per
-  top-level block; a block past that shows as plain text until long markdown is
-  virtualized.
+  One render draws at most 6,000 characters of markdown in full, counted per block
+  in document order. A longer block, or one of 1,000 or more characters that would
+  pass that, is drawn through gpui-kit's lazy `list`, which builds only what is on
+  screen; a shorter block past it draws as its plain source text, so a page of many
+  short blocks shows its later ones plain (the ceiling is interim: it goes once
+  components render in views of their own). A parse step or a lazy row that would
+  still run too long (one huge list item, say, or a row over 12,000 characters)
+  is not attempted, and that text stays plain. Code up to 300 characters is
+  highlighted where it is drawn; longer code by a task in steps of 1,000
+  characters, so it shows plain for a moment, and a step cuts multi-line tokens
+  (block comments, template strings) at its edges.
 - **Fonts:** optical sizes come in steps (14, 16, 18, 24, 28, 32) instead of
   following every size, and a size/weight pair without a cut takes the nearest
   cut. Heading large/xl track −0.1px upstream; here they get the −1% of all other text.
@@ -170,7 +178,20 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   shows it until KaTeX loads; KaTeX isn't ported. A task list's checkbox
   imitates the browser's native one. Code highlighting needs refractor's ~300
   grammars, which gpui-shell can't register at load: the first code block starts
-  registering them a couple per frame, and code shows unhighlighted for about 3 s.
+  registering them one per task step, and code shows unhighlighted for about 3 s
+  (a 216 KB fence took about 10 s in a fresh window).
+- **Long markdown and long code:** a long block is a scroll region as tall as the
+  pane's content area, with its own scrollbar; a long CodeBlock's box is as tall as
+  its code or the pane, whichever is less. The wheel scrolls the region and, at its
+  top or bottom end, passes to the page; while the region is only partly on screen
+  the wheel still scrolls the region (gpui gives both every wheel event, and the
+  region can't tell where it is). A block over the threshold but shorter than the
+  pane leaves the rest of its region empty. Rows of the list allow no handlers:
+  links are native links for http(s) addresses only, and only the hovered word
+  underlines; code blocks there have no copy button; a table draws equal columns
+  until a hidden draw has measured it, and a long table measures its first 25 rows
+  and estimates the rest from their text. A long fence or table is cut into groups
+  of rows, each of which scrolls sideways on its own.
 - **Tables:** column widths come from measuring each cell, so a new page is drawn
   once with equal columns before they settle. The sideways scroll is the
   table's own offset (gpui-kit cannot scroll a div from code): wheel, trackpad
