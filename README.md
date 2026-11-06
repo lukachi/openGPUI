@@ -46,6 +46,11 @@ bun run test           # build, then session/library/token tests against the bui
 bun run install-herdr  # copy the mod into ~/.config/herdr-app/mods/opengpui, link `opengpui` into ~/.local/bin
 ```
 
+`bun scripts/preview.ts file.oui [--look openui|herdr] [--wait ms] [--keep]` builds
+this checkout, installs it as its own mod (`opengpui-<folder>`), shows the file in a
+new Herdr tab, saves a screenshot to `tmp/preview/` and closes the tab. A lock keeps
+previews from several checkouts out of each other's way.
+
 Outputs (`dist/`):
 
 - `opengpui.js`: the library for gpui-shell hosts (`gpui-kit` and `gpui-base` stay imports).
