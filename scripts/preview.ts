@@ -107,5 +107,8 @@ try {
   }
 } finally {
   if (tab) herdr("tab.close", { id: tab });
+  // Every loaded build stays in Herdr's JS heap; an unused preview mod is removed so
+  // the window can drop it.
+  if (!keep) rmSync(to, { recursive: true, force: true });
   rmSync(lock, { recursive: true, force: true });
 }
