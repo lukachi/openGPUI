@@ -1,13 +1,19 @@
 /// <reference path="./pinned.d.ts" />
-// Charts: react-ui's 2D charts and the foundation later chart ports build on.
+// Charts: react-ui's 2D charts, the 1D charts (pie, radial, stacked bar), the
+// scatter chart, and the foundation they build on.
 //
-// Components (registered in components/index.ts under "Charts (2D)"):
+// Components (registered in components/index.ts under "Charts (2D)", "Charts (1D)",
+// "Charts (Scatter)"):
 //   BarChart, LineChart, AreaChart  cartesian.ts  (genui *Condensed: the fit layout)
 //   HorizontalBarChart              horizontalBar.ts
 //   RadarChart                      radar.ts
 //   Series                          cartesian.ts  (a prop value; renders nothing)
+//   PieChart, Slice                 pie.ts        (Slice is a prop value)
+//   RadialChart                     radial.ts
+//   SingleStackedBarChart           stacked.ts
+//   ScatterChart, ScatterSeries, Point  scatter.ts (the last two are prop values)
 //
-// Foundation API, for Pie, Radial, SingleStackedBar, Scatter and the rest.
+// Foundation API, for the charts above and the rest.
 // The shape every chart follows (cartesian.ts is the full example):
 //
 //   rows → seriesModel → Measurer.want(strings) → memo(ctx, "layout", key,
@@ -56,6 +62,14 @@
 // - chrome.ts: `legendView` (DefaultLegend with its fit and "N more" rules,
 //   percentages for 1D charts, axis captions) and `chartTooltip` (ChartTooltip
 //   in a Popup, `right-start` or `top`, flipped and shifted at window edges).
+// - polar.ts: the 1D chart base (`sliceRows` genui's labels/values preamble,
+//   `polarChart`: the chart beside or above its stacked legend with their shared
+//   hidden/active state; a chart supplies a `PolarShape`: marks, size, hit test).
+//   stackedLegend.ts: StackedLegendView. segments.ts: flex-shrink widths (gpui-free, tested).
 export { AreaChart, BarChart, LineChart, Series } from "./cartesian.ts";
 export { HorizontalBarChart } from "./horizontalBar.ts";
+export { PieChart, Slice } from "./pie.ts";
 export { RadarChart } from "./radar.ts";
+export { RadialChart } from "./radial.ts";
+export { Point, ScatterChart, ScatterSeries } from "./scatter.ts";
+export { SingleStackedBarChart } from "./stacked.ts";

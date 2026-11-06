@@ -100,6 +100,8 @@ declare module "openui-charts/utils/polarUtils" {
   export function radarLabelAnchor(angle: number): "start" | "middle" | "end";
   export function formatPercentage(value: number, total: number): string;
   export function sortByValueDescending<T extends Array<Record<string, string | number>>>(data: T, dataKey: string): T;
+  /** The hover look of a wedge or radial bar: `fillOpacity` and a `brightness(n)` filter, as CSS. */
+  export function getSliceStyle(index: number, hoveredIndex: number | null): { fillOpacity?: number; filter?: string };
 }
 
 declare module "openui-charts/utils/radarLabelLayout" {
@@ -192,6 +194,23 @@ declare module "openui-charts/hooks/cartesian/useStackedData" {
     series: Series<Record<string, string | number>, string>[],
     order: Iterable<number>,
   ): void;
+}
+
+declare module "openui-charts/shared/core/StackedLegend/stackedLegendLayout" {
+  export type StackedLegendLayout = "auto" | "showMore" | "scrollable";
+  export const LEGEND_ITEM_LIMIT: number;
+  export const SHOW_MORE_BREAKPOINT: number;
+  export function resolveStackedLegendLayout(
+    layout: StackedLegendLayout,
+    containerWidth: number | undefined,
+    itemCount: number,
+  ): { isShowMore: boolean; isScrollable: boolean };
+  export function formatStackedValue(value: number, total: number, format: "percentage" | "number"): string;
+}
+
+declare module "openui-charts/SegmentedBar/parts/segmentedBarGeometry" {
+  export function segmentValue(raw: string | number | undefined): number;
+  export function segmentShare(value: number, total: number): number;
 }
 
 declare module "openui-charts/hooks/cartesian/useXBandScale" {

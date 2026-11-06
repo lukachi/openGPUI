@@ -43,20 +43,23 @@ export function hoverState(ctx: RenderContext, part = "hover"): HoverState {
  * useChartHover's handlers on `el`: `find` maps a pointer position in `el`'s
  * own coordinates to an item (or null); `origin` is `el`'s offset in the
  * chart's coordinates, for the tooltip. Redraws only when the item changes,
- * or the pointer moves while an item (and so a tooltip) is shown.
+ * or the pointer moves while an item (and so a tooltip) is shown. A chart
+ * whose tooltip does not follow the pointer passes `followPointer = false`:
+ * it then redraws on item changes only.
  */
 export function withHover<E extends Element>(
   el: E,
   state: HoverState,
   find: (x: number, y: number) => number | null,
   origin: { x: number; y: number } = { x: 0, y: 0 },
+  followPointer = true,
 ): E {
   return el
     .on_mouse_move((e: MouseMoveEvent, cx: Context) => {
       const index = find(e.local_position.x, e.local_position.y);
       const x = origin.x + e.local_position.x;
       const y = origin.y + e.local_position.y;
-      if (index === state.index && (index === null || (x === state.x && y === state.y))) return;
+      if (index === state.index && (index === null || !followPointer || (x === state.x && y === state.y))) return;
       if (state.index === null && index !== null) state.session++;
       state.index = index;
       if (index !== null) state.last = index;

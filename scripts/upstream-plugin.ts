@@ -22,7 +22,7 @@ const CHARTS = join(REACT_UI, "components", "Charts");
 // time): value formatting, palettes, domains, label layout, bar/series
 // geometry. They compile for real, and so do their imports of each other.
 const CHART_PURE =
-  /^(utils\/[A-Za-z]+|shared\/cartesian\/(roundedBarPath|seriesGeometry)|BarChart\/parts\/(horizontalBarGeometry|verticalBarRadii)|shared\/core\/PortalTooltip\/utils|hooks\/cartesian\/(useStackedData|useXBandScale))$/;
+  /^(utils\/[A-Za-z]+|shared\/cartesian\/(roundedBarPath|seriesGeometry)|BarChart\/parts\/(horizontalBarGeometry|verticalBarRadii)|SegmentedBar\/parts\/segmentedBarGeometry|shared\/core\/PortalTooltip\/utils|shared\/core\/StackedLegend\/stackedLegendLayout|hooks\/cartesian\/(useStackedData|useXBandScale))$/;
 
 function chartModule(path: string): string | undefined {
   return [`${path}.ts`, join(path, "index.ts")].find(existsSync);

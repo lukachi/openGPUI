@@ -12,6 +12,7 @@ import { getDataKeys } from "openui-charts/utils/dataUtils";
 import { getDistributedColors, resolvePalette } from "openui-charts/utils/paletteUtils";
 import type { Props, RenderContext } from "../../render/surface.ts";
 import { cssColor } from "../../render/tokens.ts";
+import { toggleHidden } from "./visibility.ts";
 
 export type ChartRow = Record<string, string | number>;
 
@@ -88,14 +89,35 @@ export function seriesModel(ctx: RenderContext, rows: ChartRow[], paletteName: C
     colorMap,
     legendItems: allDataKeys.map((key) => ({ key, label: key, color: colorMap[key]! })),
     toggle(key, cx) {
-      const next = new Set(state.hidden);
-      if (next.has(key)) next.delete(key);
-      else {
-        // Count only hidden keys that still exist in the current series.
-        const hiddenCurrent = allDataKeys.filter((k) => next.has(k)).length;
-        if (hiddenCurrent >= allDataKeys.length - 1) return;
-        next.add(key);
-      }
+      const next = toggleHidden(state.hidden, allDataKeys, key);
+      if (!next) return;
+      state.hidden = next;
+      cx.notify();
+    },
+  };
+}
+
+/**
+ * The same model for series that are named datasets rather than row columns
+ * (ScatterChart: useScatterChartOrchestrator's colorMap and useSeriesVisibility
+ * over the dataset names). Colors go by index among all names; a repeated name
+ * is one series, as upstream keys everything by name.
+ */
+export function keyedSeriesModel(ctx: RenderContext, names: string[], paletteName: ChartPaletteName): SeriesModel {
+  const state = ctx.local<{ hidden: Set<string> }>({ hidden: new Set() }, "series");
+  const colors = chartColors(paletteName, names.length);
+  const colorMap: Record<string, Color> = {};
+  names.forEach((name, i) => (colorMap[name] = colors[i] ?? "#000000ff"));
+  return {
+    catKey: CATEGORY_KEY,
+    allDataKeys: names,
+    dataKeys: names.filter((k) => !state.hidden.has(k)),
+    hidden: state.hidden,
+    colorMap,
+    legendItems: names.map((key) => ({ key, label: key, color: colorMap[key]! })),
+    toggle(key, cx) {
+      const next = toggleHidden(state.hidden, names, key);
+      if (!next) return;
       state.hidden = next;
       cx.notify();
     },
