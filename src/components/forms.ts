@@ -134,8 +134,10 @@ function textField<S extends TextState>(
       return s;
     },
   });
-  if (state) {
-    // $state can change from elsewhere (@Set, @Reset); bring the text along.
+  // $state can change from elsewhere (@Set, @Reset); bring the text along. Asked only when
+  // they differ: deferred work wakes the pump, which redraws, so asking on every render
+  // kept a page with an input redrawing without end.
+  if (state && state.value() !== String(field.value ?? "")) {
     ctx.after(() => {
       const value = String(current(meta).value ?? "");
       if (state.value() !== value) state.set_value(value);

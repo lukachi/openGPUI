@@ -24,13 +24,19 @@
 // Citations (`[1]`) render nothing, as TextContentCitation does without a
 // CardSourceProvider. Images show their alt text: gpui loads only local files.
 // Math stays TeX in a code block, which is what upstream shows until KaTeX loads.
+//
+// gpui-shell interrupts a long JS call (budget.ts): a text not parsed yet draws as
+// its plain source text until a task has parsed it, and once one render has drawn
+// FORMATTED_CHARS of markdown formatted, top-level blocks that don't fit in what is
+// left draw as their plain text (temporary, until long markdown is virtualized).
 import type { Element as HastElement, ElementContent, Root, RootContent } from "hast";
 import { div, type Color, type Element } from "gpui-kit";
 import { tableText, tableView, type TableCell } from "../components/tables.ts";
 import type { RenderContext } from "../render/surface.ts";
 import { alpha, restyle, textStyle, typography, type TextStyle } from "../render/tokens.ts";
 import { codeBlock, codeBlockLanguage, textOf } from "./code.ts";
-import { parseMarkdown, type MarkdownProfile } from "./parse.ts";
+import { formattedBlocks, markdownTree } from "./budget.ts";
+import type { MarkdownProfile } from "./parse.ts";
 
 /** What a run of text is drawn with: the inherited CSS that matters here. */
 interface Css {
@@ -115,11 +121,12 @@ class Markdown {
     flush();
 
     const elements = items.flatMap((it) => (it.kind === "block" ? [it.node] : []));
+    let at = -1;
     const laid: Laid[] = items.map((it, i) => {
       const open = i === 0 ? marks?.open : undefined;
       const close = i === items.length - 1 ? marks?.close : undefined;
       if (it.kind === "inline") return { el: this.flow(it.nodes, css, { open, close }), mt: 0, mb: 0 };
-      const at = elements.indexOf(it.node);
+      at++;
       const next = elements[at + 1]?.tagName;
       const last = at === elements.length - 1;
       return this.block(it.node, css, scope, { next, last, open, close });
@@ -495,11 +502,32 @@ export function markdownBlock(
   o: { profile: "plain" | "content"; body?: TextStyle },
 ): Element {
   const body = o.body ?? typography(ctx.t, "body", "default");
+  const tree = markdownTree(ctx, part, text, o.profile);
+  // Until a long text is parsed (markdown/budget.ts): the text itself, in the block's style.
+  if (!tree) return textStyle(div().w_full().flex().flex_col().text_color(ctx.t.textNeutralPrimary), body).child(div().child(text));
   const md = new Markdown(ctx, part, o.profile, body);
   const css = md.css(body, ctx.t.textNeutralPrimary);
-  // `> *:first-child { margin-top: 0 }`, `> *:last-child { margin-bottom: 0 }`
-  const inner = md.blocks(parseMarkdown(text, o.profile).children as ElementContent[], css, { inList: false, inLi: false });
-  return textStyle(div().w_full().flex().flex_col().text_color(css.color), body).children(inner.els);
+  // Blocks past what one render can draw formatted (markdown/budget.ts, temporary) draw as their text.
+  const nodes = tree.children;
+  const formatted = formattedBlocks(ctx, nodes, (n) => (n.type === "doctype" ? 0 : textOf(n).length));
+  if (formatted.every(Boolean)) {
+    // `> *:first-child { margin-top: 0 }`, `> *:last-child { margin-bottom: 0 }`
+    const inner = md.blocks(nodes as ElementContent[], css, { inList: false, inLi: false });
+    return textStyle(div().w_full().flex().flex_col().text_color(css.color), body).children(inner.els);
+  }
+  // Runs of formatted and plain blocks, in order, a paragraph's margin (18px) apart.
+  const runs: { formatted: boolean; nodes: Root["children"] }[] = [];
+  nodes.forEach((node, i) => {
+    const last = runs.at(-1);
+    if (last && (last.formatted === formatted[i] || isBlank(node))) last.nodes.push(node);
+    else runs.push({ formatted: formatted[i]!, nodes: [node] });
+  });
+  const els = runs.flatMap((run): Element[] => {
+    if (run.formatted) return [div().w_full().flex().flex_col().children(md.blocks(run.nodes as ElementContent[], css, { inList: false, inLi: false }).els)];
+    const plain = run.nodes.flatMap((n) => (n.type === "doctype" || isBlank(n) ? [] : [textOf(n)]));
+    return plain.length ? [div().w_full().child(plain.join("\n\n"))] : [];
+  });
+  return textStyle(div().w_full().flex().flex_col().text_color(css.color), body).children(els.map((el, i) => (i ? el.mt(18) : el)));
 }
 
 /** The text of nodes that are only text (inside a paragraph, which InlineMarkdownRenderer unwraps), else null. */
@@ -526,9 +554,17 @@ export function markdownInline(
   text: string,
   root: { font: TextStyle; color: Color; align?: "right" },
 ): Element {
+  const tree = markdownTree(ctx, part, text, "inline");
+  // Until a long text is parsed (markdown/budget.ts): the text itself, in the line's font and color
+  // (one clipped line in a card slot that clips).
+  if (!tree) {
+    const el = textStyle(div().text_color(root.color).when(root.align === "right", (e) => e.text_right()), root.font);
+    return ctx.scope.cardText?.ellipsis
+      ? el.min_w_0().max_w_full().overflow_hidden().whitespace_nowrap().text_ellipsis().child(text.replace(/\s+/g, " "))
+      : el.child(text);
+  }
   const md = new Markdown(ctx, part, "inline", typography(ctx.t, "body", "default"));
   const css = md.css(root.font, root.color);
-  const tree: Root = parseMarkdown(text, "inline");
   // A card's clipped slot (ctx.scope.cardText.ellipsis: SnippetCardBlock) is one nowrap line ending in "…".
   // gpui can only ellipsize a single run of text, so that holds for a plain string; formatted text wraps.
   const plain = ctx.scope.cardText?.ellipsis ? plainText(tree.children) : null;
