@@ -167,6 +167,12 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   table's own offset (gpui-kit cannot scroll a div from code): wheel, trackpad
   and shift-wheel move it, and there is no scrollbar, which matches upstream's
   hidden one.
+- **EditableTable:** its own grid (upstream styles it apart from Table): column widths
+  follow the browser's auto table layout over each column's declared width, measured
+  in script, so a new table draws once at its declared widths before it settles; it
+  scrolls sideways by its own offset. Number cells edit plain text (no
+  `type="number"`), parsed on save as upstream. In an open select menu Enter picks the
+  highlighted option (upstream loses the pick: React bubbles the Enter to the cell).
 - **Tabs, Accordion, Carousel:** tab lists and carousels scroll by an offset they
   own (wheel, trackpad, chevrons/arrows), with no scrollbar, as upstream hides it.
   Tab triggers are gpui-base's native `Tab`, which hears no keys: no arrow-key roving.
@@ -207,7 +213,7 @@ Accordion/AccordionItem, Steps/StepsItem, Carousel, Modal, TextContent,
 MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Image, ImageBlock,
 ImageGallery, Text, BoldText, IconText, ImageText, ImageTextLarge,
 MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
-Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
+Icon, Separator, Table/Col, EditableTable, Form, FormControl, Label, Input, TextArea,
 Select/SelectItem, DatePicker, Slider, CheckBoxGroup/CheckBoxItem,
 RadioGroup/RadioItem, SwitchGroup/SwitchItem, Chips/ChipItem, Button, Buttons,
 IconButton, BarChart, LineChart, AreaChart, HorizontalBarChart, RadarChart, Series.
