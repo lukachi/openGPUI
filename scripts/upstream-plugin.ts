@@ -11,6 +11,7 @@ const UP = join(root, ".upstream", "openui", "packages");
 const LANG = join(UP, "lang-core", "src");
 const REACT_UI = join(UP, "react-ui", "src");
 const GENUI = join(REACT_UI, "genui-lib");
+const THEME = join(REACT_UI, "components", "ThemeProvider");
 const SHIM = join(root, "src", "upstream");
 
 const isUnder = (path: string, dir: string) => path === dir || path.startsWith(dir + "/");
@@ -23,6 +24,10 @@ export function upstreamPlugin(): BunPlugin {
       build.onResolve({ filter: /^@openuidev\/lang-core$/ }, () => ({ path: join(LANG, "index.ts") }));
       build.onResolve({ filter: /^@openuidev\/react-lang$/ }, () => ({ path: join(SHIM, "react-lang.cjs") }));
       build.onResolve({ filter: /^openui-genui$/ }, () => ({ path: join(GENUI, "index.ts") }));
+      // OpenUI's default light/dark design tokens (pure TS: swatches, no React).
+      build.onResolve({ filter: /^openui-theme$/ }, () => ({
+        path: join(THEME, "defaultTheme.ts"),
+      }));
 
       // Bare imports from upstream sources: zod is real, everything else (react, lucide, …) is a stub.
       build.onResolve({ filter: /^[^./]/ }, (args) => {
@@ -33,7 +38,8 @@ export function upstreamPlugin(): BunPlugin {
       });
 
       // Relative imports that leave genui-lib for react-ui's React components become stubs,
-      // except schema modules, which are wire contracts and load for real.
+      // except schema modules (wire contracts) and the theme's pure token modules,
+      // which load for real.
       build.onResolve({ filter: /^\./ }, (args) => {
         if (!isUnder(args.importer, GENUI) && !isUnder(args.importer, REACT_UI)) {
           if (isUnder(args.importer, LANG) && /telemetry\/runtime$/.test(args.path)) {
@@ -44,6 +50,7 @@ export function upstreamPlugin(): BunPlugin {
         const target = resolve(dirname(args.importer), args.path);
         if (isUnder(target, GENUI)) return undefined;
         if (/\/schema(\.tsx?)?$/.test(target)) return undefined;
+        if (isUnder(args.importer, THEME) && /\/(swatches|types)(\.ts)?$/.test(target)) return undefined;
         return { path: target, namespace: "opengpui-stub" };
       });
 

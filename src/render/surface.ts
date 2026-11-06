@@ -58,14 +58,15 @@ export class Surface {
   private resolveWake: (() => void) | null = null;
   private readonly timers = new Set<Task>();
 
-  constructor(options: { session: Session; components: Components; tokens?: Partial<Tokens> }) {
+  /** `tokens`: see resolveTokens(); OpenUI's light theme when omitted. */
+  constructor(options: { session: Session; components: Components; tokens?: Tokens }) {
     this.session = options.session;
     this.components = options.components;
-    this.tokens = resolveTokens(options.tokens);
+    this.tokens = options.tokens ?? resolveTokens("light");
   }
 
-  setTokens(tokens: Partial<Tokens>): void {
-    this.tokens = resolveTokens(tokens);
+  setTokens(tokens: Tokens): void {
+    this.tokens = tokens;
   }
 
   /** Start the pump. Call once from the host view's init(). */
@@ -250,8 +251,8 @@ export class RenderContext {
         .py(4)
         .rounded(6)
         .border_1()
-        .border_color(ctx.t.danger)
-        .text_color(ctx.t.danger)
+        .border_color(ctx.t.borderDangerEmphasis)
+        .text_color(ctx.t.textDangerPrimary)
         .text_size(12)
         .child(`${node.typeName} failed to render`);
     }
@@ -309,8 +310,8 @@ function unsupported(ctx: RenderContext, typeName: string): Element {
     .rounded(6)
     .border_1()
     .border_dashed()
-    .border_color(ctx.t.border)
+    .border_color(ctx.t.borderInteractive)
     .text_size(12)
-    .text_color(ctx.t.dim)
+    .text_color(ctx.t.textNeutralSecondary)
     .child(`${typeName} is not supported by opengpui yet`);
 }

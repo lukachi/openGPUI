@@ -5,5 +5,5 @@
 import * as built from "../dist/opengpui-headless.js";
 import type * as headless from "../src/headless.ts";
 
-export const { Session, libraries, subsetLibrary } = built as typeof headless;
+export const { Session, libraries, subsetLibrary, resolveTokens, toHex } = built as typeof headless;
 export type Session = InstanceType<typeof headless.Session>;

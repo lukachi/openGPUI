@@ -5,6 +5,7 @@
 //   opengpui show <file.oui> [options]             open it in Herdr, next to you
 //       --tab | --down                             a new tab, or below instead of right
 //       --title <text>  --library <name>  --tools <tools.json>
+//       --look herdr|openui                        Herdr's colors (default) or OpenUI's own theme
 //       --no-reply | --reply <terminal>            actions go to $HC_TERMINAL_ID (you) unless told otherwise
 //   opengpui wait <file.oui> [--timeout <s>]       block until the person acts; print the event
 //   opengpui events <file.oui>                     print every event so far (JSONL)
@@ -107,6 +108,7 @@ switch (command) {
     const title = option("--title");
     const library = option("--library");
     const tools = option("--tools");
+    const look = option("--look");
     const file = fileArg();
     if (!existsSync(file)) throw new Error(`${file} does not exist yet: write it first`);
     const reply = noReply ? undefined : (replyTo ?? process.env.HC_TERMINAL_ID);
@@ -117,6 +119,7 @@ switch (command) {
       ...(title ? { title } : {}),
       ...(library ? { library } : {}),
       ...(tools ? { tools: resolve(tools) } : {}),
+      ...(look ? { look } : {}),
     };
     if (place === "tab") await herdr("tab.new", { name: title ?? basename(file), mod: "opengpui", props });
     else await herdr("pane.split", { direction: place, mod: "opengpui", props });

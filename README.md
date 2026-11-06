@@ -24,10 +24,10 @@ flowchart LR
 | Path | What |
 |---|---|
 | `src/runtime/` | `Session`: one response's parse, `$state` store, queries/mutations, forms, validation, actions, errors. Framework-free port of react-lang's state hook. |
-| `src/render/` | `Surface`: draws a session with gpui-kit; owns the pump task that creates retained native state (inputs, timers) outside `render`. Design tokens. |
+| `src/render/` | `Surface`: draws a session with gpui-kit; owns the pump task that creates retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. |
 | `src/components/` | One renderer per OpenUI component. Missing ones draw a "not supported yet" box and are left out of prompts. |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries, and `subsetLibrary()` to prompt only what is implemented. |
-| `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js`). |
+| `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js`); `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
 | `bin/opengpui.ts` | The agent CLI: `prompt`, `check`, `show`, `wait`, `events`. |
 | `skills/opengpui/` | Agent skill: how an agent uses the CLI and the pane. |
 | `scripts/` | Upstream sync, build (Bun plugin that compiles upstream without React), install. |
@@ -57,22 +57,53 @@ pinned `lang-core` version differs from the `@openuidev/lang-core` dev
 dependency used for types; bump that too, then run `bun run check` and the
 tests.
 
-### Adding a component
+### Porting a component
 
-1. Read its schema in `.upstream/openui/packages/react-ui/src/genui-lib/<Name>/schema.ts`
-   and its React renderer next to it for behavior.
-2. Write a `Component` in `src/components/` and add it to `src/components/index.ts`.
-3. Retained native state (inputs, sliders) goes through `ctx.retained(...)`;
+Components are ports, not redesigns. Each one comes from three upstream
+sources under `.upstream/openui/packages/react-ui/src/`:
+
+| Layer | Upstream | Here |
+|---|---|---|
+| Contract: name, props, prompt text | `genui-lib/<Name>/schema.ts` + `defineComponent` | compiled as is, never rewritten |
+| Behavior: validation, actions, state, defaults | `genui-lib/<Name>/index.tsx` | ported line by line |
+| Look: sizes, spacing, colors, typography | `components/<X>/<X>.tsx` + `*.scss` | ported value by value through `Tokens` |
+
+1. Read all three. `Tokens` keeps upstream's token names, so scss reads across
+   directly: `cssUtils.$space-s` → `t.spaceS`, `$border-default` → `t.borderDefault`,
+   `@include typography(body, small)` → `textStyle(el, typography(t, "body", "small"))`.
+2. Write the `Component` in `src/components/`, register it in `src/components/index.ts`,
+   and name the upstream files it was ported from in the file header.
+3. Where gpui can't do what the scss does, keep the closest gpui form and add the
+   difference to the file header and to the list below.
+4. Retained native state (inputs, sliders) goes through `ctx.retained(...)`;
    work that needs a live phase through `ctx.after(...)`.
-4. `bun run check`, then look at it in Herdr (`opengpui show`).
+5. `bun run check`, then compare it in Herdr with OpenUI's own theme:
+   `opengpui show file.oui --look openui`.
+
+### Where gpui differs from the browser
+
+- **Fonts:** letter spacing and Inter's `wght` axis are not applied; the host's UI
+  font is used rather than Inter, so weights like 560 land on the nearest the font has.
+- **Shadows:** OpenUI's custom shadows map to gpui's presets (`shadow-m` → `shadow_sm`, …).
+- **Markdown:** TextContent, MarkDownRenderer and Callout descriptions use gpui's
+  `TextView`, with its own element styles, not upstream's markdown CSS. Text and
+  BoldText lines are plain text rather than inline markdown.
+- **Icons:** lucide icons (Tag icons, hint alert icon, table pager chevrons) are not
+  drawn; the pager uses `‹ ›` glyphs.
+- **Tables:** no table layout; columns share the width equally and cells truncate
+  instead of scrolling the table sideways.
+- **Callout auto-dismiss:** hides after 3 s without upstream's fade-out.
 
 ## Status
 
-First wave: Stack, Card, CardHeader, TextContent, MarkDownRenderer, Callout,
-Text, BoldText, Tag, Separator, Table/Col, Form, FormControl, Label, Input,
-TextArea, Button, Buttons. The rest of OpenUI's ~80 components (tabs, selects,
-charts, modals, card blocks, …) are not drawn yet. Built against herdr-app
-0.1.13 (gpui-shell 0.7.1) and OpenUI lang-core 1.1.0.
+First wave, ported from react-ui: Stack, Card, CardHeader, TextContent,
+MarkDownRenderer, Callout, Text, BoldText, Tag, Separator, Table/Col, Form,
+FormControl, Label, Input, TextArea, Button, Buttons. The rest of OpenUI's ~80
+components (tabs, selects, charts, modals, card blocks, …) are not drawn yet.
+Built against herdr-app 0.1.13 (gpui-shell 0.7.1) and OpenUI lang-core 1.1.0.
+
+The Herdr pane draws with OpenUI's tokens in the Herdr theme's colors by default
+(`look: "herdr"`); `look: "openui"` uses OpenUI's own light/dark theme.
 
 ## License
 

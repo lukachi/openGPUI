@@ -9,3 +9,11 @@ declare module "openui-genui" {
   export const openuiChatLibrary: Required<Library>;
   export const openuiChatPromptOptions: PromptOptions;
 }
+
+// OpenUI's default design tokens: ThemeProvider/defaultTheme.ts from the pin.
+declare module "openui-theme" {
+  import type { Theme } from "openui-theme-types";
+
+  export const defaultLightTheme: Theme;
+  export const defaultDarkTheme: Theme;
+}

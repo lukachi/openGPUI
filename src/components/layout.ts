@@ -1,84 +1,142 @@
-// Layout: Stack, Card, Separator.
-import { div } from "gpui-kit";
-import { h_flex, v_flex } from "gpui-base";
+// Layout: Stack, Card, CardHeader, Separator.
+//
+// Ported from react-ui at the pinned commit:
+//   Stack       genui-lib/Stack/index.tsx
+//   Card        genui-lib/Card/index.tsx, components/Card/{Card.tsx,card.scss}
+//   CardHeader  genui-lib/CardHeader/index.tsx, components/CardHeader/{CardHeader.tsx,cardHeader.scss}
+//   Separator   genui-lib/Separator/index.tsx, components/Separator/{Separator.tsx,separator.scss}
+import { div, type Element } from "gpui-kit";
 import type { Component, Props } from "../render/surface.ts";
-import { GAP } from "../render/tokens.ts";
+import { shadow, textStyle, TRANSPARENT, typography, type Tokens } from "../render/tokens.ts";
 
-/** Apply OpenUI FlexProps (direction, gap, align, justify, wrap) to a flex element. */
-export function flex(props: Props, fallback: { direction?: string; gap?: string; align?: string } = {}) {
-  const direction = props.direction ?? fallback.direction ?? "column";
-  let el = direction === "row" ? h_flex() : v_flex();
-  el = el.gap(GAP[String(props.gap ?? fallback.gap ?? "m")] ?? 12);
-  switch (props.align ?? fallback.align) {
-    case "start":
-      el = el.items_start();
-      break;
-    case "center":
-      el = el.items_center();
-      break;
-    case "end":
-      el = el.items_end();
-      break;
-    case "baseline":
-      el = el.items_baseline();
-      break;
-    case "stretch":
-      el = el.items_stretch();
-      break;
+/** genui-lib gapMap: FlexProps gap → --openui-space-*. */
+function gap(t: Tokens, value: unknown): number {
+  switch (value) {
+    case "none":
+      return 0;
+    case "xs":
+      return t.spaceXs;
+    case "s":
+      return t.spaceS;
+    case "l":
+      return t.spaceL;
+    case "xl":
+      return t.spaceXl;
+    case "2xl":
+      return t.space2xl;
     default:
-      // A column stretches its children like CSS flex does; a row's h_flex centers them.
-      if (direction !== "row") el = el.items_stretch();
+      return t.spaceM;
   }
-  switch (props.justify) {
-    case "center":
-      el = el.justify_center();
-      break;
-    case "end":
-      el = el.justify_end();
-      break;
-    case "between":
-      el = el.justify_between();
-      break;
-    case "around":
-      el = el.justify_around();
-      break;
-    case "evenly":
-      el = el.justify_evenly();
-      break;
+}
+
+function alignItems(el: Element, value: unknown): Element {
+  switch (value) {
     case "start":
-      el = el.justify_start();
-      break;
+      return el.items_start();
+    case "center":
+      return el.items_center();
+    case "end":
+      return el.items_end();
+    case "stretch":
+      return el.items_stretch();
+    case "baseline":
+      return el.items_baseline();
+    default:
+      return el; // CSS default: stretch
   }
-  if (props.wrap) el = el.flex_wrap();
-  return el;
+}
+
+function justifyContent(el: Element, value: unknown): Element {
+  switch (value) {
+    case "start":
+      return el.justify_start();
+    case "center":
+      return el.justify_center();
+    case "end":
+      return el.justify_end();
+    case "between":
+      return el.justify_between();
+    case "around":
+      return el.justify_around();
+    case "evenly":
+      return el.justify_evenly();
+    default:
+      return el;
+  }
+}
+
+/** A plain flex box: no gpui-base h_flex/v_flex, whose default alignment differs from CSS. */
+export function flexBox(direction: unknown): Element {
+  return direction === "row" ? div().flex().flex_row() : div().flex().flex_col();
 }
 
 export const Stack: Component = {
   render(props, ctx) {
-    return flex(props).id(ctx.id()).w_full().children(ctx.children(props.children));
+    // Upstream: a wrapping row with justify "between" falls back to "start".
+    const justify = props.wrap && props.justify === "between" ? "start" : props.justify;
+    let el = flexBox(props.direction ?? "column").id(ctx.id()).gap(gap(ctx.t, props.gap));
+    el = justifyContent(alignItems(el, props.align), justify);
+    if (props.wrap) el = el.flex_wrap();
+    return el.children(ctx.children(props.children));
   },
 };
 
+/** components/Card: base + variant classes; genui Card adds full width, flex 1 and its FlexProps. */
+function cardFrame(t: Tokens, variant: unknown, props: Props): Element {
+  let el = flexBox(props.direction ?? "column")
+    .w_full()
+    .flex_1()
+    .min_w_0()
+    .border_1()
+    .border_color(TRANSPARENT)
+    .text_color(t.textNeutralPrimary)
+    .gap(gap(t, props.gap));
+  el = textStyle(el, typography(t, "body", "default"));
+  el = justifyContent(alignItems(el, props.align ?? "stretch"), props.justify ?? "start");
+  el = props.wrap ? el.flex_wrap() : el.flex_nowrap();
+  switch (variant) {
+    case "clear":
+      return el.px(t.spaceL).rounded(t.radius3xl);
+    case "sunk":
+      return shadow(el.p(t.spaceL).rounded(t.radius3xl).bg(t.sunk).border_color(t.borderDefault), t.shadowM);
+    default: // "card": no surface of its own upstream
+      return el;
+  }
+}
+
 export const Card: Component = {
   render(props, ctx) {
+    return cardFrame(ctx.t, props.variant ?? "card", props).id(ctx.id()).children(ctx.children(props.children));
+  },
+};
+
+export const CardHeader: Component = {
+  render(props, ctx) {
     const t = ctx.t;
-    let el = flex(props, { direction: "column", gap: "m" }).id(ctx.id()).w_full().rounded(t.radius + 2);
-    switch (props.variant ?? "card") {
-      case "card":
-        el = el.p(16).bg(t.surface).border_1().border_color(t.border);
-        break;
-      case "sunk":
-        el = el.p(16).bg(t.sunk);
-        break;
-    }
-    return el.children(ctx.children(props.children));
+    const top = div()
+      .flex()
+      .flex_row()
+      .justify_between()
+      .items_center()
+      .child(
+        textStyle(div().flex().flex_row().items_center().gap(t.spaceXs).text_color(t.textNeutralPrimary), typography(t, "heading", "small"))
+          .when(props.title != null && props.title !== "", (el) => el.child(String(props.title))),
+      );
+    return div()
+      .flex()
+      .flex_col()
+      .gap(t.spaceXs)
+      .mb(t.space2xs)
+      .child(top)
+      .when(!!props.subtitle, (el) =>
+        el.child(textStyle(div().text_color(t.textNeutralSecondary), typography(t, "body", "default")).child(String(props.subtitle))),
+      );
   },
 };
 
 export const Separator: Component = {
   render(props, ctx) {
-    return props.orientation === "vertical"
-      ? div().w(1).self_stretch().bg(ctx.t.border)
-      : div().h(1).w_full().bg(ctx.t.border);
+    const line = div().flex_none().bg(ctx.t.borderDefault);
+    return props.orientation === "vertical" ? line.w(1).h_full() : line.h(1).w_full();
   },
 };

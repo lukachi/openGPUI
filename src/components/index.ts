@@ -2,9 +2,9 @@
 // "not supported yet" placeholder, and subsetLibrary() keeps it out of prompts.
 import type { Components } from "../render/surface.ts";
 import { Button, Buttons } from "./buttons.ts";
-import { BoldText, Callout, CardHeader, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
+import { BoldText, Callout, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
-import { Card, Separator, Stack } from "./layout.ts";
+import { Card, CardHeader, Separator, Stack } from "./layout.ts";
 import { Col, Table } from "./tables.ts";
 
 export const components: Components = {

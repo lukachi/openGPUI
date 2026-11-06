@@ -1,20 +1,32 @@
 // Forms: Form, FormControl, Input, TextArea.
+//
+// Ported from react-ui at the pinned commit:
+//   Form         genui-lib/Form/index.tsx
+//   FormControl  genui-lib/FormControl/index.tsx, components/FormControl/{FormControl.tsx,formControl.scss,Hint/*},
+//                components/Label/*
+//   Input        genui-lib/Input/index.tsx, components/Input/{Input.tsx,input.scss}
+//   TextArea     genui-lib/TextArea/index.tsx, components/TextArea/{TextArea.tsx,textArea.scss}
+//
+// Upstream's FormControl never passes hasError down, so inputs keep their normal
+// border on a validation error; only the hint line turns red. That is kept.
 import { isElementNode, parseStructuredRules, type ParsedRule } from "@openuidev/lang-core";
-import { div } from "gpui-kit";
-import { Input as GInput, InputState, Textarea, TextareaState, v_flex } from "gpui-base";
-import type { Element } from "gpui-kit";
+import { Input as GInput, InputState, Textarea, TextareaState } from "gpui-base";
+import { div, type Element } from "gpui-kit";
 import type { Component, Props, RenderContext } from "../render/surface.ts";
+import { textStyle, typography } from "../render/tokens.ts";
 
 export const Form: Component = {
   render(props, ctx) {
     const name = String(props.name ?? "form");
-    // Fields register their rules while rendering; start each pass from none,
-    // so a field the response removed no longer blocks submission.
+    // Fields register their rules while rendering; start each pass from none, so a
+    // field the response removed no longer blocks submission (upstream unregisters on unmount).
     if (!ctx.streaming) ctx.session.form(name).fields = {};
     const inner = ctx.child("form", { ...ctx.scope, formName: name });
-    return v_flex()
+    // FormRenderer: <div role="form" style="display:flex; flex-direction:column; gap:16px">
+    return div()
       .id(ctx.id())
-      .w_full()
+      .flex()
+      .flex_col()
       .gap(16)
       .children(inner.children(props.fields, "f"))
       .children(inner.children(props.buttons, "b"));
@@ -29,32 +41,35 @@ function inputName(input: unknown): string | undefined {
   return raw && typeof raw === "object" && "name" in raw && typeof raw.name === "string" ? raw.name : undefined;
 }
 
+function isRequired(input: unknown): boolean {
+  if (!isElementNode(input)) return false;
+  const rules = input.props.rules;
+  return !!rules && typeof rules === "object" && "required" in rules && rules.required === true;
+}
+
 export const FormControl: Component = {
   render(props, ctx) {
     const t = ctx.t;
     const name = inputName(props.input);
     const error = name ? ctx.form?.getFieldError(name) : undefined;
-    const required = isElementNode(props.input) && (props.input.props.rules as { required?: boolean } | undefined)?.required === true;
-    return v_flex()
-      .w_full()
-      .gap(6)
-      .child(
-        div()
-          .text_size(13)
-          .font_medium()
-          .child(`${props.label ?? ""}${required ? " *" : ""}`),
-      )
+    // Label: body default, neutral primary; the asterisk sits space-3xs to the right.
+    const label = textStyle(div().flex().flex_row().gap(t.space3xs).text_color(t.textNeutralPrimary), typography(t, "body", "default"))
+      .child(String(props.label ?? ""))
+      .when(isRequired(props.input), (el) => el.child("*"));
+    // Hint: body small, secondary; danger primary for an error (upstream adds an AlertCircle icon).
+    const hint = (text: string, isError: boolean) =>
+      textStyle(div().flex().flex_row().items_center().gap(t.spaceXs).text_color(isError ? t.textDangerPrimary : t.textNeutralSecondary), typography(t, "body", "small")).child(text);
+    return div()
+      .flex()
+      .flex_col()
+      .gap(t.spaceS)
+      .child(label)
       .children(ctx.children(props.input, "in"))
-      .when(!!error, (el) => el.child(div().text_size(12).text_color(t.danger).child(String(error))))
-      .when(!error && !!props.hint, (el) => el.child(div().text_size(12).text_color(t.muted).child(String(props.hint))));
+      .when(!!error, (el) => el.child(hint(String(error), true)))
+      .when(!error && !!props.hint, (el) => el.child(hint(String(props.hint), false)));
   },
 };
 
-/**
- * Shared by Input and TextArea: a retained text state bound to a form field or
- * a $variable, with upstream's validation timing (clear on focus and typing,
- * validate on blur).
- */
 interface TextState {
   value(): string;
   set_value(next: string): void;
@@ -69,13 +84,18 @@ interface FieldMeta {
   rules: ParsedRule[];
 }
 
+/**
+ * Shared by Input and TextArea: retained text state bound to a form field or a
+ * $variable, with upstream's validation timing (clear on focus and typing,
+ * validate on blur when the field has rules).
+ */
 function textField<S extends TextState>(
   kind: string,
   props: Props,
   ctx: RenderContext,
   makeState: (value: string) => S,
   makeElement: (state: S) => Element,
-  height: number,
+  frame: (el: Element) => Element,
 ): Element {
   const t = ctx.t;
   const session = ctx.session;
@@ -119,27 +139,29 @@ function textField<S extends TextState>(
       if (state.value() !== value) state.set_value(value);
     });
   }
-  const error = form?.getFieldError(name);
-  const frame = (el: Element) =>
-    el
-      .w_full()
-      .min_h(height)
-      .px(10)
-      .rounded(t.radius - 2)
-      .border_1()
-      .border_color(error ? t.danger : t.input)
-      .bg(t.background)
-      .text_size(13)
-      .when(ctx.streaming, (e) => e.opacity(0.6));
+  // Shared look: body default, 1px interactive border, highlight-subtle fill;
+  // disabled (while streaming): sunk fill, default border, tertiary text.
+  const styled = (el: Element) => {
+    const base = textStyle(el.w_full().border_1(), typography(t, "body", "default"));
+    return ctx.streaming
+      ? frame(base).bg(t.sunk).border_color(t.borderDefault).text_color(t.textNeutralTertiary)
+      : frame(base)
+          .bg(t.highlightSubtle)
+          .border_color(t.borderInteractive)
+          .text_color(t.textNeutralPrimary)
+          .focus((s) => s.border_color(t.borderInteractiveEmphasis));
+  };
   if (!state) {
     const value = String(field.value ?? "");
-    return frame(div().py(8).text_color(value ? t.foreground : t.dim).child(value || String(props.placeholder ?? "")));
+    return styled(div()).text_color(value ? t.textNeutralPrimary : t.textNeutralSecondary).child(value || String(props.placeholder ?? ""));
   }
-  return frame(makeElement(state).h(height));
+  return styled(makeElement(state));
 }
 
 export const Input: Component = {
   render(props, ctx) {
+    const t = ctx.t;
+    const body = typography(t, "body", "default");
     return textField(
       "input",
       props,
@@ -150,21 +172,35 @@ export const Input: Component = {
         return s;
       },
       (state) => GInput.new(state),
-      34,
+      // Medium size: radius m, padding (xs - 1) × (m - 1); one body line tall.
+      (el) =>
+        el
+          .rounded(t.radiusM)
+          .py(t.spaceXs - 1)
+          .px(t.spaceM - 1)
+          .h(body.size * body.lineHeight + 2 * (t.spaceXs - 1) + 2),
     );
   },
 };
 
 export const TextArea: Component = {
   render(props, ctx) {
-    const rows = Math.max(2, Math.min(20, Number(props.rows) || 4));
+    const t = ctx.t;
+    const body = typography(t, "body", "default");
+    const rows = Number(props.rows) || 3;
     return textField(
       "textarea",
       props,
       ctx,
       (value) => TextareaState.new({ placeholder: String(props.placeholder ?? ""), value, rows }),
-      (state) => Textarea.new(state).py(6),
-      rows * 20 + 14,
+      (state) => Textarea.new(state),
+      // radius xl, padding s × m; `rows` body lines tall.
+      (el) =>
+        el
+          .rounded(t.radiusXl)
+          .py(t.spaceS)
+          .px(t.spaceM)
+          .h(rows * body.size * body.lineHeight + 2 * t.spaceS + 2),
     );
   },
 };

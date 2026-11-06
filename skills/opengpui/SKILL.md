@@ -23,6 +23,7 @@ you change the file; what the person does comes back to you.
    will and prints each error with a hint. Fix until it says `ok`.
 4. **Show** it: `opengpui show ./ui/review.oui --title "Deploy review"`.
    - Opens to the right of the focused pane; `--down` below, `--tab` as a new tab.
+   - Colors follow the Herdr theme; `--look openui` uses OpenUI's own theme.
    - Show once. Afterwards just rewrite the file: the open pane follows it.
 5. **Get the answer.** Every action the person takes arrives two ways:
    - typed into your terminal as one line:

@@ -7,8 +7,8 @@
 //   // view render: surface.renderContent()
 //   // view close:  surface.close()
 export { components } from "./components/index.ts";
-export { button, type ButtonOptions } from "./components/buttons.ts";
-export { flex } from "./components/layout.ts";
+export { button, iconButton, type ButtonOptions, type ButtonSize, type ButtonVariant } from "./components/buttons.ts";
+export { flexBox } from "./components/layout.ts";
 export { libraries, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
 export {
   RenderContext,
@@ -20,7 +20,20 @@ export {
   type RetainedEntry,
   type RetainedSpec,
 } from "./render/surface.ts";
-export { alpha, DEFAULT_TOKENS, GAP, resolveTokens, toneColor, type Tokens } from "./render/tokens.ts";
+export {
+  alpha,
+  resolveTokens,
+  shadow,
+  textStyle,
+  toHex,
+  TRANSPARENT,
+  typography,
+  type ColorKey,
+  type Mode,
+  type ShadowPreset,
+  type TextStyle,
+  type Tokens,
+} from "./render/tokens.ts";
 export { parseResponseBundle, type ResponseBundle } from "./runtime/response.ts";
 export {
   FormValidation,

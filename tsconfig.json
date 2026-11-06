@@ -17,6 +17,9 @@
     "paths": {
       "herdr": [
         "./types/herdr.d.ts"
+      ],
+      "openui-theme-types": [
+        "./.upstream/openui/packages/react-ui/src/components/ThemeProvider/types.ts"
       ]
     }
   },

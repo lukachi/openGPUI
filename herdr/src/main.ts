@@ -8,9 +8,10 @@
 //   tools    JSON file of Query/Mutation tools: { "name": { "command": "…", "args": ["…"], "cwd": "…" } }
 //   library  "openui" (default) or "chat"
 //   title    header text
+//   look     "herdr" (default) or "openui": whose colors to draw with
 import type { ActionEvent, OpenUIError } from "@openuidev/lang-core";
 import { h_flex, v_flex } from "gpui-base";
-import { div, View, type Color, type Context } from "gpui-kit";
+import { div, View, type Context } from "gpui-kit";
 import { mkdir, writeFile } from "fs/promises";
 import { appHome, exec, hc, home, props, readTextFile, theme, watchFolder, window as herdrWindow } from "herdr";
 import { dirname, join } from "path";
@@ -20,10 +21,12 @@ import {
   Session,
   subsetLibrary,
   Surface,
+  textStyle,
+  typography,
   type LibraryName,
-  type Tokens,
 } from "../../src/index.ts";
 import { DEMO } from "./demo.ts";
+import { herdrTokens, type Look } from "./theme.ts";
 
 interface SurfaceProps {
   src?: string;
@@ -32,6 +35,8 @@ interface SurfaceProps {
   tools?: string;
   library?: LibraryName;
   title?: string;
+  /** "herdr" (default): OpenUI's tokens in the Herdr theme's colors; "openui": OpenUI's own theme. */
+  look?: Look;
 }
 
 interface ToolSpec {
@@ -41,36 +46,6 @@ interface ToolSpec {
 }
 
 const expand = (path: string) => (path.startsWith("~/") ? join(home(), path.slice(2)) : path);
-
-/** Herdr theme colors by opengpui token. Missing or non-hex values keep opengpui's defaults. */
-const HERDR_COLORS: Partial<Record<keyof Tokens, string[]>> = {
-  background: ["background"],
-  surface: ["surface", "raised"],
-  sunk: ["canvas", "chrome"],
-  foreground: ["foreground"],
-  muted: ["muted"],
-  dim: ["dim"],
-  border: ["border"],
-  input: ["input", "border"],
-  accent: ["accent"],
-  accentForeground: ["accent_foreground"],
-  hover: ["hover"],
-  selected: ["selected"],
-  success: ["ansi2"],
-  warning: ["ansi3"],
-  danger: ["ansi1"],
-  info: ["ansi4"],
-};
-
-function tokensFromHerdr(): Partial<Tokens> {
-  const t = theme();
-  const out: Partial<Record<keyof Tokens, Color>> = {};
-  for (const [token, names] of Object.entries(HERDR_COLORS) as [keyof Tokens, string[]][]) {
-    const value = names.map((n) => t[n]).find((v): v is Color => typeof v === "string" && v.startsWith("#"));
-    if (value) out[token] = value;
-  }
-  return out as Partial<Tokens>;
-}
 
 /** Form state as the agent wants it: `{ form: { field: value } }`, without componentType wrappers. */
 function plainFormState(state: Record<string, unknown> | undefined): Record<string, unknown> {
@@ -115,7 +90,7 @@ export default class OpenGpui extends View {
       onAction: (event) => this.onAction(event),
       onError: (errors) => this.onErrors(errors),
     });
-    this.surface = new Surface({ session: this.session, components, tokens: tokensFromHerdr() });
+    this.surface = new Surface({ session: this.session, components, tokens: herdrTokens(this.p.look ?? "herdr") });
 
     if (!this.srcPath) {
       this.session.setResponse(DEMO);
@@ -252,51 +227,39 @@ export default class OpenGpui extends View {
   }
 
   render(_cx: Context) {
-    this.surface.setTokens(tokensFromHerdr());
+    this.surface.setTokens(herdrTokens(this.p.look ?? "herdr"));
     const t = this.surface.tokens;
     const errors = this.session.errors;
     const content = this.surface.renderContent();
-    const body = v_flex().id("opengpui-body").flex_1().min_h(0).overflow_y_scrollbar().p(16).gap(12);
-    return v_flex()
+    // The response draws in a plain column, like OpenUI's Renderer root, in body text.
+    const body = textStyle(
+      div().id("opengpui-body").flex().flex_col().flex_1().min_h(0).overflow_y_scrollbar().p(t.spaceL).text_color(t.textNeutralPrimary),
+      typography(t, "body", "default"),
+    );
+    // Host chrome: a status line above, errors below, in OpenUI's small label text.
+    const label = (el: ReturnType<typeof div>) => textStyle(el, typography(t, "label", "small"));
+    return div()
       .id("opengpui-root")
+      .flex()
+      .flex_col()
       .size_full()
       .bg(t.background)
-      .text_color(t.foreground)
-      .text_size(14)
       .child(
-        h_flex()
-          .h(30)
-          .px(12)
-          .gap(8)
-          .items_center()
-          .border_b_1()
-          .border_color(t.border)
-          .text_size(12)
-          .text_color(t.muted)
+        label(h_flex().h(30).px(t.spaceM).gap(t.spaceS).items_center().border_b_1().border_color(t.borderDefault).text_color(t.textNeutralSecondary))
           .child(div().flex_1().truncate().child(this.p.title ?? this.srcPath ?? "opengpui"))
-          .when(this.session.blocked && this.loaded, (el) => el.child(div().text_color(t.accent).child("streaming…")))
+          .when(this.session.blocked && this.loaded, (el) => el.child(div().text_color(t.textInfoPrimary).child("streaming…")))
           .when(this.session.isQueryLoading, (el) => el.child(div().child("loading data…")))
-          .when(this.writeError != null, (el) => el.child(div().text_color(t.danger).truncate().child(this.writeError ?? "")))
-          .when(errors.length > 0, (el) => el.child(div().text_color(t.danger).child(`${errors.length} error${errors.length > 1 ? "s" : ""}`))),
+          .when(this.writeError != null, (el) => el.child(div().text_color(t.textDangerPrimary).truncate().child(this.writeError ?? "")))
+          .when(errors.length > 0, (el) => el.child(div().text_color(t.textDangerPrimary).child(`${errors.length} error${errors.length > 1 ? "s" : ""}`))),
       )
       .child(
         content.length === 0
-          ? body.child(div().text_color(t.dim).child(this.loadError ?? (this.loaded ? "Nothing to show yet" : "Loading…")))
+          ? body.child(div().text_color(t.textNeutralSecondary).child(this.loadError ?? (this.loaded ? "Nothing to show yet" : "Loading…")))
           : body.children(content),
       )
       .when(errors.length > 0, (el) =>
         el.child(
-          v_flex()
-            .id("opengpui-errors")
-            .max_h(120)
-            .overflow_y_scrollbar()
-            .px(12)
-            .py(6)
-            .gap(2)
-            .border_t_1()
-            .border_color(t.border)
-            .text_size(12)
-            .text_color(t.danger)
+          label(v_flex().id("opengpui-errors").max_h(120).overflow_y_scrollbar().px(t.spaceM).py(t.spaceXs).gap(t.space3xs).border_t_1().border_color(t.borderDefault).text_color(t.textDangerPrimary))
             .children(errors.map((e) => `${e.code}${e.component ? ` (${e.component})` : ""}: ${e.message}`)),
         ),
       );
