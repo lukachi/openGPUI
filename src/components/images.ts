@@ -31,7 +31,8 @@
 //   max-height); its `max-width: 768px` media query reads the gallery's own
 //   width, the closest a component gets to the viewport.
 // - The hover zoom (scale 1.05) grows the picture's box about its center
-//   instead of a transform.
+//   instead of a transform. CSS `ease` (the zoom, the thumbnails' opacity) is
+//   drawn as `ease-in-out`: gpui-kit's easings have no `ease`.
 // - GalleryModal is a surface overlay (ctx.overlay) covering the host's pane,
 //   OpenUI's viewport here, in the overlay color without the 3px backdrop
 //   blur and without the fade-in. Escape (the backdrop takes focus) and a press
@@ -43,7 +44,7 @@ import { div, svg, type Context, type Element, type FocusHandle, type ScrollWhee
 import { fitImage, type ImageState, type ObjectFit } from "../render/images.ts";
 import { optional, type Component, type RenderContext } from "../render/surface.ts";
 import { textStyle, typography, TRANSPARENT } from "../render/tokens.ts";
-import { button, iconButton } from "./buttons.ts";
+import { button, ICON_BUTTON, iconButton } from "./buttons.ts";
 import { textBlock } from "./content.ts";
 
 type Ready = Extract<ImageState, { status: "ready" }>;
@@ -292,13 +293,20 @@ export const ImageGallery: Component = {
     }));
     if (!images.length) return null;
     const t = ctx.t;
-    const local = ctx.local<GalleryLocal>({ selected: 0, hovered: -1, open: false, offset: 0, smooth: false, thumbHovered: -1, width: 0, height: 0, focus: null });
-    const states = images.map((i) => ctx.image(i.src));
+    // The gallery's UI state lives as long as the node is drawn (as React state does):
+    // a gallery drawn again later at the same place starts closed.
+    const local =
+      ctx.retained<GalleryLocal, null>(ctx.id("gallery-state"), { kind: "gallery-state", meta: null, create: () => galleryLocal() }) ?? galleryLocal();
+    // Upstream mounts images past the fifth only inside the modal.
     const visible = images.slice(0, MAX_GRID_IMAGES);
+    const states = (local.open ? images : visible).map((i) => ctx.image(i.src));
     const { width, probe } = measure(ctx, "gallery");
+    // A broken <img> is as tall as its alt text's line (body default) when nothing else sets the row.
+    const body = typography(t, "body", "default");
+    const altLine = body.size * body.lineHeight;
     const grid = galleryGrid(gridSpec(visible.length, width <= 768), width, t.spaceS, (i, cellWidth) => {
       const s = states[i]!;
-      return s.status === "ready" ? (cellWidth * s.height) / s.width : 0;
+      return s.status === "ready" ? (cellWidth * s.height) / s.width : s.status === "failed" ? altLine : 0;
     });
 
     const open = (index: number, cx: Context) => {
@@ -366,9 +374,10 @@ interface GalleryLocal {
   /** The overlay's measured size: the modal's viewport. */
   width: number;
   height: number;
-  /** Keyboard focus for Escape while the modal is open. */
-  focus: FocusHandle | null;
+  release?(): unknown;
 }
+
+const galleryLocal = (): GalleryLocal => ({ selected: 0, hovered: -1, open: false, offset: 0, smooth: false, thumbHovered: -1, width: 0, height: 0 });
 
 const THUMB_HEIGHT = 116;
 const THUMB_MIN_WIDTH = 174;
@@ -376,21 +385,17 @@ const THUMB_MIN_WIDTH = 174;
 /** components/ImageGallery GalleryModal, drawn as a surface overlay over the pane (its viewport). */
 function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageState[], local: GalleryLocal): void {
   const t = ctx.t;
+  const slot = ctx.overlay();
   const close = (cx: Context) => {
     local.open = false;
-    local.focus?.release();
-    local.focus = null;
     cx.notify();
   };
-  // Escape needs the keyboard: a focus handle, made and focused in a live phase.
-  if (!local.focus) {
-    ctx.after((cx) => {
-      if (!local.open || local.focus) return;
-      local.focus = cx.focus_handle();
-      local.focus.focus();
-      cx.notify();
-    });
-  }
+  // Escape needs the keyboard: a focus handle while open; the surface focuses the topmost overlay's.
+  const focus = ctx.retained<FocusHandle, null>(ctx.id("modal-focus"), {
+    kind: "gallery-modal-focus",
+    meta: null,
+    create: (_entry, cx) => cx.focus_handle(),
+  });
   // @media (max-width: 768px): the content fills the screen, square.
   const full = local.width <= 768;
   const boxW = full ? local.width : Math.min(local.width - 80, 720);
@@ -399,7 +404,6 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
   const selected = Math.min(local.selected, images.length - 1);
   const state = states[selected]!;
   const strip = local;
-
   // .openui-gallery__modal-header: "All Photos" in heading extra-small, a small secondary close button.
   const header = div()
     .flex()
@@ -412,10 +416,10 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
 
   // .openui-gallery__modal-main: the picture at its own size, shrunk to fit (max 100%), radius s.
   const mainW = boxW - 2 - 2 * pad;
-  const mainH = boxH - 2 - 2 * pad - 2 * t.spaceXl - 32 - THUMB_HEIGHT;
+  const mainH = Math.max(0, boxH - 2 - 2 * pad - 2 * t.spaceXl - ICON_BUTTON.small.box - THUMB_HEIGHT);
   let shown: Element | null = null;
   if (state.status === "ready") {
-    const scale = Math.min(1, mainW / state.width, mainH / state.height);
+    const scale = Math.max(0, Math.min(1, mainW / state.width, mainH / state.height));
     shown = fitImage(state, { width: state.width * scale, height: state.height * scale }, "contain", { radius: t.radiusS });
   } else if (state.status === "failed") {
     shown = div().max_w(mainW).overflow_hidden().child(images[selected]!.alt || `Gallery image ${selected + 1}`);
@@ -490,7 +494,7 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
     if (!show) return null;
     return div()
       .absolute()
-      .top((THUMB_HEIGHT - 28) / 2)
+      .top((THUMB_HEIGHT - ICON_BUTTON["extra-small"].box) / 2)
       .when(side === "left", (el) => el.left(24))
       .when(side === "right", (el) => el.right(24))
       .bg(t.foreground)
@@ -550,7 +554,9 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
       close(cx);
     })
     .on_key_down((e, cx) => {
-      if (e.key === "escape") close(cx);
+      if (e.key !== "escape") return;
+      cx.stop_propagation();
+      close(cx);
     })
     .on_scroll_wheel((_e, cx) => cx.stop_propagation())
     .on_size_change((size, cx) => {
@@ -560,9 +566,7 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
         cx.notify();
       }
     });
-  ctx.overlay(
-    (local.focus ? backdrop.track_focus(local.focus) : backdrop).children(local.width > 0 ? [content] : []),
-  );
+  slot((focus ? backdrop.track_focus(focus) : backdrop).children(local.width > 0 ? [content] : []), focus);
 }
 
 // ── ImageText, ImageTextLarge ──

@@ -33,16 +33,20 @@ describe("readImageHeader", () => {
     ["webp VP8L", bytes("RIFF", le32(30), "WEBP", "VP8L", le32(10), [0x2f], le32(((300 - 1) | ((200 - 1) << 14)) >>> 0), [0, 0, 0, 0, 0]), { width: 300, height: 200 }],
     ["webp VP8", bytes("RIFF", le32(30), "WEBP", "VP8 ", le32(10), [0, 0, 0], [0x9d, 0x01, 0x2a], le16(320), le16(240)), { width: 320, height: 240 }],
     ["bmp top-down", bytes("BM", le32(0), le32(0), le32(54), le32(40), le32(16), le32(-9 >>> 0)), { format: "bmp", width: 16, height: 9 }],
+    ["OS/2 bmp core header", bytes("BM", le32(0), le32(0), le32(26), le32(12), le16(640), le16(480)), { format: "bmp", width: 640, height: 480 }],
     ["svg with px size", bytes('<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="48px" height="32">'), { format: "svg", width: 48, height: 32 }],
     ["svg with only a viewBox", bytes('<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">'), { width: 300, height: 150 }],
     ["svg with width and viewBox", bytes('<svg width="50" viewBox="0 0 200 100">'), { width: 50, height: 25 }],
     ["svg with percent size falls back to 300×150", bytes('<svg width="100%" height="100%">'), { width: 300, height: 150 }],
+    ["svg in em units at the 16px default", bytes('<svg width="2em" height="1em">'), { width: 32, height: 16 }],
+    ["svg after a comment and an svg DOCTYPE", bytes('<?xml version="1.0"?><!-- logo --><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "x.dtd"><svg width="10" height="20">'), { width: 10, height: 20 }],
   ])("%s", (_name, data, expected) => {
     expect(readImageHeader(data)).toMatchObject(expected);
   });
 
   test.each([
     ["html error page", bytes("<!doctype html><html><body>404</body></html>")],
+    ["html page with an inline svg icon", bytes('<!doctype html><html><body><p>404</p><svg class="icon" viewBox="0 0 24 24"></svg></body></html>')],
     ["plain text", bytes("not an image")],
     ["truncated png", png.subarray(0, 12)],
     ["zero-sized gif", bytes("GIF89a", le16(0), le16(0), [0])],

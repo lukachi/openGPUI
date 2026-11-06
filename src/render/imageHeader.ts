@@ -21,6 +21,7 @@ const u16le = (b: Uint8Array, i: number) => b[i]! | (b[i + 1]! << 8);
 const u24le = (b: Uint8Array, i: number) => b[i]! | (b[i + 1]! << 8) | (b[i + 2]! << 16);
 const u32be = (b: Uint8Array, i: number) => ((b[i]! << 24) >>> 0) + (b[i + 1]! << 16) + (b[i + 2]! << 8) + b[i + 3]!;
 const i32le = (b: Uint8Array, i: number) => b[i]! | (b[i + 1]! << 8) | (b[i + 2]! << 16) | (b[i + 3]! << 24);
+const u32le = (b: Uint8Array, i: number) => i32le(b, i) >>> 0;
 const ascii = (b: Uint8Array, i: number, n: number) => String.fromCharCode(...b.subarray(i, i + n));
 
 /** Format and size from a file's bytes, or null when it is not an image gpui draws. */
@@ -34,8 +35,11 @@ export function readImageHeader(bytes: Uint8Array): ImageHeader | null {
   }
   if (b.length >= 4 && b[0] === 0xff && b[1] === 0xd8) return jpeg(b);
   if (b.length >= 30 && ascii(b, 0, 4) === "RIFF" && ascii(b, 8, 4) === "WEBP") return webp(b);
-  if (b.length >= 26 && ascii(b, 0, 2) === "BM") {
-    // BITMAPINFOHEADER and later: signed width/height (negative height: top-down).
+  if (b.length >= 22 && ascii(b, 0, 2) === "BM") {
+    // OS/2 BITMAPCOREHEADER (12 bytes): unsigned 16-bit width/height. BITMAPINFOHEADER
+    // and later: signed 32-bit (a negative height is top-down).
+    if (u32le(b, 14) === 12) return sized("bmp", "bmp", u16le(b, 18), u16le(b, 20));
+    if (b.length < 26) return null;
     return sized("bmp", "bmp", Math.abs(i32le(b, 18)), Math.abs(i32le(b, 22)));
   }
   return svg(b);
@@ -106,21 +110,32 @@ function webp(b: Uint8Array): ImageHeader | null {
   return null;
 }
 
+/** CSS absolute units and font-relative ones at the browser default (16px font, ex ≈ 0.5em) in px. */
+const UNITS: Record<string, number> = { "": 1, px: 1, pt: 4 / 3, pc: 16, in: 96, cm: 96 / 2.54, mm: 96 / 25.4, q: 96 / 101.6, em: 16, rem: 16, ex: 8 };
+
 /**
- * The root <svg>'s size as a browser takes it for an <img>: width/height in px
- * (or one of them with the viewBox's ratio), else the viewBox ratio at 300 wide
- * when only a viewBox is given, else 300×150.
+ * The root <svg>'s size as a browser takes it for an <img>: width/height in
+ * absolute or font units (or one of them with the viewBox's ratio), else the
+ * viewBox ratio at 300 wide when only a viewBox is given, else 300×150. The
+ * <svg> must be the root element: only an XML declaration, processing
+ * instructions, comments and a DOCTYPE may come before it (an HTML page with an
+ * inline icon is not an image).
  */
 function svg(b: Uint8Array): ImageHeader | null {
   // Latin-1 is enough to read ASCII markup; a UTF-8 byte order mark is skipped.
-  const head = ascii(b, 0, Math.min(b.length, 4096)).replace(/^\xEF\xBB\xBF/, "").trimStart();
-  if (!head.startsWith("<")) return null;
-  const tag = /<svg\b([^>]*)>/i.exec(head);
+  let head = ascii(b, 0, Math.min(b.length, 4096)).replace(/^\xEF\xBB\xBF/, "");
+  for (;;) {
+    const prolog = /^\s*(<\?[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE\s+svg\b[^>[]*(\[[\s\S]*?\])?\s*>)/i.exec(head);
+    if (!prolog) break;
+    head = head.slice(prolog[0].length);
+  }
+  const tag = /^\s*<svg\b([^>]*)>/i.exec(head);
   if (!tag) return null;
   const attr = (name: string) => new RegExp(`\\s${name}\\s*=\\s*["']([^"']*)["']`, "i").exec(tag[1]!)?.[1];
   const length = (value: string | undefined) => {
-    const m = value === undefined ? null : /^\s*([\d.]+)\s*(px)?\s*$/.exec(value);
-    return m ? Number(m[1]) : null;
+    const m = value === undefined ? null : /^\s*([\d.]+)\s*([a-z]*)\s*$/i.exec(value);
+    const unit = m ? UNITS[m[2]!.toLowerCase()] : undefined;
+    return m && unit !== undefined ? Number(m[1]) * unit : null;
   };
   const box = attr("viewBox")?.trim().split(/[\s,]+/).map(Number);
   const ratio = box && box.length === 4 && box[2]! > 0 && box[3]! > 0 ? box[2]! / box[3]! : null;

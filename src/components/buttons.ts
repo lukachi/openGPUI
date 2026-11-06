@@ -162,7 +162,8 @@ export function button(ctx: RenderContext, o: ButtonOptions): Element {
 
 export type IconButtonSize = "3-extra-small" | "2-extra-small" | "extra-small" | "small" | "medium" | "large";
 
-const ICON_BUTTON: Record<IconButtonSize, { box: number; icon: number; radius: (t: Tokens) => number }> = {
+/** iconButton.scss square sizes: box and icon px, radius. */
+export const ICON_BUTTON: Record<IconButtonSize, { box: number; icon: number; radius: (t: Tokens) => number }> = {
   "3-extra-small": { box: 20, icon: 10, radius: (t) => t.radiusS },
   "2-extra-small": { box: 24, icon: 12, radius: (t) => t.radiusS - 1 },
   "extra-small": { box: 28, icon: 14, radius: (t) => t.radiusS },

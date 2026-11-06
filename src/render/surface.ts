@@ -8,7 +8,7 @@
 // for, runs deferred work, and redraws. Render stays a pure description.
 import type { ElementNode } from "@openuidev/lang-core";
 import { h_flex } from "gpui-base";
-import { div, svg, type Context, type Element, type Task } from "gpui-kit";
+import { div, svg, type Context, type Element, type FocusHandle, type Task } from "gpui-kit";
 import type { FormValidation, Session } from "../runtime/session.ts";
 import { withScheduler, type Scheduler } from "../upstream/timers.ts";
 import { iconFile } from "./icons.ts";
@@ -53,6 +53,23 @@ interface Scope {
   formName?: string;
 }
 
+/** A place in the overlay stack, reserved by RenderContext.overlay(). */
+interface OverlayEntry {
+  el: Element | null;
+  focus: FocusHandle | null;
+}
+
+/**
+ * Fills an overlay slot for this frame: `el` covers the host's area; `focus`
+ * (optional) gets the keyboard while this is the topmost overlay with one.
+ */
+export type OverlaySlot = (el: Element, focus?: FocusHandle | null) => void;
+
+/** How long a src seen while streaming must stay unchanged, without a new chunk, before it loads. */
+const STABLE_MS = 150;
+/** What a src that waits for its string to settle draws as. */
+const WAITING: ImageState = { status: "loading" };
+
 export class Surface {
   readonly session: Session;
   tokens: Tokens;
@@ -60,7 +77,10 @@ export class Surface {
   /** @internal */ readonly iconPath: IconPath | null;
   /** @internal */ readonly imageLoader: ImageLoader | null;
   /** @internal */ readonly images = new Map<string, ImageState>();
-  /** @internal */ overlays: Element[] = [];
+  /** @internal */ imagesSeen = new Set<string>();
+  /** @internal */ readonly imagesWaiting = new Map<string, { revision: number; settled: boolean }>(); // first asked while streaming
+  /** @internal */ overlays: OverlayEntry[] = [];
+  private overlayTop: FocusHandle | null = null;
   /** @internal */ retainedEntries = new Map<string, RetainedEntry<any, any>>();
   /** @internal */ wanted = new Map<string, RetainedSpec<any, any>>();
   /** @internal */ deferred: ((cx: Context) => void)[] = [];
@@ -156,6 +176,10 @@ export class Surface {
         entry.state?.release?.();
         this.retainedEntries.delete(key);
       }
+      // Image states the last render didn't ask for go too (a failed one is retried
+      // when asked again; the host's cache keeps reloads cheap).
+      for (const src of this.images.keys()) if (!this.imagesSeen.has(src)) this.images.delete(src);
+      for (const src of this.imagesWaiting.keys()) if (!this.imagesSeen.has(src)) this.imagesWaiting.delete(src);
     }
     const deferred = this.deferred;
     this.deferred = [];
@@ -172,19 +196,31 @@ export class Surface {
   renderContent(): (Element | string)[] {
     this.wanted = new Map();
     this.overlays = [];
+    this.imagesSeen = new Set();
     this.rendered = true;
     const out = new RenderContext(this, "n", {}).children(this.session.root, "root");
+    // The keyboard follows the topmost overlay that has a focus handle: to it when
+    // it opens, back to the one below when it closes.
+    let top: FocusHandle | null = null;
+    for (const o of this.overlays) if (o.el && o.focus) top = o.focus;
+    if (top !== this.overlayTop) {
+      this.overlayTop = top;
+      const next = top;
+      if (next) this.deferred.push(() => next.focus());
+    }
     const missing = [...this.wanted.keys()].some((k) => !this.retainedEntries.has(k));
     if (missing || this.deferred.length) this.wake();
     return out;
   }
 
   /**
-   * What the last renderContent() asked to draw above everything (RenderContext.overlay):
-   * the host stacks each over its whole area, as CSS `position: fixed` covers the viewport.
+   * What the last renderContent() asked to draw above everything (RenderContext.overlay),
+   * bottom first. The host stacks each over its whole area (the page: CSS
+   * `position: fixed`). A host that draws content must draw these too, right
+   * after renderContent().
    */
   renderOverlays(): Element[] {
-    return this.overlays;
+    return this.overlays.flatMap((o) => (o.el ? [o.el] : []));
   }
 
   /** Stop the pump and release native state. Call from the host's close(). */
@@ -254,10 +290,15 @@ export class RenderContext {
   /**
    * An image `src` as the host made it drawable (render/images.ts): "loading"
    * until the host answers, then "ready" with its path and intrinsic size, or
-   * "failed". The surface redraws when it changes.
+   * "failed". The surface redraws when it changes. A state lives while renders
+   * ask for it. While the model is still writing, a new src starts loading only
+   * once a later chunk still contains it or it stayed unchanged for STABLE_MS
+   * (the trailing statement's string grows a character at a time); a finished
+   * response loads at once, even an invalid one.
    */
   image(src: string): ImageState {
     const surface = this.surface;
+    surface.imagesSeen.add(src);
     const known = surface.images.get(src);
     if (known) return known;
     const loader = surface.imageLoader;
@@ -266,30 +307,59 @@ export class RenderContext {
       surface.images.set(src, failed);
       return failed;
     }
+    // While the model writes, the trailing statement's string grows a character at a
+    // time: a src loads once it outlives a new chunk or STABLE_MS, whichever comes first.
+    if (this.session.isStreaming) {
+      const waiting = surface.imagesWaiting.get(src);
+      if (!waiting) {
+        const entry = { revision: this.session.revision, settled: false };
+        surface.imagesWaiting.set(src, entry);
+        this.after((cx) =>
+          cx.timer.after(STABLE_MS, () => {
+            entry.settled = true;
+            surface.wake();
+          }),
+        );
+        return WAITING;
+      }
+      if (waiting.revision === this.session.revision && !waiting.settled) return WAITING;
+    }
+    surface.imagesWaiting.delete(src);
     const loading: ImageState = { status: "loading" };
     surface.images.set(src, loading);
     // Promises only advance inside a task, so the load starts from the pump's cx.
     this.after((cx) => {
       cx.spawn(async () => {
+        let next: ImageState;
         try {
           const loaded = await loader(src);
-          surface.images.set(src, { status: "ready", path: loaded.path, width: loaded.width, height: loaded.height });
+          next = { status: "ready", path: loaded.path, width: loaded.width, height: loaded.height };
         } catch (e) {
-          surface.images.set(src, { status: "failed", error: e instanceof Error ? e.message : String(e) });
+          next = { status: "failed", error: e instanceof Error ? e.message : String(e) };
         }
+        // Dropped meanwhile (no render asks for it): a later ask loads it again.
+        if (surface.images.get(src) !== loading) return;
+        surface.images.set(src, next);
         surface.wake();
       });
     });
-    surface.wake(); // also when drawn outside renderContent (a dialog)
     return loading;
   }
 
   /**
-   * Draw `el` above the whole surface for this frame (a modal: CSS `position: fixed`).
-   * The host stacks it over its full area; ask again on every render it should stay.
+   * Reserve a place above the whole surface for this frame (a modal: CSS
+   * `position: fixed`), and fill it with the returned function. Reserve before
+   * rendering children and fill after, so overlays opened by children stack
+   * above their container's, as later portals do in the DOM. Ask again on every
+   * render it should stay. The host stacks the overlays over its whole area.
    */
-  overlay(el: Element): void {
-    this.surface.overlays.push(el);
+  overlay(): OverlaySlot {
+    const entry: OverlayEntry = { el: null, focus: null };
+    this.surface.overlays.push(entry);
+    return (el, focus = null) => {
+      entry.el = el;
+      entry.focus = focus;
+    };
   }
 
   /** A child context, e.g. with a form scope. */
