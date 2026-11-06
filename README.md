@@ -167,6 +167,12 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   table's own offset (gpui-kit cannot scroll a div from code): wheel, trackpad
   and shift-wheel move it, and there is no scrollbar, which matches upstream's
   hidden one.
+- **EditableTable:** its own grid (upstream styles it apart from Table): column widths
+  follow the browser's auto table layout over each column's declared width, measured
+  in script, so a new table draws once at its declared widths before it settles; it
+  scrolls sideways by its own offset. Number cells edit plain text (no
+  `type="number"`), parsed on save as upstream. In an open select menu Enter picks the
+  highlighted option (upstream loses the pick: React bubbles the Enter to the cell).
 - **Tabs, Accordion, Carousel:** tab lists and carousels scroll by an offset they
   own (wheel, trackpad, chevrons/arrows), with no scrollbar, as upstream hides it.
   Tab triggers are gpui-base's native `Tab`, which hears no keys: no arrow-key roving.
@@ -191,6 +197,13 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   `0..max-min` with values shifted back and rounded to the step's decimals as Radix
   does, and it's only made once `max > min` and `step > 0` (props stream in one by
   one). The value inputs stay left aligned (gpui-base's Input ignores alignment).
+- **Lists and sections:** no transforms, so ListItem's indicator doesn't scale on hover
+  (the fills and colors change). A clickable ListItem takes Tab and shows its hover
+  look while focused, but no keys, as upstream's `role="button"` div. SectionBlock's
+  open chevron is lucide's ChevronDown (gpui can't rotate) and its trigger has no
+  arrow-key roving. OptionCards' `@container` queries read the field's measured
+  width, so a new response draws once in the wide layout; cards have no focus ring
+  or transitions. EntityList's right-aligned text pushes each wrapped line right.
 - **Charts:** gpui has no SVG and no text measurement. Geometry is painted with gpui
   paths, replayed from the same path data upstream emits (d3-shape and react-ui's own
   bar paths); axis text is placed elements with SVG baselines taken from Inter's
@@ -207,10 +220,12 @@ Accordion/AccordionItem, Steps/StepsItem, Carousel, Modal, TextContent,
 MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Image, ImageBlock,
 ImageGallery, Text, BoldText, IconText, ImageText, ImageTextLarge,
 MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
-Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
-Select/SelectItem, DatePicker, Slider, CheckBoxGroup/CheckBoxItem,
-RadioGroup/RadioItem, SwitchGroup/SwitchItem, Chips/ChipItem, Button, Buttons,
-IconButton, BarChart, LineChart, AreaChart, HorizontalBarChart, RadarChart, Series.
+Icon, EntityList, ListBlock/ListItem, Separator, Table/Col, EditableTable, Form,
+FormControl, Label, Input, TextArea, Select/SelectItem, DatePicker, Slider,
+CheckBoxGroup/CheckBoxItem, RadioGroup/RadioItem, SwitchGroup/SwitchItem,
+Chips/ChipItem, OptionCards/OptionCard, Button, Buttons, IconButton, BarChart,
+LineChart, AreaChart, HorizontalBarChart, RadarChart, Series; in the chat library
+also FollowUpBlock/FollowUpItem and SectionBlock/SectionItem.
 The rest of OpenUI's ~80 components are being ported. Built against herdr-app 0.1.13
 (gpui-shell 0.7.1), OpenUI lang-core 1.1.0, Inter 4.1, lucide 0.562.0, and at
 upstream's lockfile versions date-fns 4.4.0, react-day-picker 9.14.0, d3-scale

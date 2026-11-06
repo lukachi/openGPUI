@@ -516,8 +516,16 @@ function plainText(nodes: (RootContent | ElementContent)[]): string | null {
   return out;
 }
 
-/** react-ui InlineMarkdownRenderer: markdown inside a line of text that sets the font and color. */
-export function markdownInline(ctx: RenderContext, part: string, text: string, root: { font: TextStyle; color: Color }): Element {
+/**
+ * react-ui InlineMarkdownRenderer: markdown inside a line of text that sets the font and color.
+ * `align: "right"` is the parent's `text-align: right` (each wrapped line is pushed to the right edge).
+ */
+export function markdownInline(
+  ctx: RenderContext,
+  part: string,
+  text: string,
+  root: { font: TextStyle; color: Color; align?: "right" },
+): Element {
   const md = new Markdown(ctx, part, "inline", typography(ctx.t, "body", "default"));
   const css = md.css(root.font, root.color);
   const tree: Root = parseMarkdown(text, "inline");
@@ -527,5 +535,11 @@ export function markdownInline(ctx: RenderContext, part: string, text: string, r
   if (plain !== null) {
     return textStyle(div().min_w_0().max_w_full().overflow_hidden().whitespace_nowrap().text_ellipsis().text_color(root.color), root.font).child(plain);
   }
-  return div().flex().flex_row().flex_wrap().items_baseline().children(md.words(md.pieces(tree.children as ElementContent[], css, []), false));
+  return div()
+    .flex()
+    .flex_row()
+    .flex_wrap()
+    .items_baseline()
+    .when(root.align === "right", (el) => el.justify_end())
+    .children(md.words(md.pieces(tree.children as ElementContent[], css, []), false));
 }

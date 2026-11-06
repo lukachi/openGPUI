@@ -78,7 +78,7 @@ declare module "openui-card-layout-utils" {
   export function getRowConfiguration(n: number, maxPerRow: number): number[];
 }
 
-// react-ui components/_shared/utils/safeUrl.ts: an image URL that cannot run script, trimmed.
+// react-ui components/_shared/utils/safeUrl.ts: the trimmed URL, or undefined for a script-capable scheme.
 declare module "openui-safe-url" {
   export function safeUrl(url: string | null | undefined): string | undefined;
 }

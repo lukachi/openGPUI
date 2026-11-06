@@ -5,7 +5,7 @@
 // icon-name resolver compiles for real, against the name → SVG file table
 // scripts/assets.ts generates in place of lucide-react's import map.
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import type { BunPlugin } from "bun";
 
 const root = join(import.meta.dir, "..");
@@ -57,6 +57,10 @@ export function upstreamPlugin(): BunPlugin {
       }));
       // The pure selection helpers Chips and OptionCards share (single/multiple normalizing and toggling).
       build.onResolve({ filter: /^openui-selection-utils$/ }, () => ({ path: join(GENUI, "selectionFieldUtils.ts") }));
+      // The URL sink policy every LLM-controlled href goes through (EditableTable's url cells, card images).
+      build.onResolve({ filter: /^openui-safe-url$/ }, () => ({
+        path: join(REACT_UI, "components", "_shared", "utils", "safeUrl.ts"),
+      }));
       // DatePicker's value formatting (plain TypeScript over date-fns), and react-day-picker's
       // React-free modules (its export map only offers the React entry): `openui-rdp/<path under dist/esm>`.
       build.onResolve({ filter: /^openui-datepicker-helpers$/ }, () => ({
@@ -73,14 +77,11 @@ export function upstreamPlugin(): BunPlugin {
         return { path };
       });
       build.onResolve({ filter: /^openui-genui-helpers$/ }, () => ({ path: join(GENUI, "helpers.ts") }));
-      // The card blocks' pure helpers: item-context actions (genui-lib/cardActionUtils.ts), the grid's
-      // row split (components/_shared/cards/smallCardBlockUtils.ts) and the image URL check (safeUrl.ts).
+      // The card blocks' pure helpers: item-context actions (genui-lib/cardActionUtils.ts) and the grid's
+      // row split (components/_shared/cards/smallCardBlockUtils.ts).
       build.onResolve({ filter: /^openui-card-action-utils$/ }, () => ({ path: join(GENUI, "cardActionUtils.ts") }));
       build.onResolve({ filter: /^openui-card-layout-utils$/ }, () => ({
         path: join(REACT_UI, "components", "_shared", "cards", "smallCardBlockUtils.ts"),
-      }));
-      build.onResolve({ filter: /^openui-safe-url$/ }, () => ({
-        path: join(REACT_UI, "components", "_shared", "utils", "safeUrl.ts"),
       }));
 
       // micromark decodes character references through the DOM in browser builds;
@@ -127,13 +128,20 @@ export function upstreamPlugin(): BunPlugin {
         return { path: target, namespace: "opengpui-stub" };
       });
 
-      // A stubbed directory that holds a schema module keeps that module's real exports.
+      // A stubbed directory that holds a schema module keeps that module's real exports; so does
+      // components/Sources, whose `CardSourceSchema` (in SourceContext.tsx) the chat library's Card
+      // takes as `z.array(CardSourceSchema)` at load, where the stub would be undefined.
       // (Bun does not hand pluginData to onLoad, so the schema is looked up here.)
       build.onLoad({ filter: /.*/, namespace: "opengpui-stub" }, (args) => {
         const stubPath = JSON.stringify(join(SHIM, "stub.cjs"));
-        const schema = args.path.startsWith("/")
-          ? [join(args.path, "schema.ts"), join(args.path, "schema.tsx")].find(existsSync)
-          : undefined;
+        const candidates = args.path.startsWith("/")
+          ? [
+              join(args.path, "schema.ts"),
+              join(args.path, "schema.tsx"),
+              ...(basename(args.path) === "Sources" ? [join(args.path, "SourceContext.tsx")] : []),
+            ]
+          : [];
+        const schema = candidates.find(existsSync);
         const contents = schema
           ? `const stub = require(${stubPath});
              const real = require(${JSON.stringify(schema)});
