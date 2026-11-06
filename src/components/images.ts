@@ -345,7 +345,8 @@ export const ImageGallery: Component = {
             .absolute()
             .bottom(5)
             .right(5)
-            .child(button(ctx, { id: ctx.id("show-all"), label: "Show All", variant: "primary", size: "small", onClick: (cx) => open(local.selected, cx) }))
+            // react-ui's Button never stops the click: it goes on to whatever surrounds the gallery.
+            .child(button(ctx, { id: ctx.id("show-all"), label: "Show All", variant: "primary", size: "small", bubble: true, onClick: (cx) => open(local.selected, cx) }))
         : null;
     // .openui-gallery: full width, radius m, clips; the grid is at most 376px tall.
     return div()

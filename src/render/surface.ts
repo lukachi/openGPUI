@@ -51,6 +51,13 @@ export interface RetainedEntry<S, M> {
 
 interface Scope {
   formName?: string;
+  /**
+   * How the card blocks (components/cards) restyle the text of the components they
+   * hold, as their scss does for descendants: `ellipsis` keeps a plain line on one row
+   * ending in "…", `end` right-aligns a text block, `composite` is CompositeCardBlock's
+   * inline markdown override. Inherited by every child context.
+   */
+  cardText?: { ellipsis?: boolean; end?: boolean; composite?: boolean };
 }
 
 /** A place in the overlay stack, reserved by RenderContext.overlay(). */

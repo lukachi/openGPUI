@@ -302,8 +302,15 @@ class Markdown {
       switch (tag) {
         case "strong":
         case "b":
-          // `strong`: body heavy, neutral primary; its font shorthand resets font-style.
-          this.pieces(node.children, { ...css, font: typography(t, "body", "heavy"), color: css.quote ? css.color : t.textNeutralPrimary, italic: false }, out);
+          // `strong`: body heavy, neutral primary; its font shorthand resets font-style. Inside a
+          // CompositeCardBlock (compositeCardBlock.scss) `font: inherit` keeps the slot's font at the medium weight.
+          this.pieces(
+            node.children,
+            this.ctx.scope.cardText?.composite
+              ? { ...css, font: restyle(t, css.font, { weight: typography(t, "body", "heavy").weight }), color: css.quote ? css.color : t.textNeutralPrimary }
+              : { ...css, font: typography(t, "body", "heavy"), color: css.quote ? css.color : t.textNeutralPrimary, italic: false },
+            out,
+          );
           break;
         case "em":
         case "i":
@@ -360,6 +367,7 @@ class Markdown {
   /** .openui-markdown-renderer-code: a bordered sunk chip in body link type. */
   private inlineCode(text: string, css: Css): Element {
     const t = this.t;
+    const composite = !!this.ctx.scope.cardText?.composite;
     let el = textStyle(
       div()
         .flex_none()
@@ -372,8 +380,10 @@ class Markdown {
         .border_1()
         .border_color(t.borderDefault)
         .text_color(css.quote ? css.color : t.textNeutralPrimary),
-      this.body,
+      // compositeCardBlock.scss: code-sm typography, line-height 1, inside a CompositeCardBlock.
+      composite ? typography(t, "code", "small") : this.body,
     ).child(text.replace(/\s+/g, " "));
+    if (composite) el = el.line_height(1);
     if (css.lineHeight) el = el.line_height(css.lineHeight);
     if (css.quote && css.italic) el = el.italic();
     return el;
@@ -492,6 +502,20 @@ export function markdownBlock(
   return textStyle(div().w_full().flex().flex_col().text_color(css.color), body).children(inner.els);
 }
 
+/** The text of nodes that are only text (inside a paragraph, which InlineMarkdownRenderer unwraps), else null. */
+function plainText(nodes: (RootContent | ElementContent)[]): string | null {
+  let out = "";
+  for (const n of nodes) {
+    if (n.type === "text") out += n.value;
+    else if (n.type === "element" && n.tagName === "p") {
+      const inner = plainText(n.children);
+      if (inner === null) return null;
+      out += inner;
+    } else return null;
+  }
+  return out;
+}
+
 /**
  * react-ui InlineMarkdownRenderer: markdown inside a line of text that sets the font and color.
  * `align: "right"` is the parent's `text-align: right` (each wrapped line is pushed to the right edge).
@@ -505,6 +529,13 @@ export function markdownInline(
   const md = new Markdown(ctx, part, "inline", typography(ctx.t, "body", "default"));
   const css = md.css(root.font, root.color);
   const tree: Root = parseMarkdown(text, "inline");
+  // A card's clipped slot (ctx.scope.cardText.ellipsis: SnippetCardBlock) is one nowrap line ending in "…".
+  // gpui can only ellipsize a single run of text, so that holds for a plain string; formatted text wraps.
+  const plain = ctx.scope.cardText?.ellipsis ? plainText(tree.children) : null;
+  if (plain !== null) {
+    // white-space: nowrap folds a soft line break ("\n") into a space.
+    return textStyle(div().min_w_0().max_w_full().overflow_hidden().whitespace_nowrap().text_ellipsis().text_color(root.color), root.font).child(plain.replace(/\s+/g, " "));
+  }
   return div()
     .flex()
     .flex_row()

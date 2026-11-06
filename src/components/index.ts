@@ -4,6 +4,18 @@ import type { Components } from "../render/surface.ts";
 import { Button, Buttons } from "./buttons.ts";
 import { Carousel } from "./carousel.ts";
 import {
+  CompositeCardBlock,
+  CompositeCardItem,
+  ContextCardBlock,
+  ContextCardItem,
+  OverviewCardBlock,
+  OverviewCardItem,
+  SnippetCardBlock,
+  SnippetCardItem,
+  VisualCardBlock,
+  VisualCardItem,
+} from "./cards/index.ts";
+import {
   AreaChart,
   BarChart,
   HorizontalBarChart,
@@ -67,6 +79,17 @@ export const components: Components = {
   ImageGallery,
   CodeBlock,
   InlineHeader,
+  // Cards
+  SnippetCardBlock,
+  SnippetCardItem,
+  OverviewCardBlock,
+  OverviewCardItem,
+  ContextCardBlock,
+  ContextCardItem,
+  CompositeCardBlock,
+  CompositeCardItem,
+  VisualCardBlock,
+  VisualCardItem,
   // Card building blocks
   Text,
   BoldText,

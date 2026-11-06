@@ -57,7 +57,7 @@ export function upstreamPlugin(): BunPlugin {
       }));
       // The pure selection helpers Chips and OptionCards share (single/multiple normalizing and toggling).
       build.onResolve({ filter: /^openui-selection-utils$/ }, () => ({ path: join(GENUI, "selectionFieldUtils.ts") }));
-      // The URL sink policy every LLM-controlled href goes through (EditableTable's url cells).
+      // The URL sink policy every LLM-controlled href goes through (EditableTable's url cells, card images).
       build.onResolve({ filter: /^openui-safe-url$/ }, () => ({
         path: join(REACT_UI, "components", "_shared", "utils", "safeUrl.ts"),
       }));
@@ -77,6 +77,12 @@ export function upstreamPlugin(): BunPlugin {
         return { path };
       });
       build.onResolve({ filter: /^openui-genui-helpers$/ }, () => ({ path: join(GENUI, "helpers.ts") }));
+      // The card blocks' pure helpers: item-context actions (genui-lib/cardActionUtils.ts) and the grid's
+      // row split (components/_shared/cards/smallCardBlockUtils.ts).
+      build.onResolve({ filter: /^openui-card-action-utils$/ }, () => ({ path: join(GENUI, "cardActionUtils.ts") }));
+      build.onResolve({ filter: /^openui-card-layout-utils$/ }, () => ({
+        path: join(REACT_UI, "components", "_shared", "cards", "smallCardBlockUtils.ts"),
+      }));
 
       // micromark decodes character references through the DOM in browser builds;
       // gpui-shell has no DOM, so take the package's table-based build.

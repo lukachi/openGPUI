@@ -255,6 +255,7 @@ export const IconButton: Component = {
       size: ICON_BUTTON_SIZES.find((s) => s === props.size) ?? "medium",
       shape: props.shape === "circle" ? "circle" : "square",
       disabled: ctx.streaming,
+      bubble: true,
       onClick: () => {
         void ctx.trigger(label, props.action);
       },

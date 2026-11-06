@@ -65,6 +65,19 @@ declare module "openui-datepicker-helpers" {
   export function formatDateRange(range: { from?: Date; to?: Date } | undefined): string;
 }
 
+// react-ui genui-lib/cardActionUtils.ts: a card block's `action` with the clicked item's context merged in.
+declare module "openui-card-action-utils" {
+  import type { ActionPlan } from "@openuidev/lang-core";
+
+  export type LegacyCardAction = { type: string; params: Record<string, unknown> };
+  export function withItemContext(action: unknown, itemContext: Record<string, unknown>): ActionPlan | LegacyCardAction;
+}
+
+// react-ui components/_shared/cards/smallCardBlockUtils.ts: the grid's rows (`getRowConfiguration`).
+declare module "openui-card-layout-utils" {
+  export function getRowConfiguration(n: number, maxPerRow: number): number[];
+}
+
 // react-ui components/_shared/utils/safeUrl.ts: the trimmed URL, or undefined for a script-capable scheme.
 declare module "openui-safe-url" {
   export function safeUrl(url: string | null | undefined): string | undefined;
