@@ -108,7 +108,7 @@ try {
     cpSync(from, carrier, { recursive: true });
   }
 
-  // Appearance first: it is read when the window starts and when settings change.
+  // Appearance is applied reliably only at start, so a change restarts the window.
   const settingsPath = join(home, "settings.json");
   const settings = existsSync(settingsPath) ? JSON.parse(readFileSync(settingsPath, "utf8")) : {};
   const appearanceChanged = settings.appearance !== mode;
@@ -118,12 +118,10 @@ try {
 
   const countPath = join(home, "opengpui-previews");
   const count = existsSync(countPath) ? Number(readFileSync(countPath, "utf8")) || 0 : 0;
-  if (status() && count >= RESTART_EVERY) await stopWindow();
+  if (status() && (count >= RESTART_EVERY || appearanceChanged)) await stopWindow();
   if (!status()) {
     await startWindow();
     writeFileSync(countPath, "0");
-  } else if (appearanceChanged) {
-    await Bun.sleep(500);
   }
 
   // Install this build as its own mod, asset paths rewritten as Herdr's mod.clone does.
