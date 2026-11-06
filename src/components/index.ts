@@ -8,6 +8,7 @@ import { CheckBoxGroup, CheckBoxItem, ChipItem, Chips, RadioGroup, RadioItem, Sw
 import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
 import { DatePicker } from "./datepicker.ts";
 import { Accordion, AccordionItem, Steps, StepsItem, TabItem, Tabs } from "./disclosure.ts";
+import { EditableTable } from "./editable-table.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
 import { Image, ImageBlock, ImageGallery, ImageText, ImageTextLarge } from "./images.ts";
 import { Card, CardHeader, Separator, Stack } from "./layout.ts";
@@ -65,6 +66,7 @@ export const components: Components = {
   // Tables
   Table,
   Col,
+  EditableTable,
   // Charts (2D)
   BarChart,
   LineChart,

@@ -64,3 +64,8 @@ declare module "openui-datepicker-helpers" {
   export function formatSingleDate(date: Date | undefined): string;
   export function formatDateRange(range: { from?: Date; to?: Date } | undefined): string;
 }
+
+// react-ui components/_shared/utils/safeUrl.ts: the trimmed URL, or undefined for a script-capable scheme.
+declare module "openui-safe-url" {
+  export function safeUrl(url: string | null | undefined): string | undefined;
+}

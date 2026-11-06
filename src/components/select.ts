@@ -65,6 +65,14 @@ export interface SelectControl {
   /** A fixed trigger box (SliderBlock: `button { width; height: 36px }`). */
   width?: number;
   height?: number;
+  /** Controlled open state (Radix `open`): the owner decides, told through `onOpenChange`. */
+  open?: boolean;
+  /** Radix `onOpenChange`; with `open`, every open or close request goes here. */
+  onOpenChange?(open: boolean, cx: Context): void;
+  /** A text size the trigger's own size doesn't give (EditableTable: body small on an md trigger). */
+  triggerText?: "small";
+  /** Draw the trigger alone: no native state and no menu (EditableTable's cells that aren't selected). */
+  inert?: boolean;
 }
 
 interface Native {
@@ -128,28 +136,41 @@ export function selectControl(o: SelectControl): Element {
   // Radix: data-placeholder while the value is empty.
   const placeholder = o.value === "";
 
-  const body = typography(t, "body", size === "sm" ? "small" : "default");
+  const body = typography(t, "body", size === "sm" || o.triggerText === "small" ? "small" : "default");
   const box = triggerBox(t, size);
-  const open = ui.open && !o.disabled;
-  const native = ctx.retained<Native, object>(`select:${key}`, {
-    kind: "select",
-    meta: {},
-    create(_entry, cx) {
-      const trigger = cx.focus_handle();
-      const list = cx.focus_handle();
-      const scroll = VirtualListScrollHandle.new();
-      return {
-        trigger,
-        list,
-        scroll,
-        release() {
-          trigger.release();
-          list.release();
-          scroll.release();
+  let focusList = false;
+  if (o.open !== undefined && o.open !== ui.open) {
+    // Controlled: opened from outside starts on the selected item, as setOpen does, and the list
+    // takes the keyboard (base moves it only when it opens the list itself).
+    ui.open = o.open;
+    if (o.open) {
+      ui.hi = selected >= 0 ? selected : 0;
+      ui.scrollTo = ui.hi;
+      focusList = true;
+    }
+  }
+  const open = ui.open && !o.disabled && !o.inert;
+  const native = o.inert
+    ? null
+    : ctx.retained<Native, object>(`select:${key}`, {
+        kind: "select",
+        meta: {},
+        create(_entry, cx) {
+          const trigger = cx.focus_handle();
+          const list = cx.focus_handle();
+          const scroll = VirtualListScrollHandle.new();
+          return {
+            trigger,
+            list,
+            scroll,
+            release() {
+              trigger.release();
+              list.release();
+              scroll.release();
+            },
+          };
         },
-      };
-    },
-  });
+      });
 
   // ── The trigger ──
   let trigger = textStyle(
@@ -187,10 +208,16 @@ export function selectControl(o: SelectControl): Element {
     .cursor_pointer()
     .hover((s) => s.bg(t.highlight).border_color(t.borderInteractive));
   if (!native) return trigger;
+  if (focusList) ctx.after(() => native.list.focus());
 
   // ── Behavior ──
   const setOpen = (next: boolean, cx: Context) => {
     if (ui.open === next) return;
+    if (o.onOpenChange) {
+      o.onOpenChange(next, cx);
+      cx.notify();
+      if (o.open !== undefined) return;
+    }
     ui.open = next;
     if (next) {
       ui.hi = selected >= 0 ? selected : 0;
@@ -202,7 +229,9 @@ export function selectControl(o: SelectControl): Element {
     const item = items[index];
     if (!item) return;
     o.onChange(item.value, cx);
-    ui.open = false;
+    // Radix calls onOpenChange(false) after a pick; a controlled owner hears it.
+    if (o.open !== undefined) setOpen(false, cx);
+    else ui.open = false;
     native.trigger.focus();
     cx.notify();
   };
@@ -276,80 +305,83 @@ export function selectControl(o: SelectControl): Element {
     ctx.after(() => native.scroll.scroll_to_item(target, "center"));
   }
 
-  const list = v_virtual_list(
-    `${key}:list`,
-    rows,
-    MENU_ROW_HEIGHT,
-    (i) => String(i),
-    (range) => {
-      ui.start = range.start;
-      const out: Element[] = [];
-      for (let i = range.start; i < range.end; i++) {
-        const item = items[i]!;
-        const isSelected = i === selected;
-        // components/Select SelectItem: label in item-text (secondary), the check on the trailing edge.
-        const row = textStyle(
-          menuRow(t, div().w_full().justify_between().relative().pr(t.spaceXl), {
-            highlighted: isSelected || i === ui.hi,
-            first: i === 0,
-            last: i === rows - 1,
-          }),
-          itemText,
-        )
-          .cursor_default()
-          .hover((s) => s.bg(t.highlight))
-          .child(div().flex_1().whitespace_nowrap().text_color(t.textNeutralSecondary).child(item.label));
-        out.push(
-          isSelected
-            ? row.child(div().absolute().right(6).top(9).child(ctx.icon("Check", { size: 16 })!))
-            : row,
-        );
-      }
-      return out;
-    },
-  )
-    .track_scroll(native.scroll)
-    .when(rows > 0, (e) => e.with_item_to_measure_index(longest))
-    .h(listHeight)
-    .on_item_click((k, cx) => choose(Number(k), cx));
+  // Built only while open: a closed Radix Select mounts no content either.
+  const buildMenu = (): Element => {
+    const list = v_virtual_list(
+      `${key}:list`,
+      rows,
+      MENU_ROW_HEIGHT,
+      (i) => String(i),
+      (range) => {
+        ui.start = range.start;
+        const out: Element[] = [];
+        for (let i = range.start; i < range.end; i++) {
+          const item = items[i]!;
+          const isSelected = i === selected;
+          // components/Select SelectItem: label in item-text (secondary), the check on the trailing edge.
+          const row = textStyle(
+            menuRow(t, div().w_full().justify_between().relative().pr(t.spaceXl), {
+              highlighted: isSelected || i === ui.hi,
+              first: i === 0,
+              last: i === rows - 1,
+            }),
+            itemText,
+          )
+            .cursor_default()
+            .hover((s) => s.bg(t.highlight))
+            .child(div().flex_1().whitespace_nowrap().text_color(t.textNeutralSecondary).child(item.label));
+          out.push(
+            isSelected
+              ? row.child(div().absolute().right(6).top(9).child(ctx.icon("Check", { size: 16 })!))
+              : row,
+          );
+        }
+        return out;
+      },
+    )
+      .track_scroll(native.scroll)
+      .when(rows > 0, (e) => e.with_item_to_measure_index(longest))
+      .h(listHeight)
+      .on_item_click((k, cx) => choose(Number(k), cx));
 
-  const menu = menuSurface(t, div().id(`${key}:menu`))
-    .min_w(Math.max(o.width ?? 0, ui.triggerWidth))
-    .mt(SIDE_OFFSET)
-    .track_focus(native.list)
-    .on_mouse_down_out((_e, cx) => {
-      // The trigger's own press toggles through its click; anything else is outside.
-      if (!ui.overTrigger) setOpen(false, cx);
-    })
-    .on_key_down((e, cx) => {
-      if (!rows) return;
-      const move = (index: number) => {
-        ui.hi = Math.max(0, Math.min(rows - 1, index));
-        reveal(ui.hi, visible);
-        cx.stop_propagation();
-        cx.notify();
-      };
-      switch (e.key) {
-        case "down":
-          return move(ui.hi + 1);
-        case "up":
-          return move(ui.hi - 1);
-        case "home":
-          return move(0);
-        case "end":
-          return move(rows - 1);
-        case "space":
-          // Radix: Space selects, unless it continues a typeahead search.
-          if (!typing()) {
-            cx.stop_propagation();
-            choose(ui.hi, cx);
-            return;
-          }
-      }
-      const match = typeahead(e, ui.hi);
-      if (match >= 0) move(match);
-    })
-    .child(list);
+    return menuSurface(t, div().id(`${key}:menu`))
+      .min_w(Math.max(o.width ?? 0, ui.triggerWidth))
+      .mt(SIDE_OFFSET)
+      .track_focus(native.list)
+      .on_mouse_down_out((_e, cx) => {
+        // The trigger's own press toggles through its click; anything else is outside.
+        if (!ui.overTrigger) setOpen(false, cx);
+      })
+      .on_key_down((e, cx) => {
+        if (!rows) return;
+        const move = (index: number) => {
+          ui.hi = Math.max(0, Math.min(rows - 1, index));
+          reveal(ui.hi, visible);
+          cx.stop_propagation();
+          cx.notify();
+        };
+        switch (e.key) {
+          case "down":
+            return move(ui.hi + 1);
+          case "up":
+            return move(ui.hi - 1);
+          case "home":
+            return move(0);
+          case "end":
+            return move(rows - 1);
+          case "space":
+            // Radix: Space selects, unless it continues a typeahead search.
+            if (!typing()) {
+              cx.stop_propagation();
+              choose(ui.hi, cx);
+              return;
+            }
+        }
+        const match = typeahead(e, ui.hi);
+        if (match >= 0) move(match);
+      })
+      .child(list);
+  };
 
   return GSelect.new(key)
     .flex()
@@ -359,7 +391,7 @@ export function selectControl(o: SelectControl): Element {
     .content_focus_handle(native.list)
     .on_open_change((next, cx) => setOpen(next, cx))
     .on_confirm((_e, cx) => choose(ui.hi, cx))
-    .child(Popup.new(`${key}:popup`, triggerEl).anchor(MENU_ANCHOR).when(open, (el) => el.content(menu)));
+    .child(Popup.new(`${key}:popup`, triggerEl).anchor(MENU_ANCHOR).when(open, (el) => el.content(buildMenu())));
 }
 
 /** genui Select: `name`, `items` (SelectItem records), `placeholder`, `rules`, `value`, `size`. */

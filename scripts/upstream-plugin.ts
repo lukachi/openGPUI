@@ -57,6 +57,10 @@ export function upstreamPlugin(): BunPlugin {
       }));
       // The pure selection helpers Chips and OptionCards share (single/multiple normalizing and toggling).
       build.onResolve({ filter: /^openui-selection-utils$/ }, () => ({ path: join(GENUI, "selectionFieldUtils.ts") }));
+      // The URL sink policy every LLM-controlled href goes through (EditableTable's url cells).
+      build.onResolve({ filter: /^openui-safe-url$/ }, () => ({
+        path: join(REACT_UI, "components", "_shared", "utils", "safeUrl.ts"),
+      }));
       // DatePicker's value formatting (plain TypeScript over date-fns), and react-day-picker's
       // React-free modules (its export map only offers the React entry): `openui-rdp/<path under dist/esm>`.
       build.onResolve({ filter: /^openui-datepicker-helpers$/ }, () => ({
