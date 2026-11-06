@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "sync": "bun scripts/sync-upstream.ts && bun scripts/sync-types.ts",
+    "sync": "bun scripts/sync-upstream.ts && bun scripts/assets.ts && bun scripts/sync-types.ts",
     "typecheck": "tsc -p . && tsc -p scripts",
     "build": "bun scripts/build.ts",
     "test": "bun scripts/build.ts && bun test",

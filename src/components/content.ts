@@ -1,4 +1,4 @@
-// Content: TextContent, MarkDownRenderer, Text, BoldText, Label, Callout, Tag.
+// Content: TextContent, MarkDownRenderer, Text, BoldText, Label, Callout, Tag, Icon.
 //
 // Ported from react-ui at the pinned commit:
 //   TextContent       genui-lib/TextContent/index.tsx, components/TextContentWrapper/*
@@ -7,13 +7,14 @@
 //   Label             genui-lib/Label/index.tsx, components/Label/*
 //   Callout           genui-lib/Callout/index.tsx, components/Callout/*
 //   Tag               genui-lib/Tag/index.tsx, components/Tag/*
+//   Icon              genui-lib/Icon/index.tsx, components/_shared/icons/IconWrapper.tsx
 //
 // Markdown goes through gpui's TextView, which has its own element styles:
 // upstream's per-element markdown CSS (heading sizes, list spacing, code chips)
 // is not reproduced. Text/BoldText lines render as plain text, not inline markdown.
 import { TextView } from "gpui-base";
 import { div, type Color, type Element } from "gpui-kit";
-import type { Component, RenderContext } from "../render/surface.ts";
+import { optional, type Component, type RenderContext } from "../render/surface.ts";
 import { textStyle, typography, type TextStyle, type Tokens, type TypographyGroup } from "../render/tokens.ts";
 
 /** Upstream markdown block: body default in neutral primary around a TextView. */
@@ -281,7 +282,21 @@ export const Tag: Component = {
     if (size === "sm") el = el.py(t.space2xs).px(t.spaceXs).rounded(t.radiusS).h(24).gap(t.space2xs);
     else if (size === "md") el = el.py(t.spaceXs).px(t.spaceS).rounded(t.radiusS).h(32).gap(t.spaceXs);
     else el = el.py(t.spaceS).px(t.spaceM).rounded(t.radiusM).h(36).gap(t.spaceXs);
-    // Icons (lucide) are not drawn yet.
-    return el.child(div().overflow_hidden().whitespace_nowrap().text_ellipsis().child(String(props.text ?? "")));
+    // `icon` is an Icon element: its name/category go through upstream's lucide lookup.
+    // .openui-tag-icon svg: 14px at stroke-width 2.5.
+    const icon = props.icon as { props?: { name?: unknown; category?: unknown } } | undefined;
+    const name = typeof icon?.props?.name === "string" ? icon.props.name : "";
+    const category = typeof icon?.props?.category === "string" ? icon.props.category : undefined;
+    return el
+      .children(name !== "" ? optional(ctx.icon(name, { category, size: 14, stroke: 2.5 })) : [])
+      .child(div().overflow_hidden().whitespace_nowrap().text_ellipsis().child(String(props.text ?? "")));
+  },
+};
+
+export const Icon: Component = {
+  render(props, ctx) {
+    // IconRenderer: nothing without a name; IconWrapper draws it 14px in the text color.
+    if (typeof props.name !== "string" || props.name === "") return null;
+    return ctx.icon(props.name, { category: typeof props.category === "string" ? props.category : undefined });
   },
 };

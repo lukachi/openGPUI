@@ -1,7 +1,9 @@
 // Install the built mod into Herdr and put the `opengpui` CLI on PATH.
 //   bun run build && bun scripts/install-herdr.ts
 // Herdr hot-reloads the mod in place; open surfaces pick up the new build.
-import { copyFileSync, existsSync, lstatSync, mkdirSync, symlinkSync, unlinkSync } from "node:fs";
+// Herdr loads a mod's fonts at start and on a look change, so new fonts are
+// followed by a switch to the layout already showing.
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -12,8 +14,20 @@ const to = join(herdrHome, "mods", "opengpui");
 
 if (!existsSync(join(from, "main.js"))) throw new Error("herdr/mods/opengpui/main.js is missing: bun run build first");
 mkdirSync(to, { recursive: true });
-for (const file of ["mod.json", "main.js"]) copyFileSync(join(from, file), join(to, file));
+for (const file of ["mod.json", "main.js"]) cpSync(join(from, file), join(to, file));
+const fontsChanged = !sameFiles(join(from, "fonts"), join(to, "fonts"));
+for (const dir of ["fonts", "icons"]) {
+  rmSync(join(to, dir), { recursive: true, force: true });
+  cpSync(join(from, dir), join(to, dir), { recursive: true });
+}
 console.log(`mod      -> ${to}`);
+
+if (fontsChanged) {
+  const shared = join(herdrHome, "shared.json");
+  const layout = existsSync(shared) ? (JSON.parse(readFileSync(shared, "utf8")).layout ?? "main") : "main";
+  const proc = Bun.spawnSync(["herdr-app", "do", "layout.switch", JSON.stringify({ name: layout })], { stdout: "ignore", stderr: "pipe" });
+  console.log(proc.exitCode === 0 ? `fonts    loaded (look of "${layout}" reloaded)` : `fonts    copied; restart Herdr to load them`);
+}
 
 const binDir = process.env.OPENGPUI_BIN_DIR ?? join(homedir(), ".local", "bin");
 const link = join(binDir, "opengpui");
@@ -21,6 +35,13 @@ mkdirSync(binDir, { recursive: true });
 if (existsSync(link) || isSymlink(link)) unlinkSync(link);
 symlinkSync(join(root, "bin", "opengpui"), link);
 console.log(`opengpui -> ${link}`);
+
+function sameFiles(a: string, b: string): boolean {
+  if (!existsSync(b)) return false;
+  const names = readdirSync(a).sort();
+  if (names.join("\n") !== readdirSync(b).sort().join("\n")) return false;
+  return names.every((name) => readFileSync(join(a, name)).equals(readFileSync(join(b, name))));
+}
 
 function isSymlink(path: string): boolean {
   try {

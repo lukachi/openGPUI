@@ -6,9 +6,11 @@
 //           text tints and overlays are the theme's foreground at upstream's
 //           alphas; semantic colors come from the terminal palette. Spacing,
 //           radii, typography and shadows stay OpenUI's.
+// Both draw text in the Inter cuts the mod ships (mods/opengpui/fonts) once
+// Herdr has loaded them; until then, in Herdr's UI font.
 import type { Color } from "gpui-kit";
-import { settings, theme } from "herdr";
-import { alpha, resolveTokens, type Tokens } from "../../src/index.ts";
+import { fonts, settings, theme } from "herdr";
+import { alpha, openuiFonts, resolveTokens, type Tokens } from "../../src/index.ts";
 
 export type Look = "herdr" | "openui";
 
@@ -16,12 +18,14 @@ const isHex = (v: unknown): v is Color => typeof v === "string" && v.startsWith(
 
 export function herdrTokens(look: Look): Tokens {
   const mode = settings().dark === false ? "light" : "dark";
-  if (look === "openui") return resolveTokens(mode);
+  const installed = new Set(fonts());
+  const base = { fonts: openuiFonts((family) => installed.has(family)) };
+  if (look === "openui") return resolveTokens(mode, base);
   const h = theme();
   const pick = (...names: string[]): Color | undefined => names.map((n) => h[n]).find(isHex);
   const fg = pick("foreground");
   const bg = pick("background");
-  if (!fg || !bg) return resolveTokens(mode);
+  if (!fg || !bg) return resolveTokens(mode, base);
   const dark = mode === "dark";
   const brand = pick("accent") ?? fg;
   const info = pick("ansi4") ?? brand;
@@ -31,6 +35,7 @@ export function herdrTokens(look: Look): Tokens {
   const purple = pick("ansi5") ?? brand;
   const pink = pick("ansi13", "ansi5") ?? brand;
   return resolveTokens(mode, {
+    ...base,
     // Surface
     background: bg,
     foreground: pick("surface", "raised") ?? bg,

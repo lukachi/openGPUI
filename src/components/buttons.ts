@@ -6,7 +6,7 @@
 //   IconButton  components/IconButton/{IconButton.tsx,iconButton.scss} (not an OpenUI component itself)
 import { ACTION_STEPS } from "@openuidev/lang-core";
 import { div, type Color, type Context, type Element } from "gpui-kit";
-import type { Component, RenderContext } from "../render/surface.ts";
+import { optional, type Component, type RenderContext } from "../render/surface.ts";
 import { shadow, textStyle, TRANSPARENT, typography, type ShadowPreset, type Tokens } from "../render/tokens.ts";
 
 export type ButtonVariant = "primary" | "secondary" | "tertiary";
@@ -171,13 +171,10 @@ const ICON_BUTTON: Record<IconButtonSize, { box: number; icon: number; radius: (
   large: { box: 40, icon: 16, radius: (t) => t.radiusL },
 };
 
-/**
- * components/IconButton, square shape. `glyph` stands in for the lucide icon
- * upstream draws (icons are not drawn yet).
- */
+/** components/IconButton, square shape: a lucide `icon` sized by the button (.openui-icon-button-icon). */
 export function iconButton(
   ctx: RenderContext,
-  o: { id: string; glyph: string; variant?: ButtonVariant; size?: IconButtonSize; disabled?: boolean; onClick: (cx: Context) => void },
+  o: { id: string; icon: string; variant?: ButtonVariant; size?: IconButtonSize; disabled?: boolean; onClick: (cx: Context) => void },
 ): Element {
   const t = ctx.t;
   const size = ICON_BUTTON[o.size ?? "medium"];
@@ -190,10 +187,8 @@ export function iconButton(
     .border_1()
     .w(size.box)
     .h(size.box)
-    .rounded(size.radius(t))
-    .text_size(size.icon)
-    .line_height(1);
-  return paint(el, look(t, o.variant ?? "primary", false), !!o.disabled, o.onClick).child(o.glyph);
+    .rounded(size.radius(t));
+  return paint(el, look(t, o.variant ?? "primary", false), !!o.disabled, o.onClick).children(optional(ctx.icon(o.icon, { size: size.icon })));
 }
 
 /** genui Button: primary buttons validate their form first when the action leaves the UI. */

@@ -90,7 +90,13 @@ export default class OpenGpui extends View {
       onAction: (event) => this.onAction(event),
       onError: (errors) => this.onErrors(errors),
     });
-    this.surface = new Surface({ session: this.session, components, tokens: herdrTokens(this.p.look ?? "herdr") });
+    this.surface = new Surface({
+      session: this.session,
+      components,
+      tokens: herdrTokens(this.p.look ?? "herdr"),
+      // Asset paths are relative to the Herdr home; scripts/build.ts copies the SVGs here.
+      icons: (file) => `mods/opengpui/icons/${file}.svg`,
+    });
 
     if (!this.srcPath) {
       this.session.setResponse(DEMO);

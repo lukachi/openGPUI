@@ -11,6 +11,7 @@ export { button, iconButton, type ButtonOptions, type ButtonSize, type ButtonVar
 export { flexBox } from "./components/layout.ts";
 export { libraries, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
 export {
+  optional,
   RenderContext,
   Surface,
   type Component,
@@ -20,6 +21,7 @@ export {
   type RetainedEntry,
   type RetainedSpec,
 } from "./render/surface.ts";
+export { interFace, interFamily, INTER_CUTS, openuiFonts, type Face, type FontResolver } from "./render/fonts.ts";
 export {
   alpha,
   resolveTokens,

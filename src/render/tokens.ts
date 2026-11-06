@@ -7,12 +7,15 @@
 // `t.textNeutralSecondary`, `typography(body, small)` is `typography(t, "body", "small")`.
 //
 // gpui-shell needs plain values: colors become #rrggbbaa, lengths px numbers,
-// typography { size, lineHeight, weight, family }. What gpui cannot express is
-// dropped on purpose (see GPUI_GAPS in README): letter spacing, the Inter
-// "wght" axis, custom box shadows (mapped to gpui's shadow presets).
+// typography { size, lineHeight, weight, families }. Inter's "wght" axis
+// becomes the weight; the optical size and -1% tracking live in the static
+// cuts a host ships (render/fonts.ts) and picks through `Tokens.fonts`. What
+// gpui cannot express is mapped to the nearest it can: custom box shadows
+// become gpui's shadow presets (see README "Where gpui differs").
 import type { Color, Element } from "gpui-kit";
 import { defaultDarkTheme, defaultLightTheme } from "openui-theme";
 import type { ChartPaletteKey, ColorTheme, EffectTheme, LayoutTheme, Theme, TypographyTheme } from "openui-theme-types";
+import type { FontResolver } from "./fonts.ts";
 
 export type Mode = "light" | "dark";
 
@@ -21,9 +24,12 @@ export interface TextStyle {
   size: number;
   /** multiplier of size */
   lineHeight: number;
+  /** CSS weight, or the "wght" axis value where upstream sets one. */
   weight: number;
-  /** First family of the CSS stack; hosts usually keep their own UI font. */
-  family: string;
+  /** The CSS font stack, e.g. ["Inter", "sans-serif"]. */
+  families: readonly string[];
+  /** The gpui family the host resolved the stack to; unset keeps the host's font. */
+  face?: string;
 }
 
 /** gpui's box-shadow presets; OpenUI's shadows map to the nearest. */
@@ -42,7 +48,9 @@ type TypographyValue<K> = K extends
     ? TextStyle
     : number;
 
-export type Tokens = { mode: Mode } & { [K in ColorKey]-?: Color } & { [K in keyof LayoutTheme]-?: number } & {
+export type Tokens = { mode: Mode; fonts?: FontResolver } & { [K in ColorKey]-?: Color } & {
+  [K in keyof LayoutTheme]-?: number;
+} & {
   [K in keyof TypographyTheme]-?: TypographyValue<K>;
 } & { [K in keyof EffectTheme]-?: ShadowPreset };
 
@@ -73,8 +81,8 @@ export function toHex(value: string): Color {
 function toTextStyle(font: string): TextStyle {
   const m = /^(\d+)\s+([\d.]+)px\/([\d.]+)\s+(.+)$/.exec(font.trim());
   if (!m) throw new Error(`not a font shorthand: ${font}`);
-  const family = m[4]!.split(",")[0]!.trim().replace(/^["']|["']$/g, "");
-  return { weight: Number(m[1]), size: Number(m[2]), lineHeight: Number(m[3]), family };
+  const families = m[4]!.split(",").map((f) => f.trim().replace(/^["']|["']$/g, ""));
+  return { weight: Number(m[1]), size: Number(m[2]), lineHeight: Number(m[3]), families };
 }
 
 const SHADOWS: Record<keyof EffectTheme, ShadowPreset> = {
@@ -116,77 +124,92 @@ export function alpha(hex: Color, a: number): Color {
 
 // ── Styles ──
 
-/** react-ui cssUtils `$typography` map: group → variant → token. */
+/**
+ * react-ui cssUtils `$typography` map: group → variant → [token, "wght" axis].
+ * The axis is the theme's Regular or Medium variation; null keeps the
+ * shorthand's fixed weight (headings, code), as in the scss.
+ */
 const TYPOGRAPHY = {
   body: {
-    default: "textBodyDefault",
-    heavy: "textBodyDefaultHeavy",
-    small: "textBodySm",
-    "small-heavy": "textBodySmHeavy",
-    large: "textBodyLg",
-    "large-heavy": "textBodyLgHeavy",
-    link: "textBodyDefault",
-    medium: "textBodyDefault",
+    default: ["textBodyDefault", "regular"],
+    heavy: ["textBodyDefaultHeavy", "medium"],
+    small: ["textBodySm", "regular"],
+    "small-heavy": ["textBodySmHeavy", "medium"],
+    large: ["textBodyLg", "regular"],
+    "large-heavy": ["textBodyLgHeavy", "medium"],
+    link: ["textBodyDefault", "regular"],
+    medium: ["textBodyDefault", "regular"],
   },
   label: {
-    default: "textLabelDefault",
-    heavy: "textLabelDefaultHeavy",
-    large: "textLabelLg",
-    "large-heavy": "textLabelLgHeavy",
-    medium: "textLabelDefault",
-    "medium-heavy": "textLabelDefaultHeavy",
-    small: "textLabelSm",
-    "small-heavy": "textLabelSmHeavy",
-    "extra-small": "textLabelXs",
-    "extra-small-heavy": "textLabelXsHeavy",
-    "2-extra-small": "textLabelXs",
-    "2-extra-small-heavy": "textLabelXsHeavy",
+    default: ["textLabelDefault", "regular"],
+    heavy: ["textLabelDefaultHeavy", "medium"],
+    large: ["textLabelLg", "regular"],
+    "large-heavy": ["textLabelLgHeavy", "medium"],
+    medium: ["textLabelDefault", "regular"],
+    "medium-heavy": ["textLabelDefaultHeavy", "medium"],
+    small: ["textLabelSm", "regular"],
+    "small-heavy": ["textLabelSmHeavy", "medium"],
+    "extra-small": ["textLabelXs", "regular"],
+    "extra-small-heavy": ["textLabelXsHeavy", "medium"],
+    "2-extra-small": ["textLabelXs", "regular"],
+    "2-extra-small-heavy": ["textLabelXsHeavy", "medium"],
   },
   heading: {
-    xl: "textHeadingXl",
-    large: "textHeadingLg",
-    medium: "textHeadingMd",
-    small: "textHeadingSm",
-    "extra-small": "textHeadingXs",
+    xl: ["textHeadingXl", null],
+    large: ["textHeadingLg", null],
+    medium: ["textHeadingMd", null],
+    small: ["textHeadingSm", null],
+    "extra-small": ["textHeadingXs", null],
   },
   number: {
-    large: "textNumbersLg",
-    "large-heavy": "textNumbersLgHeavy",
-    heavy: "textNumbersDefaultHeavy",
-    default: "textNumbersDefault",
-    small: "textNumbersSm",
-    "small-heavy": "textNumbersSmHeavy",
-    "extra-small": "textNumbersXs",
-    "extra-small-heavy": "textNumbersXsHeavy",
-    heading: "textNumbersHeadingLg",
-    "heading-small": "textNumbersHeadingSm",
-    "heading-medium": "textNumbersHeadingMd",
-    title: "textNumbersHeadingLg",
-    "title-medium": "textNumbersHeadingMd",
-    "heading-large": "textNumbersHeadingLg",
-    "heading-xl": "textNumbersHeadingXl",
+    large: ["textNumbersLg", "regular"],
+    "large-heavy": ["textNumbersLgHeavy", "medium"],
+    heavy: ["textNumbersDefaultHeavy", "medium"],
+    default: ["textNumbersDefault", "regular"],
+    small: ["textNumbersSm", "regular"],
+    "small-heavy": ["textNumbersSmHeavy", "medium"],
+    "extra-small": ["textNumbersXs", "regular"],
+    "extra-small-heavy": ["textNumbersXsHeavy", "medium"],
+    heading: ["textNumbersHeadingLg", null],
+    "heading-small": ["textNumbersHeadingSm", null],
+    "heading-medium": ["textNumbersHeadingMd", null],
+    title: ["textNumbersHeadingLg", null],
+    "title-medium": ["textNumbersHeadingMd", null],
+    "heading-large": ["textNumbersHeadingLg", null],
+    "heading-xl": ["textNumbersHeadingXl", null],
   },
   code: {
-    default: "textCodeDefault",
-    heavy: "textCodeDefaultHeavy",
-    small: "textCodeSm",
-    "small-heavy": "textCodeSmHeavy",
+    default: ["textCodeDefault", null],
+    heavy: ["textCodeDefaultHeavy", null],
+    small: ["textCodeSm", null],
+    "small-heavy": ["textCodeSmHeavy", null],
   },
-} as const;
+} as const satisfies Record<string, Record<string, readonly [keyof Tokens, "regular" | "medium" | null]>>;
 
 export type TypographyGroup = keyof typeof TYPOGRAPHY;
 export type TypographyVariant<G extends TypographyGroup> = keyof (typeof TYPOGRAPHY)[G];
 
-/** The text style scss `@include typography(group, variant)` applies. */
-export function typography<G extends TypographyGroup>(t: Tokens, group: G, variant: TypographyVariant<G>): TextStyle {
-  const key = (TYPOGRAPHY[group] as Record<PropertyKey, keyof Tokens>)[variant]!;
-  return t[key] as TextStyle;
+/** `"wght" 440` → 440. */
+function axis(variation: string): number {
+  const m = /"wght"\s+([\d.]+)/.exec(variation);
+  if (!m) throw new Error(`not a wght variation: ${variation}`);
+  return Number(m[1]);
 }
 
-/** Apply a text style. The family is left to the host unless `withFamily`. */
-export function textStyle<E extends Element>(el: E, style: TextStyle, withFamily = false): E {
+/** The text style scss `@include typography(group, variant)` applies, in the host's face. */
+export function typography<G extends TypographyGroup>(t: Tokens, group: G, variant: TypographyVariant<G>): TextStyle {
+  const [key, variation] = (TYPOGRAPHY[group] as Record<PropertyKey, readonly [keyof Tokens, "regular" | "medium" | null]>)[variant]!;
+  const base = t[key] as TextStyle;
+  const weight =
+    variation === "regular" ? axis(t.fontVariationRegular) : variation === "medium" ? axis(t.fontVariationMedium) : base.weight;
+  const face = t.fonts?.(base.families, base.size, weight);
+  return face ? { ...base, weight: face.weight, face: face.family } : { ...base, weight };
+}
+
+/** Apply a text style; its face, when the host resolved one. */
+export function textStyle<E extends Element>(el: E, style: TextStyle): E {
   const sized = el.text_size(style.size).line_height(style.lineHeight).font_weight(style.weight);
-  return withFamily ? sized.font_family(style.family) : sized;
+  return style.face ? sized.font_family(style.face) : sized;
 }
 
 /** Apply one of gpui's shadow presets. */

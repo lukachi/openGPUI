@@ -1,7 +1,9 @@
 // Bun plugin that compiles OpenUI's lang-core and react-ui genui-lib from source
 // without React: component schemas, names, descriptions, groups and prompt
 // examples stay exactly upstream's, while everything React (renderers, hooks,
-// icons, react itself) becomes an inert stub that is never called.
+// react itself) becomes an inert stub that is never called. Upstream's lucide
+// icon-name resolver compiles for real, against the name → SVG file table
+// scripts/assets.ts generates in place of lucide-react's import map.
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { BunPlugin } from "bun";
@@ -12,12 +14,15 @@ const LANG = join(UP, "lang-core", "src");
 const REACT_UI = join(UP, "react-ui", "src");
 const GENUI = join(REACT_UI, "genui-lib");
 const THEME = join(REACT_UI, "components", "ThemeProvider");
+const ICONS = join(REACT_UI, "components", "_shared", "icons");
+const LUCIDE_MAP = join(root, ".upstream", "assets", "lucide-map.js");
 const SHIM = join(root, "src", "upstream");
 
 const isUnder = (path: string, dir: string) => path === dir || path.startsWith(dir + "/");
 
 export function upstreamPlugin(): BunPlugin {
   if (!existsSync(GENUI)) throw new Error("Run `bun run sync` first: .upstream/openui is missing");
+  if (!existsSync(LUCIDE_MAP)) throw new Error("Run `bun run sync` first: .upstream/assets/lucide-map.js is missing");
   return {
     name: "opengpui-upstream",
     setup(build) {
@@ -28,6 +33,9 @@ export function upstreamPlugin(): BunPlugin {
       build.onResolve({ filter: /^openui-theme$/ }, () => ({
         path: join(THEME, "defaultTheme.ts"),
       }));
+      // Lucide icon lookup by name, with upstream's fuzzy matching and category fallbacks.
+      build.onResolve({ filter: /^openui-icons$/ }, () => ({ path: join(ICONS, "dynamicIconImports.ts") }));
+      build.onResolve({ filter: /^openui-icon-fallbacks$/ }, () => ({ path: join(ICONS, "categoryFallbacks.ts") }));
 
       // Bare imports from upstream sources: zod is real, everything else (react, lucide, …) is a stub.
       build.onResolve({ filter: /^[^./]/ }, (args) => {
@@ -41,6 +49,9 @@ export function upstreamPlugin(): BunPlugin {
       // except schema modules (wire contracts) and the theme's pure token modules,
       // which load for real.
       build.onResolve({ filter: /^\./ }, (args) => {
+        if (isUnder(args.importer, ICONS)) {
+          return /lucideDynamicImports\.mjs$/.test(args.path) ? { path: LUCIDE_MAP } : undefined;
+        }
         if (!isUnder(args.importer, GENUI) && !isUnder(args.importer, REACT_UI)) {
           if (isUnder(args.importer, LANG) && /telemetry\/runtime$/.test(args.path)) {
             return { path: join(SHIM, "telemetry-noop.ts") };

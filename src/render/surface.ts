@@ -8,13 +8,20 @@
 // for, runs deferred work, and redraws. Render stays a pure description.
 import type { ElementNode } from "@openuidev/lang-core";
 import { h_flex } from "gpui-base";
-import { div, type Context, type Element, type Task } from "gpui-kit";
+import { div, svg, type Context, type Element, type Task } from "gpui-kit";
 import type { FormValidation, Session } from "../runtime/session.ts";
 import { withScheduler, type Scheduler } from "../upstream/timers.ts";
+import { iconFile } from "./icons.ts";
+import { ICON_SIZE, lucideFile, type IconPath, type StrokeWidth } from "./lucide.ts";
 import { resolveTokens, type Tokens } from "./tokens.ts";
 
 /** What a renderer returns: an element, text, several of them, or nothing. */
 export type Rendered = Element | string | Rendered[] | null;
+
+/** `[el]`, or nothing for null: for `.children(...)` with an optional part. */
+export function optional<T>(el: T | null | undefined): T[] {
+  return el == null ? [] : [el];
+}
 
 /** Props as the evaluator hands them over: typed by the component's zod schema upstream. */
 export type Props = Record<string, any>;
@@ -48,6 +55,7 @@ export class Surface {
   readonly session: Session;
   tokens: Tokens;
   readonly components: Components;
+  /** @internal */ readonly iconPath: IconPath | null;
   /** @internal */ retainedEntries = new Map<string, RetainedEntry<any, any>>();
   /** @internal */ wanted = new Map<string, RetainedSpec<any, any>>();
   /** @internal */ deferred: ((cx: Context) => void)[] = [];
@@ -58,11 +66,15 @@ export class Surface {
   private resolveWake: (() => void) | null = null;
   private readonly timers = new Set<Task>();
 
-  /** `tokens`: see resolveTokens(); OpenUI's light theme when omitted. */
-  constructor(options: { session: Session; components: Components; tokens?: Tokens }) {
+  /**
+   * `tokens`: see resolveTokens(); OpenUI's light theme when omitted.
+   * `icons`: where the host keeps lucide's SVGs; omitted, icons are not drawn.
+   */
+  constructor(options: { session: Session; components: Components; tokens?: Tokens; icons?: IconPath }) {
     this.session = options.session;
     this.components = options.components;
     this.tokens = options.tokens ?? resolveTokens("light");
+    this.iconPath = options.icons ?? null;
   }
 
   setTokens(tokens: Tokens): void {
@@ -208,6 +220,19 @@ export class RenderContext {
   /** A stable element id for a part of this node. */
   id(part = ""): string {
     return part ? `${this.key}:${part}` : this.key;
+  }
+
+  /**
+   * A lucide icon by name, as upstream's IconWrapper draws it: `size` px, in the
+   * surrounding text color, at a stroke width react-ui uses. Null when the host
+   * has no icons.
+   */
+  icon(name: string, options: { category?: string; size?: number; stroke?: StrokeWidth } = {}): Element | null {
+    const path = this.surface.iconPath;
+    if (!path) return null;
+    return svg(path(lucideFile(iconFile(name, options.category), options.stroke)))
+      .size(options.size ?? ICON_SIZE)
+      .flex_none();
   }
 
   /** A child context, e.g. with a form scope. */

@@ -24,23 +24,24 @@ flowchart LR
 | Path | What |
 |---|---|
 | `src/runtime/` | `Session`: one response's parse, `$state` store, queries/mutations, forms, validation, actions, errors. Framework-free port of react-lang's state hook. |
-| `src/render/` | `Surface`: draws a session with gpui-kit; owns the pump task that creates retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. |
+| `src/render/` | `Surface`: draws a session with gpui-kit; owns the pump task that creates retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. `fonts.ts`: the Inter cuts and how a stack resolves to them. `icons.ts`/`lucide.ts`: upstream's lucide lookup and the SVG layout a host ships. |
 | `src/components/` | One renderer per OpenUI component. Missing ones draw a "not supported yet" box and are left out of prompts. |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries, and `subsetLibrary()` to prompt only what is implemented. |
 | `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js`); `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
 | `bin/opengpui.ts` | The agent CLI: `prompt`, `check`, `show`, `wait`, `events`. |
 | `skills/opengpui/` | Agent skill: how an agent uses the CLI and the pane. |
-| `scripts/` | Upstream sync, build (Bun plugin that compiles upstream without React), install. |
+| `scripts/` | Upstream sync, assets (Inter cuts, lucide SVGs), build (Bun plugin that compiles upstream without React), install. |
 
 ## Develop
 
-Needs [Bun](https://bun.sh) and, for the mod, herdr-app.
+Needs [Bun](https://bun.sh), [uv](https://docs.astral.sh/uv/) (`uvx` runs fontTools to cut
+the fonts) and, for the mod, herdr-app.
 
 ```sh
 bun install
-bun run sync           # check out the pinned OpenUI commit (upstream.json); copy gpui/herdr types from Herdr
+bun run sync           # pinned OpenUI checkout, Inter and lucide assets (upstream.json); gpui/herdr types from Herdr
 bun run check          # typecheck, build, herdr-app check on the mod
-bun run test           # build, then session/library tests against the built headless bundle
+bun run test           # build, then session/library/token tests against the built headless bundle
 bun run install-herdr  # copy the mod into ~/.config/herdr-app/mods/opengpui, link `opengpui` into ~/.local/bin
 ```
 
@@ -50,12 +51,29 @@ Outputs (`dist/`):
 - `opengpui-headless.js`: libraries, prompts and `Session` without gpui, for Bun/Node.
 - `opengpui-cli.js`: the CLI.
 
+The mod also ships `fonts/` and `icons/` (copied from `.upstream/assets` at build):
+
+- **Fonts:** OpenUI draws Inter as a variable font. Its `wght` axis is set per
+  style, its optical size follows the font size, and text is tracked −1%. gpui
+  applies no variable axes and has no letter spacing, so `scripts/assets.ts` cuts
+  static Inter fonts. It makes one per (optical size, weight) pair OpenUI's
+  typography uses (`INTER_CUTS` in `src/render/fonts.ts`), bakes the tracking
+  into the glyph advances, and subsets to Latin, Greek and Cyrillic. Herdr loads
+  a mod's fonts at start and on a look change; `install-herdr` reloads the look
+  when they change. A host without them keeps its own UI font.
+- **Icons:** lucide SVGs at the version react-ui depends on. The tarballs are
+  checked against upstream's lockfile and `upstream.json`. Names resolve
+  through upstream's own lookup (fuzzy matching, category fallbacks), compiled
+  from the pin. There is one SVG set per stroke width react-ui gives icons
+  (`LUCIDE_STROKE_WIDTHS`).
+
 ### Updating OpenUI
 
 `bun scripts/sync-upstream.ts --to main` moves the pin. The sync fails if the
 pinned `lang-core` version differs from the `@openuidev/lang-core` dev
 dependency used for types; bump that too, then run `bun run check` and the
-tests.
+tests. `bun scripts/assets.ts` then checks that `upstream.json` still pins the
+lucide release react-ui depends on.
 
 ### Porting a component
 
@@ -71,6 +89,9 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 1. Read all three. `Tokens` keeps upstream's token names, so scss reads across
    directly: `cssUtils.$space-s` → `t.spaceS`, `$border-default` → `t.borderDefault`,
    `@include typography(body, small)` → `textStyle(el, typography(t, "body", "small"))`.
+   A lucide icon is `ctx.icon("ChevronLeft", { size: 16 })`; an scss `stroke-width`
+   other than 2 is `stroke`, listed in `LUCIDE_STROKE_WIDTHS`. A new type size and
+   weight pair needs its cut in `INTER_CUTS`.
 2. Write the `Component` in `src/components/`, register it in `src/components/index.ts`,
    and name the upstream files it was ported from in the file header.
 3. Where gpui can't do what the scss does, keep the closest gpui form and add the
@@ -82,30 +103,38 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 
 ### Where gpui differs from the browser
 
-- **Fonts:** letter spacing and Inter's `wght` axis are not applied; the host's UI
-  font is used rather than Inter, so weights like 560 land on the nearest the font has.
-- **Shadows:** OpenUI's custom shadows map to gpui's presets (`shadow-m` → `shadow_sm`, …).
+- **Fonts:** optical sizes come in steps (14, 16, 18, 24, 28, 32) instead of
+  following every size, and a size/weight pair without a cut takes the nearest
+  cut. Heading large/xl track −0.1px upstream; here they get the −1% of all other text.
+- **Shadows:** OpenUI's custom shadows map to gpui's presets (`shadow-m` → `shadow_sm`, …):
+  gpui-shell exposes only presets, not gpui's `BoxShadow`.
 - **Markdown:** TextContent, MarkDownRenderer and Callout descriptions use gpui's
   `TextView`, with its own element styles, not upstream's markdown CSS. Text and
   BoldText lines are plain text rather than inline markdown.
-- **Icons:** lucide icons (Tag icons, hint alert icon, table pager chevrons) are not
-  drawn; the pager uses `‹ ›` glyphs.
-- **Tables:** no table layout; columns share the width equally and cells truncate
-  instead of scrolling the table sideways.
-- **Callout auto-dismiss:** hides after 3 s without upstream's fade-out.
+- **Tables:** column widths come from measuring each cell, so a new page is drawn
+  once with equal columns before they settle. The sideways scroll is the
+  table's own offset (gpui-kit cannot scroll a div from code): wheel, trackpad
+  and shift-wheel move it, and there is no scrollbar, which matches upstream's
+  hidden one.
 
 ## Status
 
 First wave, ported from react-ui: Stack, Card, CardHeader, TextContent,
-MarkDownRenderer, Callout, Text, BoldText, Tag, Separator, Table/Col, Form,
-FormControl, Label, Input, TextArea, Button, Buttons. The rest of OpenUI's ~80
-components (tabs, selects, charts, modals, card blocks, …) are not drawn yet.
-Built against herdr-app 0.1.13 (gpui-shell 0.7.1) and OpenUI lang-core 1.1.0.
+MarkDownRenderer, Callout, Text, BoldText, Tag, Icon, Separator, Table/Col,
+Form, FormControl, Label, Input, TextArea, Button, Buttons. The rest of
+OpenUI's ~80 components (tabs, selects, charts, modals, card blocks, …) are not
+drawn yet. Built against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI lang-core
+1.1.0, Inter 4.1 and lucide 0.562.0.
 
 The Herdr pane draws with OpenUI's tokens in the Herdr theme's colors by default
-(`look: "herdr"`); `look: "openui"` uses OpenUI's own light/dark theme.
+(`look: "herdr"`); `look: "openui"` uses OpenUI's own light/dark theme. Both
+draw text in the shipped Inter cuts.
 
 ## License
 
 MIT. Parts port or compile [OpenUI](https://github.com/thesysdev/openui) (MIT,
-Thesys Inc.); see `LICENSE` and `licenses/openui.txt`.
+Thesys Inc.); see `LICENSE` and `licenses/openui.txt`. The Herdr mod ships
+modified cuts of [Inter](https://github.com/rsms/inter) (SIL OFL 1.1,
+`licenses/inter.txt`) and [lucide](https://lucide.dev) icons (ISC,
+`licenses/lucide.txt`); each license also travels in the mod's `fonts/` and
+`icons/` folders.

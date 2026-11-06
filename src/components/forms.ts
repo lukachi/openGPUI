@@ -12,7 +12,7 @@
 import { isElementNode, parseStructuredRules, type ParsedRule } from "@openuidev/lang-core";
 import { Input as GInput, InputState, Textarea, TextareaState } from "gpui-base";
 import { div, type Element } from "gpui-kit";
-import type { Component, Props, RenderContext } from "../render/surface.ts";
+import { optional, type Component, type Props, type RenderContext } from "../render/surface.ts";
 import { textStyle, typography } from "../render/tokens.ts";
 
 export const Form: Component = {
@@ -56,9 +56,11 @@ export const FormControl: Component = {
     const label = textStyle(div().flex().flex_row().gap(t.space3xs).text_color(t.textNeutralPrimary), typography(t, "body", "default"))
       .child(String(props.label ?? ""))
       .when(isRequired(props.input), (el) => el.child("*"));
-    // Hint: body small, secondary; danger primary for an error (upstream adds an AlertCircle icon).
+    // Hint: body small, secondary; danger primary with a 14px AlertCircle for an error.
     const hint = (text: string, isError: boolean) =>
-      textStyle(div().flex().flex_row().items_center().gap(t.spaceXs).text_color(isError ? t.textDangerPrimary : t.textNeutralSecondary), typography(t, "body", "small")).child(text);
+      textStyle(div().flex().flex_row().items_center().gap(t.spaceXs).text_color(isError ? t.textDangerPrimary : t.textNeutralSecondary), typography(t, "body", "small"))
+        .children(isError ? optional(ctx.icon("AlertCircle", { size: 14 })) : [])
+        .child(text);
     return div()
       .flex()
       .flex_col()

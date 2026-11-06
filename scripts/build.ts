@@ -1,12 +1,23 @@
 // Build:
 //   dist/opengpui.js               the library (gpui-kit and gpui-base stay host imports)
 //   herdr/mods/opengpui/main.js    the Herdr mod, with the library bundled in
-import { mkdirSync } from "node:fs";
+//   herdr/mods/opengpui/{fonts,icons}  the assets it ships (bun scripts/assets.ts)
+import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { BunPlugin } from "bun";
 import { upstreamPlugin } from "./upstream-plugin.ts";
 
 const root = join(import.meta.dir, "..");
+
+function copyAssets(): void {
+  for (const dir of ["fonts", "icons"]) {
+    const from = join(root, ".upstream", "assets", dir);
+    if (!existsSync(join(from, ".stamp.json"))) throw new Error(`.upstream/assets/${dir} is missing: run \`bun run sync\``);
+    const to = join(root, "herdr", "mods", "opengpui", dir);
+    rmSync(to, { recursive: true, force: true });
+    cpSync(from, to, { recursive: true, filter: (src) => !src.endsWith(".stamp.json") });
+  }
+}
 
 // gpui-shell throws on browser timers. Upstream React renderers (genui-lib
 // component files) use them, but never run here; nothing else may.
@@ -79,3 +90,4 @@ const sizes = {
   "dist/opengpui-cli.js": await bundle("bin/opengpui.ts", "dist/opengpui-cli.js", { target: "bun", plugins: [hostStubs] }),
 };
 for (const [file, size] of Object.entries(sizes)) console.log(`${file} ${(size / 1024).toFixed(0)} KiB`);
+copyAssets();

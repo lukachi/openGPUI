@@ -17,3 +17,13 @@ declare module "openui-theme" {
   export const defaultLightTheme: Theme;
   export const defaultDarkTheme: Theme;
 }
+
+// react-ui's lucide resolver (components/_shared/icons) from the pin. Upstream's
+// thunks import a React icon; the build's map makes them answer its SVG file name.
+declare module "openui-icons" {
+  export function getIconImport(iconName: string): (() => unknown) | null;
+}
+
+declare module "openui-icon-fallbacks" {
+  export function getFallbackIconName(category?: string): string;
+}
