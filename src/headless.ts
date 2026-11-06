@@ -2,6 +2,7 @@
 // runtime, response parsing, design tokens. Built to dist/opengpui-headless.js for Bun/Node
 // tools (prompt generation, checks) and for the tests.
 export { libraries, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
+export * as dateLogic from "./components/date-logic.ts";
 export { parseMarkdown, type MarkdownProfile } from "./markdown/parse.ts";
 export { interFace, openuiFonts, type Face, type FontResolver } from "./render/fonts.ts";
 export { readImageHeader, type ImageFormat, type ImageHeader } from "./render/imageHeader.ts";
@@ -15,3 +16,10 @@ export {
   type SessionOptions,
   type Tools,
 } from "./runtime/session.ts";
+export {
+  booleanAggregate,
+  selectionField,
+  toggleBoolean,
+  type FieldContext,
+  type SelectionField,
+} from "./components/selection.ts";

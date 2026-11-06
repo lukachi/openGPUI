@@ -51,6 +51,16 @@ this checkout, installs it as its own mod (`opengpui-<folder>`), shows the file 
 new Herdr tab, saves a screenshot to `tmp/preview/` and closes the tab. A lock keeps
 previews from several checkouts out of each other's way.
 
+`bun scripts/reference.ts setup` checks out OpenUI at the pin into `.reference/`
+(gitignored) with react-ui's dependencies from upstream's lockfile, a headless Chromium
+and the pinned InterVariable. `bun scripts/reference.ts serve` serves a page that draws
+a `.oui` file with upstream's own `Renderer`, library and `ThemeProvider`, styled as
+OpenUI's docs set it up (Tailwind preflight, react-ui's stylesheet, Inter), on port
+6106. `bun scripts/reference.ts shot <file.oui> --out <file.png> [--mode light|dark]
+[--library openui|chat] [--width px]` saves upstream's render of the file at device
+scale 2, framed like the Herdr body, for side-by-side comparison with
+`scripts/preview.ts`, and prints a URL with the same render live.
+
 Outputs (`dist/`):
 
 - `opengpui.js`: the library for gpui-shell hosts (`gpui-kit` and `gpui-base` stay imports).
@@ -112,8 +122,8 @@ sources under `.upstream/openui/packages/react-ui/src/`:
    difference to the file header and to the list below.
 4. Retained native state (inputs, sliders) goes through `ctx.retained(...)`;
    work that needs a live phase through `ctx.after(...)`.
-5. `bun run check`, then compare it in Herdr with OpenUI's own theme:
-   `opengpui show file.oui --look openui`.
+5. `bun run check`, then compare `bun scripts/preview.ts file.oui --mode light|dark`
+   with `bun scripts/reference.ts shot file.oui --mode light|dark`.
 
 ### Where gpui differs from the browser
 
@@ -122,6 +132,18 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   cut. Heading large/xl track −0.1px upstream; here they get the −1% of all other text.
 - **Shadows:** OpenUI's custom shadows map to gpui's presets (`shadow-m` → `shadow_sm`, …):
   gpui-shell exposes only presets, not gpui's `BoxShadow`.
+- **Transitions:** gpui animates only opacity, size and position, so upstream's color
+  transitions (hover fills, borders) switch at once. `cursor: not-allowed` isn't drawn.
+- **Choice controls:** gpui-base's unstyled `Checkbox`, `Radio` and `Switch` carry
+  focus, keyboard and disabled state; the indicators are drawn from upstream's sizes
+  (the checkmark is a path without round caps). There is no focus ring and no
+  `overflow-wrap: anywhere`: a word longer than its row isn't broken.
+- **Modal:** drawn in a gpui-base `Popup` layer sized to the window rather than a
+  window dialog (a dialog is a separate view that wouldn't redraw with the session
+  and reports no Escape or backdrop close). In Herdr the backdrop covers the whole
+  window, as upstream's portal covers the page. Hover styles under the backdrop
+  still react (gpui gives scripts no occluding hitbox); Escape is heard while the
+  keyboard is in the dialog, which takes focus on open; the slide-in isn't drawn.
 - **Markdown:** gpui has no inline text layout, so a paragraph is a wrapping row
   of words, one element per word in its own style. Such text can't be selected,
   and a word may wrap one space earlier than in a browser (the trailing space
@@ -136,15 +158,44 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   table's own offset (gpui-kit cannot scroll a div from code): wheel, trackpad
   and shift-wheel move it, and there is no scrollbar, which matches upstream's
   hidden one.
+- **Tabs, Accordion, Carousel:** tab lists and carousels scroll by an offset they
+  own (wheel, trackpad, chevrons/arrows), with no scrollbar, as upstream hides it.
+  Tab triggers are gpui-base's native `Tab`, which hears no keys: no arrow-key roving.
+  gpui can't rotate, so the accordion chevron flips instead of turning; only opening
+  and closing slide. The carousel's edge fade (`mask-image`) isn't drawn and its
+  narrow-window card width needs the window width, which render can't read. A chosen
+  tab or open item survives its parent being hidden, where Radix would reset it.
+- **Date pickers:** gpui-kit's `Popover` hosts the calendar: it also closes on Escape
+  and doesn't flip above the field near the window's bottom; its scale/fade isn't
+  animated. The month and year lists scroll by an offset they own. The grid takes
+  one keyboard focus with a roving focused day (DayPicker's own key map) instead of
+  focusable day buttons. Two deliberate deviations: range ends given as strings are
+  read (upstream crashes on them), and re-picking the selected day clears what the
+  field shows as well as its value (upstream keeps showing the first pick).
+- **Select:** the menu opens below the trigger and never flips above it; its
+  fade/scale and the chevron's turn aren't animated. The pointer row and the
+  keyboard row are separate highlights (Radix moves focus to the row under the
+  pointer), so both can show at once.
+- **Slider:** thumbs, drag and keyboard are gpui-base's native `Slider`; the fill and
+  dots follow a drag one frame late. `SliderState.new` with some nonzero `min`
+  (500…10000) never returns and stops the pump, so the native slider runs on
+  `0..max-min` with values shifted back and rounded to the step's decimals as Radix
+  does, and it's only made once `max > min` and `step > 0` (props stream in one by
+  one). The value inputs stay left aligned (gpui-base's Input ignores alignment).
 
 ## Status
 
-First wave, ported from react-ui: Stack, Card, CardHeader, TextContent,
-MarkDownRenderer, Callout, Text, BoldText, Tag, Icon, Separator, Table/Col,
-Form, FormControl, Label, Input, TextArea, Button, Buttons. The rest of
-OpenUI's ~80 components (tabs, selects, charts, modals, card blocks, …) are not
-drawn yet. Built against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI lang-core
-1.1.0, Inter 4.1 and lucide 0.562.0.
+Ported from react-ui so far: Stack, Card, CardHeader, Tabs/TabItem,
+Accordion/AccordionItem, Steps/StepsItem, Carousel, Modal, TextContent,
+MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Text, BoldText,
+IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
+Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
+Select/SelectItem, DatePicker, Slider, CheckBoxGroup/CheckBoxItem,
+RadioGroup/RadioItem, SwitchGroup/SwitchItem, Chips/ChipItem, Button, Buttons,
+IconButton. The rest of OpenUI's ~80 components
+are being ported. Built against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI
+lang-core 1.1.0, Inter 4.1, lucide 0.562.0, and for dates date-fns 4.4.0 and
+react-day-picker 9.14.0 (upstream's lockfile versions).
 
 The Herdr pane draws with OpenUI's tokens in the Herdr theme's colors by default
 (`look: "herdr"`); `look: "openui"` uses OpenUI's own light/dark theme. Both

@@ -34,6 +34,15 @@ declare module "openui-remark-citations" {
   export const remarkCitations: () => (tree: Root) => void;
 }
 
+// react-ui genui-lib/selectionFieldUtils.ts: normalize, default and toggle a single/multiple selection.
+declare module "openui-selection-utils" {
+  export type SelectionType = "single" | "multiple";
+  export type SelectionDefaultValue = string | string[] | undefined;
+  export function normalizeSelection(type: SelectionType, storedValue: unknown, defaultValue: SelectionDefaultValue): string[];
+  export function getStoredDefaultValue(type: SelectionType, defaultValue: SelectionDefaultValue): string | string[] | undefined;
+  export function toggleSelection(type: SelectionType, selection: string[], itemValue: string): string[];
+}
+
 // The Prism themes react-ui's markdown code blocks use (plain style objects).
 declare module "react-syntax-highlighter/dist/esm/styles/prism/one-light.js" {
   const style: Record<string, Record<string, string>>;
@@ -48,4 +57,10 @@ declare module "react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js"
 declare module "opengpui-prism-all" {
   import type { Syntax } from "refractor/core";
   export const syntaxes: Syntax[];
+}
+
+// react-ui components/DatePicker/helpers/utils/helperFn.tsx: the shown value's text.
+declare module "openui-datepicker-helpers" {
+  export function formatSingleDate(date: Date | undefined): string;
+  export function formatDateRange(range: { from?: Date; to?: Date } | undefined): string;
 }

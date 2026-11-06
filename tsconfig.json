@@ -15,6 +15,9 @@
     "resolveJsonModule": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
+      "openui-rdp/*": [
+        "./node_modules/react-day-picker/dist/esm/*"
+      ],
       "herdr": [
         "./types/herdr.d.ts"
       ],
