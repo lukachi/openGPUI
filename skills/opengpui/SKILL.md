@@ -52,12 +52,17 @@ you change the file; what the person does comes back to you.
   first line `]]>openui:content`, last line `]]>openui:end`; the pane treats it
   as streaming (inputs wait) until the end line appears.
 
-## What the pane draws today
+## What the pane draws
 
-The manual from `opengpui prompt` lists only what is implemented. Any other
-OpenUI component (Tabs, Select, charts, …) is rejected by `opengpui check` and
-drawn as a "not supported yet" box. Don't use components that are not in the
-manual, even when a signature names them inside a union.
+Every component of OpenUI's `openui` library (the default) and `chat` library
+(`--library chat`), as `opengpui prompt` lists them: layout (Tabs, Accordion,
+Steps, Carousel, Modal), content (markdown, callouts, code, images and galleries),
+tables (also EditableTable), charts (bar, line, area, radar, pie, radial, stacked,
+scatter), every form field (Select, DatePicker, Slider, checkbox/radio/switch
+groups, Chips, OptionCards) and card blocks. Use only what the manual for your
+library lists: a component from the other library is rejected by `opengpui check`.
+Images need real `http(s)` URLs or paths under your home folder; Herdr downloads
+and caches them.
 
 ## Limits
 
