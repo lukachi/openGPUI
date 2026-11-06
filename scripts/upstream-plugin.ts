@@ -20,6 +20,11 @@ const SHIM = join(root, "src", "upstream");
 
 const isUnder = (path: string, dir: string) => path === dir || path.startsWith(dir + "/");
 
+/** Bare imports upstream sources keep real: a package name (a regex source), alone or with a subpath. */
+const REAL_BARE_IMPORTS = ["zod", "unist-util-visit", "date-fns", "@openuidev/[^/]+"];
+/** Any other bare specifier: `^` then a negative lookahead over REAL_BARE_IMPORTS. */
+const REAL_BARE_FILTER = new RegExp(`^(?!(?:${REAL_BARE_IMPORTS.join("|")})(?:/|$))[^./]`);
+
 export function upstreamPlugin(): BunPlugin {
   if (!existsSync(GENUI)) throw new Error("Run `bun run sync` first: .upstream/openui is missing");
   if (!existsSync(LUCIDE_MAP)) throw new Error("Run `bun run sync` first: .upstream/assets/lucide-map.js is missing");
@@ -57,12 +62,16 @@ export function upstreamPlugin(): BunPlugin {
         path: join(root, "node_modules", "decode-named-character-reference", "index.js"),
       }));
 
-      // Bare imports from upstream sources: zod, the unist walker and date-fns (DatePicker's
-      // helperFn.tsx) are real, everything else (react, lucide, …) is a stub.
-      build.onResolve({ filter: /^[^./]/ }, (args) => {
+      // Bare imports from upstream sources: the packages in REAL_BARE_IMPORTS load for real (zod,
+      // the unist walker, date-fns for DatePicker's helperFn.tsx, the rest of @openuidev/*),
+      // everything else (react, lucide, …) is a stub.
+      // They are left out of the filter itself, not just answered with `undefined`: Bun treats a
+      // module reached through a hop a plugin matched as possibly having side effects, even when
+      // the plugin declines, so a package's `sideEffects: false` would be ignored and its whole
+      // barrel bundled (date-fns: 367 modules for the few functions used). Add a real import to
+      // the list, not to the callback.
+      build.onResolve({ filter: REAL_BARE_FILTER }, (args) => {
         if (!isUnder(args.importer, UP)) return undefined;
-        if (/^(zod|unist-util-visit|date-fns)(\/|$)/.test(args.path)) return undefined;
-        if (args.path.startsWith("@openuidev/")) return undefined;
         return { path: args.path, namespace: "opengpui-stub" };
       });
 
