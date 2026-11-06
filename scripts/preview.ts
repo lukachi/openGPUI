@@ -1,25 +1,30 @@
-// Show a .oui file in the running Herdr window with this checkout's build, take
-// a screenshot, and close it again. Several checkouts can preview at once: each
-// installs its build as its own mod, and a lock keeps the window to one preview
-// at a time.
+// Show a .oui file with this checkout's build in a Herdr window of its own, take a
+// screenshot, and close it again.
 //
 //   bun scripts/preview.ts <file.oui> [options]
 //     --look openui|herdr   whose colors to draw with (default openui)
+//     --mode light|dark     the window's appearance (default light)
 //     --library openui|chat
 //     --wait <ms>           how long the tab is drawn before the shot (default 1500;
 //                           code blocks need ~4000 for highlighting)
-//     --out <file.png>      default tmp/preview/<file>-<look>.png
+//     --out <file.png>      default tmp/preview/<file>-<look>-<mode>.png
 //     --keep                leave the tab open (for a person to click through)
 //     --mod <name>          mod folder to install as (default opengpui-<checkout folder>)
 //
-// It builds first. Fonts come from the installed `opengpui` mod (same family
-// names), so `bun run install-herdr` must have run once on this machine.
+// Previews never touch the person's window. They run in a separate Herdr window
+// with its own home (~/.config/herdr-preview, or OPENGPUI_PREVIEW_HOME) and its own
+// herdr-core session, started in the background on first use. Herdr keeps every
+// mod build it loads in its JS heap, so after a few different builds a window
+// fails mod loads with "out of memory"; the preview window is therefore restarted
+// every RESTART_EVERY previews. A lock lets several checkouts share it.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
+const RESTART_EVERY = 2;
+
 const root = join(import.meta.dir, "..");
-const herdrHome = process.env.HERDR_APP_HOME ?? join(homedir(), ".config", "herdr-app");
+const home = process.env.OPENGPUI_PREVIEW_HOME ?? join(homedir(), ".config", "herdr-preview");
 const args = process.argv.slice(2);
 
 function option(name: string): string | undefined {
@@ -37,44 +42,47 @@ function flag(name: string): boolean {
 }
 
 const look = option("--look") ?? "openui";
+const mode = option("--mode") ?? "light";
 const library = option("--library");
 const waitMs = Number(option("--wait") ?? 1500);
 const outOption = option("--out");
 const modName = option("--mod") ?? `opengpui-${basename(root).toLowerCase().replace(/[^a-z0-9-]+/g, "-")}`;
 const keep = flag("--keep");
 const fileArg = args.shift();
-if (!fileArg || args.length) {
-  console.error("usage: bun scripts/preview.ts <file.oui> [--look openui|herdr] [--library name] [--wait ms] [--out file.png] [--keep] [--mod name]");
+if (!fileArg || args.length || !["light", "dark"].includes(mode)) {
+  console.error(
+    "usage: bun scripts/preview.ts <file.oui> [--look openui|herdr] [--mode light|dark] [--library name] [--wait ms] [--out file.png] [--keep] [--mod name]",
+  );
   process.exit(2);
 }
 const file = resolve(fileArg);
 if (!existsSync(file)) throw new Error(`${file} does not exist`);
-if (modName === "opengpui") throw new Error("--mod opengpui is the installed mod; preview under another name");
+if (modName === "opengpui") throw new Error("--mod opengpui is the font carrier; preview under another name");
 const stem = basename(file).replace(/\.[^.]*$/, "");
-const out = resolve(outOption ?? join(root, "tmp", "preview", `${stem}-${look}.png`));
+const out = resolve(outOption ?? join(root, "tmp", "preview", `${stem}-${look}-${mode}.png`));
 
+const env = { ...process.env, HERDR_APP_HOME: home };
 function run(argv: string[]): string {
-  const proc = Bun.spawnSync(argv, { cwd: root, stdout: "pipe", stderr: "pipe" });
+  const proc = Bun.spawnSync(argv, { cwd: root, env, stdout: "pipe", stderr: "pipe" });
   if (proc.exitCode !== 0) throw new Error(`${argv.join(" ")} failed:\n${proc.stderr.toString()}${proc.stdout.toString()}`);
   return proc.stdout.toString();
 }
+function tryRun(argv: string[]): string | null {
+  const proc = Bun.spawnSync(argv, { cwd: root, env, stdout: "pipe", stderr: "pipe" });
+  return proc.exitCode === 0 ? proc.stdout.toString() : null;
+}
 const herdr = (command: string, payload: object) => JSON.parse(run(["herdr-app", "do", command, JSON.stringify(payload)]) || "{}");
+const status = () => {
+  const text = tryRun(["herdr-app", "status"]);
+  return text ? (JSON.parse(text) as { tab?: string; errors?: unknown[] }) : null;
+};
 
-// Build and install this checkout's mod under its own name. Asset paths are
-// rewritten the way Herdr's mod.clone does.
 run(["bun", "scripts/build.ts"]);
 const from = join(root, "herdr", "mods", "opengpui");
-const to = join(herdrHome, "mods", modName);
-mkdirSync(to, { recursive: true });
-cpSync(join(from, "mod.json"), join(to, "mod.json"));
-writeFileSync(join(to, "main.js"), readFileSync(join(from, "main.js"), "utf8").replaceAll("mods/opengpui/", `mods/${modName}/`));
-rmSync(join(to, "icons"), { recursive: true, force: true });
-cpSync(join(from, "icons"), join(to, "icons"), { recursive: true });
-run(["herdr-app", "check", to]);
+mkdirSync(join(home, "mods"), { recursive: true });
 
-// One preview at a time in the shared window. A lock older than two minutes
-// belongs to a preview that died.
-const lock = join(herdrHome, "opengpui-preview.lock");
+// One preview at a time. A lock older than three minutes belongs to a preview that died.
+const lock = join(home, "opengpui-preview.lock");
 const started = Date.now();
 for (;;) {
   try {
@@ -82,33 +90,98 @@ for (;;) {
     break;
   } catch {
     try {
-      if (Date.now() - statSync(lock).mtimeMs > 120_000) rmSync(lock, { recursive: true, force: true });
+      if (Date.now() - statSync(lock).mtimeMs > 180_000) rmSync(lock, { recursive: true, force: true });
     } catch {}
-    if (Date.now() - started > 15 * 60_000) throw new Error(`waited 15 min for ${lock}`);
+    if (Date.now() - started > 20 * 60_000) throw new Error(`waited 20 min for ${lock}`);
     await Bun.sleep(500);
   }
 }
+
+const to = join(home, "mods", modName);
 let tab: string | undefined;
 try {
-  const before = JSON.parse(run(["herdr-app", "status"])).tab as string | undefined;
-  const events = join(herdrHome, "opengpui", "events", `${modName}-${stem}.jsonl`);
+  // The fonts: any mod's fonts/ load for the whole window, so a copy of the plain
+  // mod carries them (family names are the same in every build).
+  const carrier = join(home, "mods", "opengpui");
+  if (!existsSync(join(carrier, "fonts"))) {
+    rmSync(carrier, { recursive: true, force: true });
+    cpSync(from, carrier, { recursive: true });
+  }
+
+  // Appearance first: it is read when the window starts and when settings change.
+  const settingsPath = join(home, "settings.json");
+  const settings = existsSync(settingsPath) ? JSON.parse(readFileSync(settingsPath, "utf8")) : {};
+  const appearanceChanged = settings.appearance !== mode;
+  if (appearanceChanged || settings.sounds?.enabled !== false) {
+    writeFileSync(settingsPath, JSON.stringify({ ...settings, appearance: mode, sounds: { enabled: false } }, null, 2) + "\n");
+  }
+
+  const countPath = join(home, "opengpui-previews");
+  const count = existsSync(countPath) ? Number(readFileSync(countPath, "utf8")) || 0 : 0;
+  if (status() && count >= RESTART_EVERY) await stopWindow();
+  if (!status()) {
+    await startWindow();
+    writeFileSync(countPath, "0");
+  } else if (appearanceChanged) {
+    await Bun.sleep(500);
+  }
+
+  // Install this build as its own mod, asset paths rewritten as Herdr's mod.clone does.
+  mkdirSync(to, { recursive: true });
+  cpSync(join(from, "mod.json"), join(to, "mod.json"));
+  writeFileSync(join(to, "main.js"), readFileSync(join(from, "main.js"), "utf8").replaceAll("mods/opengpui/", `mods/${modName}/`));
+  rmSync(join(to, "icons"), { recursive: true, force: true });
+  cpSync(join(from, "icons"), join(to, "icons"), { recursive: true });
+  run(["herdr-app", "check", to]);
+
+  const events = join(home, "opengpui", "events", `${modName}-${stem}.jsonl`);
   const props = { src: file, events, look, title: `${modName}: ${stem}`, ...(library ? { library } : {}) };
   tab = herdr("tab.new", { name: `${stem} (${modName})`, mod: modName, props }).tab;
+  writeFileSync(countPath, String((existsSync(countPath) ? Number(readFileSync(countPath, "utf8")) || 0 : 0) + 1));
   await Bun.sleep(waitMs);
   mkdirSync(join(out, ".."), { recursive: true });
   run(["herdr-app", "shot", out]);
   console.log(`shot   ${out}`);
   if (keep) {
-    console.log(`tab    ${tab} left open; close with: herdr-app do tab.close '{"id":"${tab}"}'`);
+    console.log(`tab    left open in the preview window (HERDR_APP_HOME=${home})`);
+    console.log(`       close: HERDR_APP_HOME=${home} herdr-app do tab.close '{"id":"${tab}"}'`);
     console.log(`events ${events}`);
     tab = undefined;
-  } else if (before) {
-    herdr("tab.select", { id: before });
   }
 } finally {
-  if (tab) herdr("tab.close", { id: tab });
-  // Every loaded build stays in Herdr's JS heap; an unused preview mod is removed so
-  // the window can drop it.
+  if (tab) tryRun(["herdr-app", "do", "tab.close", JSON.stringify({ id: tab })]);
   if (!keep) rmSync(to, { recursive: true, force: true });
   rmSync(lock, { recursive: true, force: true });
+}
+
+async function startWindow(): Promise<void> {
+  // A fresh home opens with the welcome over everything; mark it seen, as finishing
+  // it would.
+  const sharedPath = join(home, "shared.json");
+  const shared = existsSync(sharedPath) ? JSON.parse(readFileSync(sharedPath, "utf8")) : {};
+  if (shared["frame.welcomed"] !== "finished") {
+    writeFileSync(sharedPath, JSON.stringify({ ...shared, "frame.welcomed": "finished" }, null, 2) + "\n");
+  }
+  // -n: a second instance beside the person's; -g: in the background, without focus.
+  // HC_SESSION gives it its own herdr-core, so its spaces and tabs never show up in
+  // the person's window.
+  run(["open", "-n", "-g", "-a", "Herdr", "--env", `HERDR_APP_HOME=${home}`, "--env", "HC_SESSION=opengpui-preview"]);
+  const deadline = Date.now() + 30_000;
+  while (!status()) {
+    if (Date.now() > deadline) throw new Error(`the preview window (HERDR_APP_HOME=${home}) did not start`);
+    await Bun.sleep(300);
+  }
+  const spaces = JSON.parse(run(["herdr-app", "ls"])).spaces as unknown[];
+  if (!spaces.length) herdr("space.new", { name: "previews", folder: root });
+  await Bun.sleep(1000); // first frame
+}
+
+async function stopWindow(): Promise<void> {
+  tryRun(["herdr-app", "do", "app.quit", "{}"]);
+  const deadline = Date.now() + 15_000;
+  while (status()) {
+    if (Date.now() > deadline) throw new Error("the preview window did not quit");
+    await Bun.sleep(300);
+  }
+  await Bun.sleep(500);
 }
