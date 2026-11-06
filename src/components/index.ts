@@ -16,6 +16,7 @@ import {
   TagBlock,
   TextCallout,
 } from "./misc.ts";
+import { Modal } from "./modal.ts";
 import { Col, Table } from "./tables.ts";
 
 export const components: Components = {
@@ -23,6 +24,7 @@ export const components: Components = {
   Stack,
   Card,
   Separator,
+  Modal,
   // Content
   CardHeader,
   TextContent,
