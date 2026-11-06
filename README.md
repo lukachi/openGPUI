@@ -165,6 +165,13 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   and closing slide. The carousel's edge fade (`mask-image`) isn't drawn and its
   narrow-window card width needs the window width, which render can't read. A chosen
   tab or open item survives its parent being hidden, where Radix would reset it.
+- **Date pickers:** gpui-kit's `Popover` hosts the calendar: it also closes on Escape
+  and doesn't flip above the field near the window's bottom; its scale/fade isn't
+  animated. The month and year lists scroll by an offset they own. The grid takes
+  one keyboard focus with a roving focused day (DayPicker's own key map) instead of
+  focusable day buttons. Two deliberate deviations: range ends given as strings are
+  read (upstream crashes on them), and re-picking the selected day clears what the
+  field shows as well as its value (upstream keeps showing the first pick).
 
 ## Status
 
@@ -172,12 +179,12 @@ Ported from react-ui so far: Stack, Card, CardHeader, Tabs/TabItem,
 Accordion/AccordionItem, Steps/StepsItem, Carousel, Modal, TextContent,
 MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Text, BoldText,
 IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
-Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
+Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea, DatePicker,
 CheckBoxGroup/CheckBoxItem, RadioGroup/RadioItem, SwitchGroup/SwitchItem,
 Chips/ChipItem, Button, Buttons, IconButton. The rest of OpenUI's ~80 components
-are being ported. Built
-against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI lang-core 1.1.0, Inter 4.1
-and lucide 0.562.0.
+are being ported. Built against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI
+lang-core 1.1.0, Inter 4.1, lucide 0.562.0, and for dates date-fns 4.4.0 and
+react-day-picker 9.14.0 (upstream's lockfile versions).
 
 The Herdr pane draws with OpenUI's tokens in the Herdr theme's colors by default
 (`look: "herdr"`); `look: "openui"` uses OpenUI's own light/dark theme. Both
