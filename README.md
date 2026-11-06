@@ -138,12 +138,21 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   focus, keyboard and disabled state; the indicators are drawn from upstream's sizes
   (the checkmark is a path without round caps). There is no focus ring and no
   `overflow-wrap: anywhere`: a word longer than its row isn't broken.
-- **Modal:** drawn in a gpui-base `Popup` layer sized to the window rather than a
-  window dialog (a dialog is a separate view that wouldn't redraw with the session
-  and reports no Escape or backdrop close). In Herdr the backdrop covers the whole
-  window, as upstream's portal covers the page. Hover styles under the backdrop
-  still react (gpui gives scripts no occluding hitbox); Escape is heard while the
-  keyboard is in the dialog, which takes focus on open; the slide-in isn't drawn.
+- **Overlays:** a page-level `position: fixed` portal (Modal, the gallery's modal) is
+  a surface overlay that the host stacks over its own area: in Herdr the pane, not
+  the whole window. Percent sizes (`90vw`, `85vh`) are of the pane. An overlay opened
+  inside another stacks above it, and the keyboard goes to the topmost one and back
+  when it closes. Hover styles under an overlay still react (gpui gives scripts no
+  occluding hitbox). A host draws `surface.renderOverlays()` over its area after
+  `renderContent()`; one that doesn't shows no modals.
+- **Images:** gpui draws only local files, so the host turns a `src` into a cached
+  file first (Herdr downloads with curl into `~/.config/herdr-app/opengpui/images/`,
+  bounded to 256 MiB; local paths only under `$HOME`); an image is an empty box until
+  then, and while a response streams a src loads only once it stops changing.
+  `object-fit` is drawn from the intrinsic size read from the file header; a clipping
+  box doesn't round its children, so cropped pictures keep square corners. No CSS
+  filters: ImageBlock's backdrop isn't blurred. Broken images show their alt text
+  without the browser's icon.
 - **Markdown:** gpui has no inline text layout, so a paragraph is a wrapping row
   of words, one element per word in its own style. Such text can't be selected,
   and a word may wrap one space earlier than in a browser (the trailing space
@@ -195,8 +204,9 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 
 Ported from react-ui so far: Stack, Card, CardHeader, Tabs/TabItem,
 Accordion/AccordionItem, Steps/StepsItem, Carousel, Modal, TextContent,
-MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Text, BoldText,
-IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
+MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Image, ImageBlock,
+ImageGallery, Text, BoldText, IconText, ImageText, ImageTextLarge,
+MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
 Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
 Select/SelectItem, DatePicker, Slider, CheckBoxGroup/CheckBoxItem,
 RadioGroup/RadioItem, SwitchGroup/SwitchItem, Chips/ChipItem, Button, Buttons,
