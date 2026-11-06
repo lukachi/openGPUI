@@ -2,6 +2,7 @@
 // "not supported yet" placeholder, and subsetLibrary() keeps it out of prompts.
 import type { Components } from "../render/surface.ts";
 import { Button, Buttons } from "./buttons.ts";
+import { AreaChart, BarChart, HorizontalBarChart, LineChart, RadarChart, Series } from "./charts/index.ts";
 import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
 import { Card, CardHeader, Separator, Stack } from "./layout.ts";
@@ -26,6 +27,13 @@ export const components: Components = {
   // Tables
   Table,
   Col,
+  // Charts (2D)
+  BarChart,
+  LineChart,
+  AreaChart,
+  RadarChart,
+  HorizontalBarChart,
+  Series,
   // Forms
   Form,
   FormControl,
