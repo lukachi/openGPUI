@@ -17,11 +17,21 @@ const THEME = join(REACT_UI, "components", "ThemeProvider");
 const ICONS = join(REACT_UI, "components", "_shared", "icons");
 const LUCIDE_MAP = join(root, ".upstream", "assets", "lucide-map.js");
 const SHIM = join(root, "src", "upstream");
+const CHARTS = join(REACT_UI, "components", "Charts");
+// react-ui chart modules that are plain TypeScript (no React, no DOM at call
+// time): value formatting, palettes, domains, label layout, bar/series
+// geometry. They compile for real, and so do their imports of each other.
+const CHART_PURE =
+  /^(utils\/[A-Za-z]+|shared\/cartesian\/(roundedBarPath|seriesGeometry)|BarChart\/parts\/(horizontalBarGeometry|verticalBarRadii)|shared\/core\/PortalTooltip\/utils|hooks\/cartesian\/(useStackedData|useXBandScale))$/;
+
+function chartModule(path: string): string | undefined {
+  return [`${path}.ts`, join(path, "index.ts")].find(existsSync);
+}
 
 const isUnder = (path: string, dir: string) => path === dir || path.startsWith(dir + "/");
 
 /** Bare imports upstream sources keep real: a package name (a regex source), alone or with a subpath. */
-const REAL_BARE_IMPORTS = ["zod", "unist-util-visit", "date-fns", "@openuidev/[^/]+"];
+const REAL_BARE_IMPORTS = ["zod", "unist-util-visit", "date-fns", "d3-scale", "d3-shape", "@openuidev/[^/]+"];
 /** Any other bare specifier: `^` then a negative lookahead over REAL_BARE_IMPORTS. */
 const REAL_BARE_FILTER = new RegExp(`^(?!(?:${REAL_BARE_IMPORTS.join("|")})(?:/|$))[^./]`);
 
@@ -55,6 +65,14 @@ export function upstreamPlugin(): BunPlugin {
       build.onResolve({ filter: /^openui-rdp\// }, (args) => ({
         path: join(root, "node_modules", "react-day-picker", "dist", "esm", args.path.slice("openui-rdp/".length)),
       }));
+      // react-ui's pure chart helpers (see CHART_PURE), and genui's chart data builder.
+      build.onResolve({ filter: /^openui-charts\// }, (args) => {
+        const rel = args.path.slice("openui-charts/".length);
+        const path = CHART_PURE.test(rel) ? chartModule(join(CHARTS, rel)) : undefined;
+        if (!path) throw new Error(`${args.path} is not a pure react-ui chart module`);
+        return { path };
+      });
+      build.onResolve({ filter: /^openui-genui-helpers$/ }, () => ({ path: join(GENUI, "helpers.ts") }));
 
       // micromark decodes character references through the DOM in browser builds;
       // gpui-shell has no DOM, so take the package's table-based build.
@@ -63,7 +81,8 @@ export function upstreamPlugin(): BunPlugin {
       }));
 
       // Bare imports from upstream sources: the packages in REAL_BARE_IMPORTS load for real (zod,
-      // the unist walker, date-fns for DatePicker's helperFn.tsx, the rest of @openuidev/*),
+      // the unist walker, date-fns for DatePicker's helperFn.tsx, d3-scale and d3-shape for the
+      // charts, the rest of @openuidev/*),
       // everything else (react, lucide, …) is a stub.
       // They are left out of the filter itself, not just answered with `undefined`: Bun treats a
       // module reached through a hop a plugin matched as possibly having side effects, even when
@@ -90,6 +109,10 @@ export function upstreamPlugin(): BunPlugin {
         }
         const target = resolve(dirname(args.importer), args.path);
         if (isUnder(target, GENUI)) return undefined;
+        if (isUnder(args.importer, CHARTS) && isUnder(target, CHARTS) && CHART_PURE.test(target.slice(CHARTS.length + 1))) {
+          const path = chartModule(target);
+          if (path) return { path };
+        }
         if (/\/schema(\.tsx?)?$/.test(target)) return undefined;
         if (isUnder(args.importer, THEME) && /\/(swatches|types)(\.ts)?$/.test(target)) return undefined;
         return { path: target, namespace: "opengpui-stub" };
@@ -127,6 +150,23 @@ export function upstreamPlugin(): BunPlugin {
         const header = `import { ogpuiStructuredClone } from ${JSON.stringify(join(SHIM, "clone.ts"))};\n`;
         return { contents: header + source.replace(/\bstructuredClone\(/g, "ogpuiStructuredClone("), loader: "js" };
       });
+
+      // gpui-shell freezes the built-in prototypes, so assigning a `constructor`
+      // or `toString` an object inherits from them throws (the "override
+      // mistake"); d3-color does so at import. Define the own property first;
+      // the assignment then works as in a browser. Only the d3-color, d3-format
+      // and d3-time-format files that do this, and only plain-identifier targets.
+      build.onLoad(
+        { filter: /node_modules\/(d3-color\/src\/define|d3-format\/src\/(formatSpecifier|locale)|d3-time-format\/src\/locale)\.js$/ },
+        (args) => {
+          const source = readFileSync(args.path, "utf8");
+          const patched = source.replace(
+            /(?<![\w$.)\]])([A-Za-z_$][\w$.]*)\.(toString|constructor)\s*=(?!=)/g,
+            'Object.defineProperty($1, "$2", { writable: true, configurable: true, enumerable: true, value: undefined }).$2 =',
+          );
+          return patched === source ? undefined : { contents: patched, loader: "js" };
+        },
+      );
 
       // refractor/all registers ~300 Prism grammars at import, too slow for gpui-shell
       // to load a mod. This lists the same grammars in the same order (later ones
