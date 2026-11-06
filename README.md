@@ -158,10 +158,18 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   table's own offset (gpui-kit cannot scroll a div from code): wheel, trackpad
   and shift-wheel move it, and there is no scrollbar, which matches upstream's
   hidden one.
+- **Tabs, Accordion, Carousel:** tab lists and carousels scroll by an offset they
+  own (wheel, trackpad, chevrons/arrows), with no scrollbar, as upstream hides it.
+  Tab triggers are gpui-base's native `Tab`, which hears no keys: no arrow-key roving.
+  gpui can't rotate, so the accordion chevron flips instead of turning; only opening
+  and closing slide. The carousel's edge fade (`mask-image`) isn't drawn and its
+  narrow-window card width needs the window width, which render can't read. A chosen
+  tab or open item survives its parent being hidden, where Radix would reset it.
 
 ## Status
 
-Ported from react-ui so far: Stack, Card, CardHeader, Modal, TextContent,
+Ported from react-ui so far: Stack, Card, CardHeader, Tabs/TabItem,
+Accordion/AccordionItem, Steps/StepsItem, Carousel, Modal, TextContent,
 MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Text, BoldText,
 IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
 Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
