@@ -11,12 +11,20 @@
 //
 // refractor/all registers its ~300 grammars at import; gpui-shell's engine
 // interrupts that while loading a mod. They are registered in the same order
-// (a grammar may extend earlier ones), two per frame, by the task of a view
-// that shows a code block; until all are in (about 3 s, 8 s measured in a
-// fresh Herdr window), code shows unhighlighted, then redraws. Past HIGHLIGHT_MS of
-// a render, code not highlighted before waits a frame, except one block per render,
-// so a page of many blocks highlights over a few frames instead of one long one.
-import type { Element as HastElement, ElementContent, RootContent } from "hast";
+// (a grammar may extend earlier ones), one per resume, by the task of a view
+// that shows a code block; until all are in (about 5 s in a fresh Herdr window),
+// code shows unhighlighted, then redraws. A grammar whose registration the engine
+// interrupted is skipped, and a watchdog redraws a view whose task died, which
+// starts another. refractor itself costs about 13 ms per kilobyte there (30 with
+// drawing): code up to INLINE_CHARS is highlighted where it is drawn (past
+// HIGHLIGHT_MS of a render, one such block per render), longer code by a task of
+// the view, a line group per step, the most recently drawn first; it shows plain
+// until then. A CodeBlock past LONG_LINES or LONG_CHARS draws its line groups
+// through a lazy list (markdown/lazy.ts) in a box as tall as the code or the
+// viewport, whichever is less; each group scrolls sideways on its own. In a long
+// markdown block's lazy list rows (render.ts virtualBlock), which allow no
+// handlers, a block has no hover state and no copy button.
+import type { ElementContent, RootContent } from "hast";
 import { div, type Color, type Context, type Element } from "gpui-kit";
 import { syntaxes } from "opengpui-prism-all";
 import oneLight from "react-syntax-highlighter/dist/esm/styles/prism/one-light.js";
@@ -25,28 +33,66 @@ import { refractor } from "refractor/core";
 import { iconButton } from "../components/buttons.ts";
 import type { RenderContext } from "../render/surface.ts";
 import { cssColor } from "../render/tokens.ts";
+import { CODE_GROUP_CHARS, CODE_GROUP_LINES, lineGroups } from "./blocks.ts";
+import { edge, lazyRows } from "./lazy.ts";
 
 let registered = 0;
 
-/**
- * Grammars per resume. gpui-shell interrupts a call that runs too long, and an
- * interrupted engine stops rendering every view; a loop bounded by elapsed time
- * (Date.now) still ran into that, so the bound is a count.
- */
-const PER_TICK = 2;
-
 type Spawned = Parameters<Parameters<Context["spawn"]>[0]>[0];
 
+/** When each view's warming task last resumed: a view whose task stopped (killed) starts another. */
+const warming = new WeakMap<RenderContext["session"], number>();
+/** The grammar the last registration started on: if a task starts there again, that one was killed. */
+let attempted = -1;
+
 /**
- * Register refractor/all's next grammars, in its order, until all are in. Every
- * waiting code block's task takes part through the shared count, so a view that
- * closes doesn't strand the others.
+ * Register refractor/all's next grammars, in its order, one per resume, until all are in;
+ * then redraw the view. Every waiting view's task takes part through the shared count, so a
+ * view that closes doesn't strand the others. gpui-shell interrupts a resume that runs too
+ * long and the task dies with it: a grammar whose registration was interrupted (`tsx`, which
+ * clones two large grammars, was in the engine) is skipped by the next task.
  */
-async function warm(task: Spawned): Promise<void> {
+async function warm(task: Spawned, session: RenderContext["session"], redraw: () => void): Promise<void> {
   while (registered < syntaxes.length) {
-    for (let i = 0; i < PER_TICK && registered < syntaxes.length; i++) refractor.register(syntaxes[registered++]!);
+    warming.set(session, Date.now());
+    if (attempted === registered) {
+      console.log(`[opengpui] registering a grammar was interrupted; skipping it`);
+      registered++;
+      continue;
+    }
+    attempted = registered;
+    refractor.register(syntaxes[registered]!);
+    registered++;
     await task.sleep(16);
   }
+  warming.delete(session);
+  redraw();
+}
+
+/** Views with a watchdog: it redraws the view while warming has stalled, which starts a new warming task. */
+const watched = new WeakSet<RenderContext["session"]>();
+
+/** Start the view's warming task unless one is running (it resumed within the last second). */
+function ensureWarm(ctx: RenderContext, fromRow: boolean): void {
+  const resumed = warming.get(ctx.session);
+  if (resumed !== undefined && Date.now() - resumed < 1000) return;
+  warming.set(ctx.session, Date.now());
+  const session = ctx.session;
+  const watch = !watched.has(session);
+  watched.add(session);
+  ctx.after((cx) => {
+    cx.spawn((task) => warm(task, session, () => ctx.wake()));
+    if (watch) {
+      cx.spawn(async (task) => {
+        while (!highlightingReady()) {
+          await task.sleep(1000);
+          if (Date.now() - (warming.get(session) ?? 0) > 1000) ctx.wake();
+        }
+        watched.delete(session);
+      });
+    }
+  });
+  if (fromRow) ctx.wake(); // a row runs after the render, so its after() needs a wake of its own
 }
 
 const highlightingReady = () => registered === syntaxes.length;
@@ -96,43 +142,169 @@ function flatten(nodes: (ElementContent | RootContent)[], classes: string[], out
 const highlighted = new Map<string, Segment[]>();
 const plain = (code: string): Segment[] => [{ text: code, classes: [] }];
 
+function remember(key: string, segments: Segment[]): void {
+  highlighted.set(key, segments);
+  if (highlighted.size > 400) highlighted.delete(highlighted.keys().next().value!);
+}
+
 /**
  * Past this much of a render, code not highlighted before waits for a later frame (see
  * budget.ts), except the first such block of each render: every render highlights at
  * least one, so a page whose render is always long still finishes, a block per frame.
  */
 const HIGHLIGHT_MS = 20;
+/**
+ * refractor costs about 30 ms per kilobyte in gpui-shell's engine (measured: a 16-line,
+ * 800-character group took 26 ms), so only code this short (about 9 ms) is highlighted in
+ * the call that draws it; longer code is highlighted by a task of its view (highlightLater).
+ */
+const INLINE_CHARS = 300;
+/**
+ * What one task step highlights at most (about 30 ms; a 3,000-character step never finished
+ * in a resume, so the step is well inside the budget): longer code is tokenized in line
+ * groups (blocks.ts lineGroups) of this size, each on its own, so a token that spans a
+ * group boundary (a block comment, a template string) restarts at it.
+ */
+const TASK_GROUP_LINES = 40;
+const TASK_GROUP_CHARS = 1_000;
+/** How often a view's highlighting task redraws the view while blocks are still waiting. */
+const REDRAW_MS = 250;
+/** A view's highlighting task that hasn't resumed for this long was killed: a new one may start. */
+const TASK_STALE_MS = 1000;
+/** Code waiting for a view's highlighting task, newest last (drawn most recently: on screen). */
+interface Job {
+  code: string;
+  language: string;
+  lines: string[];
+  starts: number[];
+  /** The next group to highlight, and the segments of those done. */
+  group: number;
+  out: Segment[];
+  failed?: boolean;
+}
+const jobs = new WeakMap<RenderContext["session"], { queue: Map<string, Job>; resumed: number | null; watched: boolean }>();
 /** Per view, the render that last highlighted new code. */
 const highlightedIn = new WeakMap<RenderContext["session"], number>();
+/** Jobs a view keeps waiting at most: past this, the least recently drawn are dropped (and asked again when drawn). */
+const QUEUE_SIZE = 64;
+
+function tokens(code: string, language: string): Segment[] | null {
+  try {
+    return flatten(refractor.highlight(code, language).children, [], []);
+  } catch (e) {
+    console.log(`[opengpui] highlighting ${language} failed: ${e}`);
+    return null;
+  }
+}
 
 /**
- * getCodeTree: refractor's tokens for a known language, plain text otherwise. Kept per
- * block (`mine`, its ctx.local) and in a shared cache, so a page with more blocks than
- * the cache holds never highlights the same block twice.
+ * Queue `code` for the view's highlighting task, which takes the most recently drawn code
+ * first, a line group per step, and redraws the view as each block is done.
  */
-function highlight(ctx: RenderContext, mine: { key: string; segments: Segment[] | null }, code: string, language: string): Segment[] {
-  if (!language || language === "text" || !highlightingReady()) return plain(code);
+function highlightLater(ctx: RenderContext, key: string, code: string, language: string): void {
+  let view = jobs.get(ctx.session);
+  if (!view) jobs.set(ctx.session, (view = { queue: new Map(), resumed: null, watched: false }));
+  const queue = view.queue;
+  const job = queue.get(key);
+  queue.delete(key);
+  if (job) queue.set(key, job);
+  else {
+    const lines = code.split("\n");
+    queue.set(key, { code, language, lines, starts: lineGroups(lines, TASK_GROUP_LINES, TASK_GROUP_CHARS), group: 0, out: [] });
+    if (queue.size > QUEUE_SIZE) queue.delete(queue.keys().next().value!);
+  }
+  view.resumed = Date.now();
+  const state = view;
+  const watch = !view.watched;
+  view.watched = true;
+  ctx.after((cx) => {
+    // The engine kills a resume that runs too long, and its task with it, silently: while code
+    // waits and no task has resumed for a second, the watchdog redraws, which starts another.
+    if (watch) {
+      cx.spawn(async (task) => {
+        while (queue.size) {
+          await task.sleep(1000);
+          if (queue.size && (state.resumed === null || Date.now() - state.resumed > TASK_STALE_MS)) ctx.wake();
+        }
+        state.watched = false;
+      });
+    }
+    cx.spawn(async (task) => {
+      let redrawn = Date.now();
+      try {
+        while (queue.size) {
+          // Each step in a resume of its own: the first would otherwise run inside the pump's call.
+          await task.sleep(16);
+          state.resumed = Date.now();
+          const [key, job] = [...queue].at(-1)!;
+          const g = job.group;
+          const group = job.lines.slice(job.starts[g], job.starts[g + 1]).join("\n");
+          const found = tokens(group, job.language);
+          job.group++; // after the work: a step the engine kills is redone by the next task
+          if (g > 0) job.out.push({ text: "\n", classes: [] });
+          job.out.push(...(found ?? plain(group)));
+          if (!found) job.failed = true;
+          if (job.group + 1 >= job.starts.length) {
+            queue.delete(key);
+            // A block a group of which failed shows plain, and is tried again when next drawn.
+            if (!job.failed) remember(key, job.out);
+            // The pump redraws (a notify from this task, spawned in the pump, didn't redraw the view):
+            // when the queue is empty, or a quarter second on, so a page of many blocks isn't redrawn per block.
+            if (!queue.size || Date.now() - redrawn >= REDRAW_MS) {
+              redrawn = Date.now();
+              ctx.wake();
+            }
+          }
+        }
+      } finally {
+        state.resumed = null;
+      }
+    });
+  });
+  ctx.wake(); // from a lazy list's row the render's own wake has passed
+}
+
+/**
+ * getCodeTree: refractor's tokens for a language it has registered, plain text otherwise
+ * (react-syntax-highlighter's `registered` check). Kept per block (`mine`, its ctx.local)
+ * and in a shared cache, so a page with more blocks than the cache holds never highlights
+ * the same block twice. Short code is highlighted here (`budgeted`: within the render's
+ * HIGHLIGHT_MS; a lazy list's row is a call of its own), longer code by the view's task,
+ * plain until it is done. A highlight that throws shows plain and is not remembered.
+ */
+function highlight(ctx: RenderContext, mine: { key: string; segments: Segment[] | null }, code: string, language: string, budgeted: boolean): Segment[] {
+  if (!language || language === "text" || !highlightingReady() || !refractor.registered(language)) return plain(code);
   const key = `${language}\u0000${code}`;
   if (mine.key === key && mine.segments) return mine.segments;
   let segments = highlighted.get(key);
   if (!segments) {
-    if (ctx.renderTime > HIGHLIGHT_MS && highlightedIn.get(ctx.session) === ctx.frame) {
+    if (code.length > INLINE_CHARS) {
+      highlightLater(ctx, key, code, language);
+      return plain(code);
+    }
+    if (budgeted && ctx.renderTime > HIGHLIGHT_MS && highlightedIn.get(ctx.session) === ctx.frame) {
       ctx.after(() => {}); // the pump redraws, and the next render highlights more
       return plain(code);
     }
     highlightedIn.set(ctx.session, ctx.frame);
-    try {
-      segments = flatten(refractor.highlight(code, language).children, [], []);
-    } catch {
-      segments = plain(code); // a language refractor doesn't know: plain text, as upstream
-    }
-    highlighted.set(key, segments);
-    if (highlighted.size > 100) highlighted.delete(highlighted.keys().next().value!);
+    const found = tokens(code, language);
+    if (!found) return plain(code);
+    segments = found;
+    remember(key, segments);
   }
   mine.key = key;
   mine.segments = segments;
   return segments;
 }
+
+/**
+ * A CodeBlock longer than this (lines, characters) draws its lines through a lazy list:
+ * drawn whole and highlighted, 1,200 lines (33 KB) ran past a render's budget in the engine.
+ */
+const LONG_LINES = 150;
+const LONG_CHARS = 6_000;
+/** Where a host never told its viewport height, a long CodeBlock's box is at most this tall. */
+const DEFAULT_VIEWPORT = 600;
 
 const px = (value: string | undefined): number | undefined => (value?.endsWith("px") ? parseFloat(value) : undefined);
 const families = (value: string | undefined) => (value ?? "monospace").split(",").map((f) => f.trim().replace(/^["']|["']$/g, ""));
@@ -143,6 +315,17 @@ export interface CodeBlockOptions {
   theme?: "mode" | "dark";
   /** The box padding: markDownRenderer.scss forces 25px; a bare CodeBlock keeps its theme's (`1em`). */
   padding?: "markdown" | "theme";
+  /**
+   * Drawn in a lazy list's row (gpui-kit `list`), which allows no handlers: no hover
+   * state and no copy button; the code still scrolls sideways natively.
+   */
+  static?: boolean;
+  /**
+   * One line group of a long fence in a lazy list (render.ts virtualBlock): only the first
+   * group has the box's top padding and corners, only the last its bottom ones. Each group
+   * scrolls sideways on its own.
+   */
+  edges?: { top: boolean; bottom: boolean };
 }
 
 /**
@@ -161,17 +344,8 @@ export function codeBlock(
   const theme = (options.theme === "dark" || t.mode === "dark" ? vscDarkPlus : oneLight) as Theme;
   const pre = theme['pre[class*="language-"]'] ?? {};
   const codeTag = { ...theme['code[class*="language-"]'], ...theme[`code[class*="language-${language}"]`] };
-  const local = ctx.local({ hovered: false, copied: false, waiting: false, highlight: { key: "", segments: null as Segment[] | null } }, part);
-  if (language && language !== "text" && !highlightingReady() && !local.waiting) {
-    local.waiting = true;
-    ctx.after((cx) => {
-      cx.spawn(async (view) => {
-        await warm(view);
-        local.waiting = false;
-        view.notify();
-      });
-    });
-  }
+  const local = ctx.local({ hovered: false, copied: false, highlight: { key: "", segments: null as Segment[] | null } }, part);
+  if (language && language !== "text" && !highlightingReady()) ensureWarm(ctx, !!options.static);
 
   const preSize = px(pre.fontSize) ?? inheritedSize;
   const size = px(codeTag.fontSize) ?? preSize;
@@ -196,42 +370,79 @@ export function codeBlock(
     return el;
   };
 
-  // One row per line; an empty line keeps its height.
-  const lines: Element[][] = [[]];
-  for (const seg of highlight(ctx, local.highlight, code, language)) {
-    const style = tokenStyle(seg.classes, theme);
-    seg.text.split("\n").forEach((piece, i) => {
-      if (i > 0) lines.push([]);
-      if (piece) lines.at(-1)!.push(span(piece, style));
-    });
-  }
-  // A browser draws no empty line after a final newline.
-  if (code.endsWith("\n") && lines.length > 1) lines.pop();
   const regular = face(400);
-  let body = div()
-    .flex_none()
-    .flex()
-    .flex_col()
-    .text_size(size)
-    .line_height(lineHeight)
-    .text_color(baseColor)
-    .children(lines.map((spans) => div().flex().flex_row().whitespace_nowrap().min_h(size * lineHeight).children(spans)));
-  if (regular) body = body.font_family(regular.family).font_weight(regular.weight);
+  /** The lines of `segments`, one row per line; an empty line keeps its height. */
+  const column = (segments: Segment[], text: string): Element => {
+    const lines: Element[][] = [[]];
+    for (const seg of segments) {
+      const style = tokenStyle(seg.classes, theme);
+      seg.text.split("\n").forEach((piece, i) => {
+        if (i > 0) lines.push([]);
+        if (piece) lines.at(-1)!.push(span(piece, style));
+      });
+    }
+    // A browser draws no empty line after a final newline.
+    if (text.endsWith("\n") && lines.length > 1) lines.pop();
+    let body = div()
+      .flex_none()
+      .flex()
+      .flex_col()
+      .text_size(size)
+      .line_height(lineHeight)
+      .text_color(baseColor)
+      .children(lines.map((spans) => div().flex().flex_row().whitespace_nowrap().min_h(size * lineHeight).children(spans)));
+    if (regular) body = body.font_family(regular.family).font_weight(regular.weight);
+    return body;
+  };
 
   // An inline theme radius beats codeBlock.scss's 0.5rem; vscDarkPlus sets none.
   const length = (value: string | undefined): number | undefined =>
     value?.endsWith("em") ? parseFloat(value) * preSize : px(value);
   const radius = length(pre.borderRadius) ?? 8;
   const background: Color = cssColor(pre.background ?? pre.backgroundColor ?? "") ?? t.sunk;
-  const highlighter = div()
-    .id(ctx.id(`${part}-pre`))
-    .flex()
-    .flex_row()
-    .overflow_x_scroll()
-    .p(options.padding === "theme" ? (length(pre.padding) ?? 0) : 25)
-    .rounded(radius)
-    .bg(background)
-    .child(body);
+  const pad = options.padding === "theme" ? (length(pre.padding) ?? 0) : 25;
+  let highlighter: Element;
+  const codeLines = code.replace(/\n$/, "").split("\n");
+  if (!options.static && (codeLines.length > LONG_LINES || code.length > LONG_CHARS)) {
+    // Long code: line groups (blocks.ts lineGroups) in a lazy list, in a box as tall as the code
+    // or the host's viewport, whichever is less; each group highlights and scrolls sideways on its own.
+    const starts = lineGroups(codeLines, CODE_GROUP_LINES, CODE_GROUP_CHARS);
+    const groups = starts.length - 1;
+    const height = Math.min(codeLines.length * size * lineHeight + 2 * pad, ctx.viewportHeight ?? DEFAULT_VIEWPORT);
+    highlighter = div()
+      .relative()
+      .w_full()
+      .h(height)
+      .rounded(radius)
+      .bg(background)
+      .children(
+        lazyRows(ctx, part, {
+          count: groups,
+          key: (g) => `g${starts[g]}`,
+          row: (g) => {
+            const text = codeLines.slice(starts[g], starts[g + 1]).join("\n");
+            const row = div()
+              .id(ctx.id(`${part}-g${starts[g]}`))
+              .w_full()
+              .flex()
+              .flex_row()
+              .overflow_x_scroll()
+              .px(pad)
+              .when(g === 0, (el) => el.pt(pad))
+              .when(g === groups - 1, (el) => el.pb(pad))
+              .child(column(highlight(ctx, { key: "", segments: null }, text, language, false), text));
+            return edge(row, g, groups);
+          },
+        }),
+      );
+  } else {
+    const edges = options.edges ?? { top: true, bottom: true };
+    let box = div().id(ctx.id(`${part}-pre`)).flex().flex_row().overflow_x_scroll().px(pad).bg(background).child(column(highlight(ctx, local.highlight, code, language, !options.static), code));
+    if (edges.top) box = box.pt(pad).rounded_t(radius);
+    if (edges.bottom) box = box.pb(pad).rounded_b(radius);
+    highlighter = box;
+  }
+  if (options.static) return div().relative().w_full().child(highlighter);
 
   // CodeBlock.tsx draws lucide's `<Copy />` at its default size 24; the 16px `.openui-icon-button-icon`
   // span squeezes the svg (a flex item) to 16, as the reference renderer measures.
@@ -270,20 +481,4 @@ export function codeBlock(
         .transition("opacity", { duration: 200, easing: "ease-in-out" })
         .child(local.copied ? copy.text_color(t.textSuccessPrimary).bg(t.successBackground) : copy),
     );
-}
-
-/** The language markdown's `code` override would give a CodeBlock, or null for inline code. */
-export function codeBlockLanguage(node: HastElement): string | null {
-  const className = node.properties.className;
-  const classes = Array.isArray(className) ? className.join(" ") : typeof className === "string" ? className : "";
-  const match = /language-(\w+)/.exec(classes);
-  if (match || (!classes && textOf(node).includes("\n"))) return match?.[1] ?? "text";
-  return null;
-}
-
-/** React's String(children) for a code element: its text. */
-export function textOf(node: ElementContent): string {
-  if (node.type === "text") return node.value;
-  if (node.type === "element") return node.children.map(textOf).join("");
-  return "";
 }

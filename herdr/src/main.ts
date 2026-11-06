@@ -75,6 +75,8 @@ export default class OpenGpui extends View {
   private wakeWriter: (() => void) | null = null;
   private writeError: string | null = null;
   private lastErrorReport = "";
+  /** The body's height inside its padding, as last told to the surface. */
+  private viewportHeight = -1;
   /** Filled once the tools file loads; the session looks tools up at call time. */
   private readonly tools: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {};
 
@@ -241,8 +243,26 @@ export default class OpenGpui extends View {
     const errors = this.session.errors;
     const content = this.surface.renderContent();
     // The response draws in a plain column, like OpenUI's Renderer root, in body text.
+    // Its height inside the padding is what a long markdown block's scroll region fills.
+    const pad = t.spaceL;
     const body = textStyle(
-      div().id("opengpui-body").flex().flex_col().flex_1().min_h(0).overflow_y_scrollbar().p(t.spaceL).text_color(t.textNeutralPrimary),
+      div()
+        .id("opengpui-body")
+        .flex()
+        .flex_col()
+        .flex_1()
+        .min_h(0)
+        .overflow_y_scrollbar()
+        .p(pad)
+        .text_color(t.textNeutralPrimary)
+        .on_size_change((size, cx) => {
+          const height = Math.max(0, size.height - 2 * pad);
+          if (this.viewportHeight !== height) {
+            this.viewportHeight = height;
+            this.surface.setViewportHeight(height);
+            cx.notify();
+          }
+        }),
       typography(t, "body", "default"),
     );
     // Host chrome: a status line above, errors below, in OpenUI's small label text.
