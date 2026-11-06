@@ -3,6 +3,7 @@
 import type { Components } from "../render/surface.ts";
 import { Button, Buttons } from "./buttons.ts";
 import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
+import { DatePicker } from "./datepicker.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
 import { Card, CardHeader, Separator, Stack } from "./layout.ts";
 import { Col, Table } from "./tables.ts";
@@ -32,6 +33,7 @@ export const components: Components = {
   Label,
   Input,
   TextArea,
+  DatePicker,
   // Buttons
   Button,
   Buttons,
