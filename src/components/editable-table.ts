@@ -603,8 +603,10 @@ export const EditableTable: Component = {
         if (!live && st.overField === part) st.overField = null;
         base = base
           .on_click((_e, cx) => {
-            // onClickCapture: a press on the selected cell's field belongs to the picker.
-            if (isEditing || st.overField === part) return;
+            // onClickCapture: the first press anywhere in the cell, its field included, selects it.
+            // On the selected cell the field is the live picker, whose own press opens it (and
+            // reaches onOpenChange), so a press over the field is left to it.
+            if (isEditing || (isSelected && st.overField === part)) return;
             if (!isSelected) handleCellSelect(ri, columnId);
             else handleStartEdit(ri, columnId);
             cx.notify();
