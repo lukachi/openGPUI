@@ -1,0 +1,5 @@
+{
+  "repo": "https://github.com/thesysdev/openui",
+  "commit": "fe9171c769cafa2d0ac9606d856e210d87782140",
+  "note": "lang-core and react-ui/src/genui-lib are built from this commit"
+}

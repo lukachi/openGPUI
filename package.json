@@ -1,0 +1,25 @@
+{
+  "name": "opengpui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenUI Lang rendered with native gpui-kit elements",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "sync": "bun scripts/sync-upstream.ts && bun scripts/sync-types.ts",
+    "typecheck": "tsc -p . && tsc -p scripts",
+    "build": "bun scripts/build.ts",
+    "test": "bun scripts/build.ts && bun test",
+    "check": "bun run typecheck && bun run build && herdr-app check herdr/mods/opengpui",
+    "install-herdr": "bun scripts/build.ts && bun scripts/install-herdr.ts"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@openuidev/lang-core": "1.1.0",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}
