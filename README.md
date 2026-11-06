@@ -26,7 +26,7 @@ flowchart LR
 | `src/runtime/` | `Session`: one response's parse, `$state` store, queries/mutations, forms, validation, actions, errors. Framework-free port of react-lang's state hook. |
 | `src/render/` | `Surface`: draws a session with gpui-kit; owns the pump task that creates retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. `fonts.ts`: the Inter cuts and how a stack resolves to them. `icons.ts`/`lucide.ts`: upstream's lucide lookup and the SVG layout a host ships. |
 | `src/markdown/` | Markdown as react-ui draws it: react-markdown's own pipeline (unified, remark, the plugins each renderer passes) into an HTML tree, drawn with react-ui's markdown styles; code blocks highlighted by the same Prism grammars and themes. |
-| `src/components/` | One renderer per OpenUI component. Missing ones draw a "not supported yet" box and are left out of prompts. |
+| `src/components/` | One renderer per OpenUI component. Missing ones draw a "not supported yet" box and are left out of prompts. `charts/` holds the chart renderers and their shared foundation (its `index.ts` documents the API). |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries, and `subsetLibrary()` to prompt only what is implemented. |
 | `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js`); `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
 | `bin/opengpui.ts` | The agent CLI: `prompt`, `check`, `show`, `wait`, `events`. |
@@ -182,6 +182,14 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   `0..max-min` with values shifted back and rounded to the step's decimals as Radix
   does, and it's only made once `max > min` and `step > 0` (props stream in one by
   one). The value inputs stay left aligned (gpui-base's Input ignores alignment).
+- **Charts:** gpui has no SVG and no text measurement. Geometry is painted with gpui
+  paths, replayed from the same path data upstream emits (d3-shape and react-ui's own
+  bar paths); axis text is placed elements with SVG baselines taken from Inter's
+  metrics. Labels are measured by drawing them invisibly, so a string with characters
+  no chart has met yet holds the plot back one frame. Hover followers glide on native
+  springs tuned to upstream's presets (active dots in a straight line, not along the
+  curve); there are no round line caps; RadarChart's hover reacts inside the series
+  polygons only.
 
 ## Status
 
@@ -192,10 +200,11 @@ IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock
 Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
 Select/SelectItem, DatePicker, Slider, CheckBoxGroup/CheckBoxItem,
 RadioGroup/RadioItem, SwitchGroup/SwitchItem, Chips/ChipItem, Button, Buttons,
-IconButton. The rest of OpenUI's ~80 components
-are being ported. Built against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI
-lang-core 1.1.0, Inter 4.1, lucide 0.562.0, and for dates date-fns 4.4.0 and
-react-day-picker 9.14.0 (upstream's lockfile versions).
+IconButton, BarChart, LineChart, AreaChart, HorizontalBarChart, RadarChart, Series.
+The rest of OpenUI's ~80 components are being ported. Built against herdr-app 0.1.13
+(gpui-shell 0.7.1), OpenUI lang-core 1.1.0, Inter 4.1, lucide 0.562.0, and at
+upstream's lockfile versions date-fns 4.4.0, react-day-picker 9.14.0, d3-scale
+4.0.2 and d3-shape 3.2.0.
 
 The Herdr pane draws with OpenUI's tokens in the Herdr theme's colors by default
 (`look: "herdr"`); `look: "openui"` uses OpenUI's own light/dark theme. Both
