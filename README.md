@@ -122,8 +122,8 @@ sources under `.upstream/openui/packages/react-ui/src/`:
    difference to the file header and to the list below.
 4. Retained native state (inputs, sliders) goes through `ctx.retained(...)`;
    work that needs a live phase through `ctx.after(...)`.
-5. `bun run check`, then compare it in Herdr with OpenUI's own theme:
-   `opengpui show file.oui --look openui`.
+5. `bun run check`, then compare `bun scripts/preview.ts file.oui --mode light|dark`
+   with `bun scripts/reference.ts shot file.oui --mode light|dark`.
 
 ### Where gpui differs from the browser
 
@@ -132,6 +132,8 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   cut. Heading large/xl track −0.1px upstream; here they get the −1% of all other text.
 - **Shadows:** OpenUI's custom shadows map to gpui's presets (`shadow-m` → `shadow_sm`, …):
   gpui-shell exposes only presets, not gpui's `BoxShadow`.
+- **Transitions:** gpui animates only opacity, size and position, so upstream's color
+  transitions (hover fills, borders) switch at once. `cursor: not-allowed` isn't drawn.
 - **Markdown:** gpui has no inline text layout, so a paragraph is a wrapping row
   of words, one element per word in its own style. Such text can't be selected,
   and a word may wrap one space earlier than in a browser (the trailing space
@@ -149,12 +151,13 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 
 ## Status
 
-First wave, ported from react-ui: Stack, Card, CardHeader, TextContent,
-MarkDownRenderer, Callout, Text, BoldText, Tag, Icon, Separator, Table/Col,
-Form, FormControl, Label, Input, TextArea, Button, Buttons. The rest of
-OpenUI's ~80 components (tabs, selects, charts, modals, card blocks, …) are not
-drawn yet. Built against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI lang-core
-1.1.0, Inter 4.1 and lucide 0.562.0.
+Ported from react-ui so far: Stack, Card, CardHeader, TextContent,
+MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Text, BoldText,
+IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
+Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea, Button,
+Buttons, IconButton. The rest of OpenUI's ~80 components are being ported. Built
+against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI lang-core 1.1.0, Inter 4.1
+and lucide 0.562.0.
 
 The Herdr pane draws with OpenUI's tokens in the Herdr theme's colors by default
 (`look: "herdr"`); `look: "openui"` uses OpenUI's own light/dark theme. Both
