@@ -135,6 +135,8 @@ export interface ButtonOptions {
   destructive?: boolean;
   size?: ButtonSize;
   disabled?: boolean;
+  /** A lucide icon before the label (Button's `iconLeft`); `& svg { width: 1em }` sizes it to the label text. */
+  iconLeft?: string;
   onClick: (cx: Context) => void;
 }
 
@@ -157,7 +159,11 @@ export function button(ctx: RenderContext, o: ButtonOptions): Element {
     default:
       el = el.py(t.spaceS - 1).px(t.spaceSM).rounded(t.radiusM);
   }
-  return paint(el, look(t, o.variant ?? "primary", !!o.destructive), !!o.disabled, o.onClick).child(o.label);
+  const textSize = typography(t, "label", o.size === "small" || o.size === "extra-small" ? "small" : "default").size;
+  const icon = o.iconLeft ? ctx.icon(o.iconLeft, { size: textSize }) : null;
+  return paint(el, look(t, o.variant ?? "primary", !!o.destructive), !!o.disabled, o.onClick)
+    .children(optional(icon))
+    .child(o.label);
 }
 
 export type IconButtonSize = "3-extra-small" | "2-extra-small" | "extra-small" | "small" | "medium" | "large";

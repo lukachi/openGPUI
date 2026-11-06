@@ -20,5 +20,6 @@ export const {
   selectionField,
   toggleBoolean,
   dateLogic,
+  editableTableModel,
 } = built as typeof headless;
 export type Session = InstanceType<typeof headless.Session>;
