@@ -134,6 +134,10 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   gpui-shell exposes only presets, not gpui's `BoxShadow`.
 - **Transitions:** gpui animates only opacity, size and position, so upstream's color
   transitions (hover fills, borders) switch at once. `cursor: not-allowed` isn't drawn.
+- **Choice controls:** gpui-base's unstyled `Checkbox`, `Radio` and `Switch` carry
+  focus, keyboard and disabled state; the indicators are drawn from upstream's sizes
+  (the checkmark is a path without round caps). There is no focus ring and no
+  `overflow-wrap: anywhere`: a word longer than its row isn't broken.
 - **Markdown:** gpui has no inline text layout, so a paragraph is a wrapping row
   of words, one element per word in its own style. Such text can't be selected,
   and a word may wrap one space earlier than in a browser (the trailing space
@@ -154,8 +158,10 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 Ported from react-ui so far: Stack, Card, CardHeader, TextContent,
 MarkDownRenderer, Callout, TextCallout, InlineHeader, CodeBlock, Text, BoldText,
 IconText, MetricIndicatorInline, MetricIndicatorWithStrikethrough, Tag, TagBlock,
-Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea, Button,
-Buttons, IconButton. The rest of OpenUI's ~80 components are being ported. Built
+Icon, Separator, Table/Col, Form, FormControl, Label, Input, TextArea,
+CheckBoxGroup/CheckBoxItem, RadioGroup/RadioItem, SwitchGroup/SwitchItem,
+Chips/ChipItem, Button, Buttons, IconButton. The rest of OpenUI's ~80 components
+are being ported. Built
 against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI lang-core 1.1.0, Inter 4.1
 and lucide 0.562.0.
 
