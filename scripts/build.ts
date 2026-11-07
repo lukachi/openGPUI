@@ -2,6 +2,7 @@
 //   dist/opengpui.js               the library (gpui-kit and gpui-base stay host imports)
 //   herdr/mods/opengpui/main.js    the Herdr mod, with the library bundled in
 //   herdr/mods/opengpui/{fonts,icons}  the assets it ships (bun scripts/assets.ts)
+//   harness/app/main.js            the headless harness's script (tools/oui-harness), with its icons
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { BunPlugin } from "bun";
@@ -10,10 +11,15 @@ import { upstreamPlugin } from "./upstream-plugin.ts";
 const root = join(import.meta.dir, "..");
 
 function copyAssets(): void {
-  for (const dir of ["fonts", "icons"]) {
+  const copies: [string, string][] = [
+    ["fonts", join("herdr", "mods", "opengpui", "fonts")],
+    ["icons", join("herdr", "mods", "opengpui", "icons")],
+    ["icons", join("harness", "app", "icons")],
+  ];
+  for (const [dir, dest] of copies) {
     const from = join(root, ".upstream", "assets", dir);
     if (!existsSync(join(from, ".stamp.json"))) throw new Error(`.upstream/assets/${dir} is missing: run \`bun run sync\``);
-    const to = join(root, "herdr", "mods", "opengpui", dir);
+    const to = join(root, dest);
     rmSync(to, { recursive: true, force: true });
     cpSync(from, to, { recursive: true, filter: (src) => !src.endsWith(".stamp.json") });
   }
@@ -84,6 +90,10 @@ const sizes = {
   "dist/opengpui.js": await bundle("src/index.ts", "dist/opengpui.js", { external: gpui }),
   "herdr/mods/opengpui/main.js": await bundle("herdr/src/main.ts", "herdr/mods/opengpui/main.js", {
     external: [...gpui, "herdr"],
+    plugins: [runtimeBuiltins],
+  }),
+  "harness/app/main.js": await bundle("harness/src/main.ts", "harness/app/main.js", {
+    external: [...gpui, "oui-harness"],
     plugins: [runtimeBuiltins],
   }),
   "dist/opengpui-headless.js": await bundle("src/headless.ts", "dist/opengpui-headless.js", { target: "bun" }),

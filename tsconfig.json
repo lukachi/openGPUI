@@ -29,6 +29,7 @@
   "include": [
     "src",
     "herdr/src",
+    "harness/src",
     "types/gpui-kit.d.ts"
   ]
 }

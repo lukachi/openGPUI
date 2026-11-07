@@ -29,6 +29,8 @@ flowchart LR
 | `src/components/` | One renderer per OpenUI component. Missing ones draw a "not supported yet" box and are left out of prompts. `charts/` holds the chart renderers and their shared foundation (its `index.ts` documents the API). |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries, and `subsetLibrary()` to prompt only what is implemented. |
 | `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js`); `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
+| `harness/` | The headless harness's script (`harness/src/main.ts` → `harness/app/main.js`): the mod's content area without Herdr, for `scripts/shot.ts`. |
+| `tools/` | `oui-harness` (Rust): runs the harness script offscreen on Herdr's gpui-shell. `oui-poke` (Swift): input for a Herdr preview window. |
 | `bin/opengpui.ts` | The agent CLI: `prompt`, `check`, `show`, `wait`, `events`. |
 | `skills/opengpui/` | Agent skill: how an agent uses the CLI and the pane. |
 | `scripts/` | Upstream sync, assets (Inter cuts, lucide SVGs), build (Bun plugin that compiles upstream without React), install. |
@@ -36,7 +38,7 @@ flowchart LR
 ## Develop
 
 Needs [Bun](https://bun.sh), [uv](https://docs.astral.sh/uv/) (`uvx` runs fontTools to cut
-the fonts) and, for the mod, herdr-app.
+the fonts), for the mod herdr-app, and for shots a Rust toolchain (`cargo`) on macOS.
 
 ```sh
 bun install
@@ -46,8 +48,23 @@ bun run test           # build, then session/library/token tests against the bui
 bun run install-herdr  # copy the mod into ~/.config/herdr-app/mods/opengpui, link `opengpui` into ~/.local/bin
 ```
 
+`bun scripts/shot.ts file.oui... [--mode light,dark] [--library chat] [--width 1280]
+[--height 820] [--steps steps.json] [--out dir] [--spec]` is how to look at UI: it builds
+this checkout and draws each file offscreen, with the real core on the gpui-shell runtime
+Herdr embeds, and writes `tmp/shots/<file>-<mode>.png` (2x) once the view has settled. No
+window appears and nothing takes focus, so it runs beside the person's work and in
+parallel (`--jobs`, default 4: 122 files in both modes, 244 shots, take about 30 s).
+`--steps` runs input after the first shot (click an id or a point, wheel, hover, key,
+type) and `{ "shot": "name" }` saves `<file>-<mode>-<name>.png`; the actions the session
+sends and every error and runtime warning are printed. `--spec` writes the element
+description and the ids a step can name. The drawing comes from `tools/oui-harness`, a
+Rust host on GPUI's headless app context (simulated clock, Metal offscreen renderer)
+pinned to the herdr-app tag of the installed Herdr; it refuses to run when Herdr's
+`~/.config/herdr-app/gpui-kit.d.ts` says Herdr's runtime has moved (see its `Cargo.toml`).
+
 `bun scripts/preview.ts file.oui... [--mode light|dark|light,dark] [--look openui|herdr]
-[--wait ms] [--keep]` builds this checkout, installs it as its own mod
+[--wait ms] [--keep]` is for the Herdr integration only (props, the events file, `hc`
+replies, `--look herdr`, the pane chrome): it installs this checkout as its own mod
 (`opengpui-<folder>`) in a background Herdr window of the checkout's own, shows each file
 in a new tab, saves a screenshot to `tmp/preview/` once the window has stopped changing,
 and closes the tab. Checkouts never wait for each other.
@@ -71,7 +88,7 @@ OpenUI's docs set it up (Tailwind preflight, react-ui's stylesheet, Inter), on p
 6106. `bun scripts/reference.ts shot <file.oui> --out <file.png> [--mode light|dark]
 [--library openui|chat] [--width px]` saves upstream's render of the file at device
 scale 2, framed like the Herdr body, for side-by-side comparison with
-`scripts/preview.ts`, and prints a URL with the same render live.
+`scripts/shot.ts`, and prints a URL with the same render live.
 
 Outputs (`dist/`):
 
@@ -134,7 +151,7 @@ sources under `.upstream/openui/packages/react-ui/src/`:
    difference to the file header and to the list below.
 4. Retained native state (inputs, sliders) goes through `ctx.retained(...)`;
    work that needs a live phase through `ctx.after(...)`.
-5. `bun run check`, then compare `bun scripts/preview.ts file.oui --mode light|dark`
+5. `bun run check`, then compare `bun scripts/shot.ts file.oui --mode light,dark`
    with `bun scripts/reference.ts shot file.oui --mode light|dark`.
 
 ### Where gpui differs from the browser
