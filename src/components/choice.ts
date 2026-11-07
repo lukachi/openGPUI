@@ -331,10 +331,11 @@ function switchItem(ctx: RenderContext, o: SwitchOptions): Element {
     .when(!o.checked && !o.disabled, (el) => el.hover((s) => s.border_color(t.borderInteractive)))
     .child(thumb);
   const body = typography(t, "body", "default");
-  // The label text is `<label htmlFor>`: a click on it toggles the switch. The description is not.
+  // The label text is `<label htmlFor>`: a click on it toggles the switch. The description is not. A
+  // `<label>` keeps the browser's default cursor (switchItem.scss gives it no `cursor`), unlike the track's pointer.
   const label = o.label
     ? textStyle(div().id(`${o.id}:label`).text_color(t.textNeutralPrimary), body)
-        .when(!o.disabled, (el) => el.cursor_pointer().on_click((_e, cx) => {
+        .when(!o.disabled, (el) => el.on_click((_e, cx) => {
           cx.stop_propagation();
           o.onChange(!o.checked);
         }))

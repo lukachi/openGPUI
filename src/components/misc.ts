@@ -100,9 +100,11 @@ export const TextCallout: Component = {
     const description = text(props.description);
     // .openui-text-callout-content: a column of the two spans; the title takes the variant's color
     // (neutral sets it explicitly, the others inherit it), the description is always neutral primary.
+    // min_w_0: a browser's flex item shrinks to its longest word, so the text wraps inside the row.
     const content = div()
       .flex()
       .flex_col()
+      .min_w_0()
       .when(title !== "", (el) => {
         const titleEl = textStyle(div(), typography(t, "body", "heavy")).child(title);
         return el.child(color ? titleEl.text_color(color) : titleEl);
@@ -140,8 +142,10 @@ export const InlineHeader: Component = {
       .gap(t.space3xs)
       .when(heading !== "", (el) =>
         el.child(
-          // .openui-inline-header-heading: a row (align center, gap xs) around InlineMarkdownRenderer.
-          textStyle(div().flex().flex_row().items_center().gap(t.spaceXs).text_color(t.textNeutralPrimary), headingFont).child(
+          // .openui-inline-header-heading: a row (align center, gap xs) around InlineMarkdownRenderer. A browser
+          // clamps a flex-start item's fit-content width to its container; max_w_full does that here, so a long
+          // heading wraps instead of running past the pane.
+          textStyle(div().flex().flex_row().items_center().gap(t.spaceXs).max_w_full().text_color(t.textNeutralPrimary), headingFont).child(
             markdownInline(ctx, "heading", heading, { font: headingFont, color: t.textNeutralPrimary }),
           ),
         ),

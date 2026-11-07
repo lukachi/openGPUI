@@ -33,8 +33,10 @@
 //    gpui can't rotate, so the open trigger's ChevronRight (rotated 90deg upstream) is lucide's ChevronDown,
 //    which is the same drawing. The chevron's 20px box leaves out the IconButton's `shadow-m`: gpui paints a
 //    shadow under a transparent box, where a browser clips it, which filled the box grey. The trigger is
-//    gpui-base's native `AccordionTrigger` (Enter/Space; no arrow-key roving between triggers, which Radix
-//    has). A chosen section survives its parent being hidden.
+//    gpui-base's `AccordionTrigger` with a focusable div inside it that takes Tab and Enter/Space (base's
+//    trigger is a click handler only; no arrow-key roving between triggers, which Radix has). The focused
+//    trigger draws no focus ring (upstream's `<button>` gets the browser's default one), so a keyboard user
+//    cannot see which section Enter will toggle. A chosen section survives its parent being hidden.
 //  - EntityList: `text-align: right` is the cell's wrapped lines pushed to the right edge (each line is
 //    right-aligned, as in a browser, but the words are laid out as markdownInline lays them).
 //  - FollowUpBlock's "Related Queries" header sets no font upstream and inherits the page's; here it
@@ -394,6 +396,20 @@ function sectionTrigger(ctx: RenderContext, t: Tokens, id: string, text: string,
         // `-content-text`: heading small, grows, centered vertically.
         .child(textStyle(div().flex().flex_1().items_center().justify_start().text_color(t.textNeutralPrimary), typography(t, "heading", "small")).child(text)),
     );
+  // `-trigger` is a Radix `<button>`: Tab reaches it and Enter/Space press it. gpui-base's unstyled
+  // AccordionTrigger is a click handler that base keeps out of keyboard focus (`tab_index` does nothing on
+  // it), so a focusable div inside it, over the whole trigger, is the tab stop (a click focuses it) and takes
+  // the key press, which gpui does not turn into a click on a div.
+  const focusable = div()
+    .id(`${id}:key`)
+    .w_full()
+    .tab_index(0)
+    .on_key_down((e, cx) => {
+      if (e.key !== "enter" && e.key !== "space" && e.key !== " ") return;
+      cx.stop_propagation();
+      toggle(cx);
+    })
+    .child(wrapper);
   // `-trigger`: padding m 0 xs 0, full width, space-between, primary, pointer.
   return AccordionTrigger.new(id)
     .flex()
@@ -407,7 +423,7 @@ function sectionTrigger(ctx: RenderContext, t: Tokens, id: string, text: string,
     .text_color(t.textNeutralPrimary)
     .cursor_pointer()
     .on_change((_open, cx) => toggle(cx))
-    .child(wrapper);
+    .child(focusable);
 }
 
 export const SectionBlock: Component = {
