@@ -114,6 +114,11 @@ Re-read on every change of its folder. Plain OpenUI Lang, or framed for streamin
 end line the pane shows "streaming…", holds buttons and inputs, and reports no errors. Under
 `$HOME`, at most 1 MiB. Relative image paths resolve against the file's folder.
 
+Where: anywhere under `$HOME` works. The skill asks agents to keep panes out of repositories, in
+`~/.cache/opengpui/<project>-<topic>.oui`, rewriting one file per topic. Nothing deletes them:
+not the CLI, not the mod, not the agent (unless the person asks). The folder is disposable and
+the person can clear it at any time; a pane whose file is gone shows "Waiting for <path>".
+
 ## Tools
 
 `--tools tools.json`:

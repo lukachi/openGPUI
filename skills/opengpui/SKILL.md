@@ -30,13 +30,19 @@ Options, given the same way to `prompt`, `check` and `show`:
 ## 2. Write, check, show
 
 1. Write the whole file at once (write to a temp file and rename if your tool
-   writes in pieces): the pane reports errors in whatever it reads. Put it under
-   your home folder (Herdr mods read only there), under 1 MiB, `root = …` first.
-2. `opengpui check ui/review.oui`: parses it as the pane will. It prints each
+   writes in pieces): the pane reports errors in whatever it reads. Under 1 MiB,
+   `root = …` first. Where:
+   - A pane is part of the conversation, not of the project: write it to
+     `~/.cache/opengpui/<project>-<topic>.oui` (create the folder), never into the
+     repository. For the same topic, rewrite the same file instead of adding new ones.
+   - Herdr mods read only under the home folder, so not `/tmp` or `$TMPDIR`.
+   - Never delete these files yourself. If the person asks to keep one, copy it where
+     they say. `~/.cache/opengpui/` is theirs to clear whenever they like.
+2. `opengpui check ~/.cache/opengpui/shop-deploy.oui`: parses it as the pane will. It prints each
    problem (unknown component, wrong argument, a name used but never defined, a
    statement root never reaches, an unclosed bracket, a Diagram id that matches
    nothing) and exits 1; fix until it prints `ok:`.
-3. `opengpui show ui/review.oui --title "Deploy review"` opens the pane right of
+3. `opengpui show ~/.cache/opengpui/shop-deploy.oui --title "Deploy review"` opens the pane right of
    your terminal (`--down` below, `--tab` a new tab; `--look openui` for OpenUI's own
    colors instead of Herdr's). Show once: afterwards just rewrite the file. Showing a
    file again closes its earlier pane and starts a new event log.
@@ -54,16 +60,16 @@ Choose how you receive events when you `show`:
 - **Reply (default when `$HC_TERMINAL_ID` is set):** end your turn. The event is
   typed into your terminal as your next message:
   ```
-  [opengpui /abs/ui/review.oui] continue_conversation: Approve deploy
-  {"at":"…","src":"/abs/ui/review.oui","type":"continue_conversation","message":"Approve deploy","params":{"context":{"id":42}},"formName":"review","formState":{"review":{"note":"ship it"}}}
+  [opengpui /Users/you/.cache/opengpui/shop-deploy.oui] continue_conversation: Approve deploy
+  {"at":"…","src":"/Users/you/.cache/opengpui/shop-deploy.oui","type":"continue_conversation","message":"Approve deploy","params":{"context":{"id":42}},"formName":"review","formState":{"review":{"note":"ship it"}}}
   ```
-- **Wait:** `opengpui show … --no-reply`, then `opengpui wait ui/review.oui --timeout 100`
+- **Wait:** `opengpui show … --no-reply`, then `opengpui wait ~/.cache/opengpui/shop-deploy.oui --timeout 100`
   blocks until an event and prints each one you haven't seen yet as a JSON line
   (none is lost between `show` and `wait`). Keep `--timeout` below your shell tool's
   time limit (default 110 s); exit 1 means nothing yet: run `wait` again.
   Don't combine it with replies: you'd get every event twice.
 
-`opengpui events ui/review.oui` prints every event since `show`.
+`opengpui events ~/.cache/opengpui/shop-deploy.oui` prints every event since `show`.
 
 Reading an event: `message` is what the button said; `params.context` is
 `@ToAssistant`'s second argument; `formState` is `{ "<form>": { "<field>": value } }`
@@ -87,7 +93,7 @@ If the file has errors once complete, the pane lists them and sends an event of
 `"type": "errors"` (`errors: [{ code, message, hint, component, statementId }]`).
 Fix the file; the pane redraws.
 
-`opengpui close ui/review.oui` closes the pane when you're done with it.
+`opengpui close ~/.cache/opengpui/shop-deploy.oui` closes the pane when you're done with it.
 
 ## Diagrams
 

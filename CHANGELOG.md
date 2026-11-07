@@ -4,6 +4,12 @@ Releases are tagged `v<version>` from `package.json`'s `version`. Each one ships
 on herdr.dev (`gallery/opengpui/`) and as `opengpui-v<version>.tar.gz` on GitHub Releases. The
 [agent contract](docs/agent-contract.md) changes only with a note here.
 
+## Unreleased
+
+- The skill asks agents to write panes to `~/.cache/opengpui/<project>-<topic>.oui`, out of the
+  person's repositories, one file per topic, and never to delete them; the person clears that
+  folder when they like.
+
 ## 0.2.0
 
 - Diagrams, openGPUI's own components on top of OpenUI's libraries
