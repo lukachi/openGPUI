@@ -82,6 +82,8 @@ struct Item {
     library: String,
     /// Where to write the element description of the settled view.
     spec: Option<PathBuf>,
+    /// Query/Mutation tools as JSON text (`shot.ts --tools`): the script answers them.
+    tools: Option<String>,
     steps: Vec<StepEntry>,
 }
 
@@ -197,6 +199,7 @@ fn run() -> Result<()> {
                 ("mode".into(), HostValue::Str(item.mode.clone())),
                 ("library".into(), HostValue::Str(item.library.clone())),
                 ("follow".into(), HostValue::Bool(follow)),
+                ("tools".into(), item.tools.clone().map_or(HostValue::Null, HostValue::Str)),
             ]));
         });
         // Herdr grants every mod the clipboard (herdr-app src/mods.rs); here it is

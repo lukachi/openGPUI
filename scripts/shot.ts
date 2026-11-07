@@ -28,6 +28,9 @@
 //     --out <dir>           default tmp/shots: <file>-<mode>.png, <file>-<mode>-<name>.png
 //     --spec                also write <file>-<mode>.spec.txt: the element description after
 //                           the last step, and the ids a step can name, with their bounds
+//     --tools <tools.json>  Query/Mutation tools: { "name": { "result": any, "delay": ms, "error": "…" } };
+//                           each answers `delay` simulated ms after the call (a Herdr tools file
+//                           runs commands instead; here the answer is given)
 //     --jobs <n>            harness processes in parallel (default 4)
 //     --quiet <ms>          simulated time without a script render that counts as
 //                           settled (default 2500: the core's watchdogs restart
@@ -86,6 +89,8 @@ const jobs = Number(option("--jobs") ?? 4);
 const quiet = option("--quiet");
 const spec = flag("--spec");
 const asJson = flag("--json");
+const toolsPath = option("--tools");
+const tools = toolsPath ? JSON.stringify(JSON.parse(readFileSync(toolsPath, "utf8"))) : undefined;
 const files = args.map((f) => resolve(f));
 if (
   !files.length ||
@@ -95,7 +100,7 @@ if (
   !(width > 0 && height > 0 && jobs > 0 && (quiet == null || Number(quiet) >= 0))
 ) {
   console.error("usage: bun scripts/shot.ts <file.oui>... [--mode light,dark] [--library openui|chat] [--width 1280] [--height 820]");
-  console.error("                          [--steps steps.json] [--out dir] [--spec] [--jobs 4] [--quiet 2500] [--json]");
+  console.error("                          [--steps steps.json] [--tools tools.json] [--out dir] [--spec] [--jobs 4] [--quiet 2500] [--json]");
   process.exit(2);
 }
 const steps: Step[] = stepsPath
@@ -131,6 +136,7 @@ const items = modes.flatMap((mode) =>
       mode,
       library,
       ...(spec ? { spec: join(outDir, `${stem}.spec.txt`) } : {}),
+      ...(tools ? { tools } : {}),
       steps: [{ shot: join(outDir, `${stem}.png`) }, ...steps.map((s) => ("shot" in s ? { shot: join(outDir, `${stem}-${s.shot}.png`) } : s))],
     };
   }),

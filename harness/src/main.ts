@@ -42,6 +42,7 @@ export default class Harness extends View {
     const source = subsetLibrary(libraries[j.library] ?? libraries.openui, Object.keys(components));
     this.session = new Session({
       library: source.library,
+      tools: this.tools(j.tools, cx),
       onAction: (event) => this.onAction(event),
       onError: (errors) => this.onErrors(errors),
     });
@@ -69,6 +70,37 @@ export default class Harness extends View {
         cx.notify();
       }
     });
+  }
+
+  /**
+   * Query/Mutation tools for `shot.ts --tools`: each answers its `result` (or fails with
+   * `error`) `delay` simulated ms after the call, as a Herdr tools.json command answers
+   * after it runs. The answers go out from this view's own task.
+   */
+  private tools(text: string | null, cx: Context): Record<string, (args: Record<string, unknown>) => Promise<unknown>> {
+    if (!text) return {};
+    const specs = JSON.parse(text) as Record<string, { result?: unknown; error?: string; delay?: number }>;
+    const pending: { due: number; settle: () => void }[] = [];
+    cx.spawn(async (cx) => {
+      for (;;) {
+        await cx.sleep(16);
+        const now = clock();
+        for (const call of pending.filter((c) => c.due <= now)) {
+          pending.splice(pending.indexOf(call), 1);
+          call.settle();
+        }
+      }
+    });
+    return Object.fromEntries(
+      Object.entries(specs).map(([name, spec]) => [
+        name,
+        () =>
+          new Promise((resolve, reject) => {
+            const settle = () => (spec.error != null ? reject(new Error(spec.error)) : resolve(spec.result ?? null));
+            pending.push({ due: clock() + (spec.delay ?? 0), settle });
+          }),
+      ]),
+    );
   }
 
   private onAction(event: ActionEvent): void {

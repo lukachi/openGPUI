@@ -12,6 +12,8 @@ declare module "oui-harness" {
     library: "openui" | "chat";
     /** The steps hand over new texts (a "response" step): look for them with `response()`. */
     follow: boolean;
+    /** `shot.ts --tools`: { name: { result?, error?, delay? } } as JSON text, or null. */
+    tools: string | null;
   }
   /** What to draw in the view being created. */
   export function job(): Job;
