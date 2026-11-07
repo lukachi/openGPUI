@@ -26,5 +26,7 @@ export const {
   dateLogic,
   readImageHeader,
   editableTableModel,
+  indexTree,
+  sameValue,
 } = built as typeof headless;
 export type Session = InstanceType<typeof headless.Session>;

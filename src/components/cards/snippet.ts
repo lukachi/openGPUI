@@ -80,7 +80,7 @@ export const SnippetCardBlock: Component = {
       if (!props.action || ctx.streaming) return;
       const { id, lhs, rhs } = item.props;
       const label = stringProp(lhs, "title") ?? (typeof id === "string" ? id : undefined) ?? `Snippet card ${index + 1}`;
-      void ctx.trigger(
+      ctx.trigger(
         label,
         withItemContext(props.action, {
           itemIndex: index,

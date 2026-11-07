@@ -87,7 +87,7 @@ export const OverviewCardBlock: Component = {
       if (!props.action || ctx.streaming) return;
       const { id, top, bottom } = item.props;
       const title = stringProp(top, "title") ?? stringProp(top, "value");
-      void ctx.trigger(
+      ctx.trigger(
         title ?? (typeof id === "string" ? id : undefined) ?? `Overview card ${index + 1}`,
         withItemContext(props.action, {
           itemIndex: index,

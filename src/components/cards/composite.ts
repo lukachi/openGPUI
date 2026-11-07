@@ -111,7 +111,7 @@ export const CompositeCardBlock: Component = {
       const { title, subtitle, imageAlt } = headerText(item);
       const { id, body, footer } = item.props;
       const { price, button } = footerParts(footer);
-      void ctx.trigger(
+      ctx.trigger(
         title || imageAlt || (typeof id === "string" ? id : "") || `Composite card ${index + 1}`,
         withItemContext(props.action, {
           itemIndex: index,

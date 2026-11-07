@@ -151,7 +151,7 @@ export const ContextCardBlock: Component = {
       const { id, title, body, bgColor, bgImageSrc, bgImageAlt } = item.props;
       // getContextTitleText: a string title, or the Tag's text.
       const titleText = typeof title === "string" ? title : isElementNode(title) ? (stringProp(title, "text") ?? "") : "";
-      void ctx.trigger(
+      ctx.trigger(
         titleText || (typeof id === "string" ? id : "") || `Context card ${index + 1}`,
         withItemContext(props.action, {
           itemIndex: index,

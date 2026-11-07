@@ -14,7 +14,7 @@ import { h_flex, v_flex } from "gpui-base";
 import { div, View, type Context } from "gpui-kit";
 import { mkdir, writeFile } from "fs/promises";
 import { appHome, exec, hc, home, props, readTextFile, theme, watchFolder, window as herdrWindow } from "herdr";
-import { dirname, join } from "path";
+import { basename, dirname, join } from "path";
 import {
   components,
   libraries,
@@ -62,6 +62,9 @@ function plainFormState(state: Record<string, unknown> | undefined): Record<stri
 /** A Response is "streaming" while it is framed with markers and has no end line yet. */
 const isStreaming = (text: string) => /^\]\]>openui:content/m.test(text) && !/^\]\]>openui:end\s*$/m.test(text);
 
+/** How often the writer loop looks for event lines and a new status to write. */
+const WRITE_TICK_MS = 50;
+
 export default class OpenGpui extends View {
   private p: SurfaceProps = {};
   private surface!: Surface;
@@ -70,11 +73,13 @@ export default class OpenGpui extends View {
   private loaded = false;
   private loadError: string | null = null;
   private eventsPath = "";
-  /** Event lines waiting for the writer task, and how to wake it. */
+  /** Event lines waiting for the writer loop. */
   private pendingEvents: string[] = [];
-  private wakeWriter: (() => void) | null = null;
   private writeError: string | null = null;
   private lastErrorReport = "";
+  /** opengpui/status/<name>.json: whether the surface is idle, for tools that wait on it (scripts/preview.ts). */
+  private statusPath = "";
+  private pendingStatus: string | null = null;
   /** The body's height inside its padding, as last told to the surface. */
   private viewportHeight = -1;
   /** Filled once the tools file loads; the session looks tools up at call time. */
@@ -85,6 +90,7 @@ export default class OpenGpui extends View {
     this.srcPath = this.p.src ? expand(this.p.src) : null;
     const name = (this.srcPath ?? "demo").split("/").pop()!.replace(/\.[^.]*$/, "").replace(/[^\w.-]+/g, "_");
     this.eventsPath = this.p.events ? expand(this.p.events) : join(appHome(), "opengpui", "events", `${name}.jsonl`);
+    this.statusPath = join(appHome(), "opengpui", "status", `${basename(this.eventsPath).replace(/\.jsonl$/, "")}.json`);
 
     const source = subsetLibrary(libraries[this.p.library ?? "openui"] ?? libraries.openui, Object.keys(components));
     this.session = new Session({
@@ -102,6 +108,7 @@ export default class OpenGpui extends View {
       // Remote and data: images are cached under the Herdr home; relative ones resolve against the .oui's folder.
       images: herdrImages(this.srcPath ? dirname(this.srcPath) : null),
     });
+    this.surface.onIdle = (idle) => this.reportIdle(idle);
 
     if (!this.srcPath) {
       this.session.setResponse(DEMO);
@@ -151,6 +158,11 @@ export default class OpenGpui extends View {
     });
   }
 
+  /** The surface is idle (nothing left to draw for the file as loaded so far) or busy again: the writer loop reports it. */
+  private reportIdle(idle: boolean): void {
+    this.pendingStatus = JSON.stringify({ idle: idle && this.loaded, at: new Date().toISOString(), src: this.srcPath });
+  }
+
   private async loadTools(path: string): Promise<typeof this.tools> {
     const text = await readTextFile(path);
     if (!text) return {};
@@ -174,36 +186,44 @@ export default class OpenGpui extends View {
   }
 
   /**
-   * Appends event lines to the events file. It runs as a task: promise chains
-   * started outside one are not driven by the host, so they would never write.
-   * fs/promises has no append, so each batch reads the file and writes it back longer.
+   * Appends event lines to the events file and writes the status file, from a task of this
+   * view: writes need one. The loop looks for work every WRITE_TICK_MS rather than being woken
+   * by a promise: a promise resolved by a handler would continue the loop inside that handler's
+   * view (a modal's), whose release would cancel the write. Awaiting only its own sleeps and
+   * writes, it stays in this view's scope. fs/promises has no append, so each batch reads the
+   * file and writes it back longer.
    */
   private startWriter(cx: Context): void {
     cx.spawn(async (cx) => {
       for (;;) {
-        if (!this.pendingEvents.length) {
-          await new Promise<void>((resolve) => (this.wakeWriter = resolve));
+        if (this.pendingEvents.length) {
+          const lines = this.pendingEvents.splice(0);
+          const path = this.eventsPath;
+          try {
+            await mkdir(dirname(path), { recursive: true });
+            const current = (await readTextFile(path)) ?? "";
+            await writeFile(path, `${current}${lines.map((l) => `${l}\n`).join("")}`);
+            this.writeError = null;
+          } catch (e) {
+            this.writeError = `Can't write ${path}: ${e}`;
+          }
+          cx.notify();
         }
-        const lines = this.pendingEvents.splice(0);
-        const path = this.eventsPath;
-        try {
-          await mkdir(dirname(path), { recursive: true });
-          const current = (await readTextFile(path)) ?? "";
-          await writeFile(path, `${current}${lines.map((l) => `${l}\n`).join("")}`);
-          this.writeError = null;
-        } catch (e) {
-          this.writeError = `Can't write ${path}: ${e}`;
+        if (this.pendingStatus !== null) {
+          const text = this.pendingStatus;
+          this.pendingStatus = null;
+          try {
+            await mkdir(dirname(this.statusPath), { recursive: true });
+            await writeFile(this.statusPath, text);
+          } catch {}
         }
-        cx.notify();
+        await cx.sleep(WRITE_TICK_MS);
       }
     });
   }
 
   private record(entry: Record<string, unknown>): void {
     this.pendingEvents.push(JSON.stringify({ at: new Date().toISOString(), src: this.srcPath, ...entry }));
-    const wake = this.wakeWriter;
-    this.wakeWriter = null;
-    wake?.();
   }
 
   private send(message: string): void {

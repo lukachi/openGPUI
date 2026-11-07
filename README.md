@@ -24,7 +24,7 @@ flowchart LR
 | Path | What |
 |---|---|
 | `src/runtime/` | `Session`: one response's parse, `$state` store, queries/mutations, forms, validation, actions, errors. Framework-free port of react-lang's state hook. |
-| `src/render/` | `Surface`: draws a session with gpui-kit; owns the pump task that creates retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. `fonts.ts`: the Inter cuts and how a stack resolves to them. `icons.ts`/`lucide.ts`: upstream's lucide lookup and the SVG layout a host ships. |
+| `src/render/` | `Surface`: draws a session with gpui-kit as retained nested views (the root, each costly or stateful component, each overlay) and redraws only the views a change touches (`invalidate.ts`); owns the pump task that creates them and the retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. `fonts.ts`: the Inter cuts and how a stack resolves to them. `icons.ts`/`lucide.ts`: upstream's lucide lookup and the SVG layout a host ships. |
 | `src/markdown/` | Markdown as react-ui draws it: react-markdown's own pipeline (unified, remark, the plugins each renderer passes) into an HTML tree, drawn with react-ui's markdown styles; code blocks highlighted by the same Prism grammars and themes. |
 | `src/components/` | One renderer per OpenUI component. Missing ones draw a "not supported yet" box and are left out of prompts. `charts/` holds the chart renderers and their shared foundation (its `index.ts` documents the API). |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries, and `subsetLibrary()` to prompt only what is implemented. |
@@ -49,7 +49,9 @@ bun run install-herdr  # copy the mod into ~/.config/herdr-app/mods/opengpui, li
 `bun scripts/preview.ts file.oui... [--mode light|dark|light,dark] [--look openui|herdr]
 [--wait ms] [--keep]` builds this checkout, installs it as its own mod
 (`opengpui-<folder>`) in a background Herdr window of the checkout's own, shows each file
-in a new tab, saves a screenshot to `tmp/preview/` once the window has stopped changing,
+in a new tab, saves a screenshot to `tmp/preview/` once the tab reports itself idle
+(`opengpui/status/<name>.json`: nothing left to parse, highlight, load or draw) and stays
+so for 300 ms (a build that reports nothing: once the window has stopped changing),
 and closes the tab. Checkouts never wait for each other.
 
 `bun scripts/poke.ts click|hover|drag|scroll|key|type …` gives that preview window
@@ -132,29 +134,51 @@ sources under `.upstream/openui/packages/react-ui/src/`:
    and name the upstream files it was ported from in the file header.
 3. Where gpui can't do what the scss does, keep the closest gpui form and add the
    difference to the file header and to the list below.
-4. Retained native state (inputs, sliders) goes through `ctx.retained(...)`;
-   work that needs a live phase through `ctx.after(...)`.
-5. `bun run check`, then compare `bun scripts/preview.ts file.oui --mode light|dark`
+4. Retained native state (inputs, sliders) goes through `ctx.retained(...)`; work that
+   needs a live phase through `ctx.after(...)` (the surface's pump runs it and redraws
+   this component's view); actions through `ctx.trigger(...)` (the pump runs them). A
+   render reads session state only through tracked accessors: `ctx.field`, `ctx.form`,
+   `ctx.streaming`, `ctx.queryLoading`, `ctx.viewportHeight`, `ctx.image`, or
+   `ctx.watch(() => …)` for anything else; never `ctx.session` directly (handlers and
+   `ctx.after` work may). A view redraws when what it read changes, so an untracked read
+   leaves it stale.
+5. Give the component a view of its own (`view(...)` in `src/components/index.ts`,
+   setting `Component.view`) when its render cost grows with its content or it owns
+   state that redraws often (hover, measuring, typing, loads). Its render must then
+   return one element or null, and its parent must place it without restyling or
+   inspecting it. A component that restyles the nodes it renders directly (the card
+   blocks) sets `inlineChildren`: those draw inside its view, what they hold in views as
+   anywhere else. A costly piece that is not a node (a step's markdown) goes through
+   `ctx.piece(part, input, draw)`; a page-level overlay through `ctx.overlay(part, draw)`.
+6. `bun run check`, then compare `bun scripts/preview.ts file.oui --mode light|dark`
    with `bun scripts/reference.ts shot file.oui --mode light|dark`.
 
 ### Where gpui differs from the browser
 
-- **Render budget:** gpui-shell interrupts a JS call that runs about 50 ms in
-  `render` (a task may run a few hundred ms), and Herdr's QuickJS is slow. So a
-  render only describes: strings without markdown skip the parser, longer markdown
-  is parsed in a task in pieces (the same tree as one parse) and shows as its plain
-  source for the first frames, code highlighting lands one block per frame at worst.
-  One render draws at most 6,000 characters of markdown in full, counted per block
-  in document order. A longer block, or one of 1,000 or more characters that would
-  pass that, is drawn through gpui-kit's lazy `list`, which builds only what is on
-  screen; a shorter block past it draws as its plain source text, so a page of many
-  short blocks shows its later ones plain (the ceiling is interim: it goes once
-  components render in views of their own). A parse step or a lazy row that would
-  still run too long (one huge list item, say, or a row over 12,000 characters)
-  is not attempted, and that text stays plain. Code up to 300 characters is
-  highlighted where it is drawn; longer code by a task in steps of 1,000
-  characters, so it shows plain for a moment, and a step cuts multi-line tokens
-  (block comments, template strings) at its edges.
+- **Views and the per-call budget:** gpui-shell interrupts a JS call that runs about
+  50 ms in `render` (a task may run a few hundred ms), and Herdr's QuickJS is slow. The
+  limit is per call, and each costly or stateful component (markdown and code, charts,
+  tables, tabs, accordions, steps, carousels, images, card blocks, lists, form controls),
+  the response root and each overlay draws in a retained gpui view of its own, so a page
+  of any size is many bounded calls, and a change redraws only the views it touches: a
+  stream chunk the views whose evaluated node changed, a hover or a toggle its own view,
+  typing the input and what shows its value. A view met for the first time is an empty
+  placeholder until it is created: a new part of the page appears a frame per level of
+  nesting later. An interrupted view shows gpui's error card in its place; the rest of
+  the page goes on. Within a view: strings without markdown skip the parser; longer
+  markdown is parsed in a task in pieces (the same tree as one parse) and shows as its
+  plain source for the first frames; a block longer than 6,000 characters is drawn
+  through gpui-kit's lazy `list`, which builds only what is on screen. A parse step or a
+  lazy row that would still run too long (one huge list item, say, or a row over 12,000
+  characters) is not attempted, and that text stays plain. Code up to 300 characters is
+  highlighted where it is drawn; longer code by a task in steps of 1,000 characters, so
+  it shows plain for a moment, and a step cuts multi-line tokens (block comments,
+  template strings) at its edges.
+- **Tasks and plain promises:** an async `cx` acts for whichever call is running, and
+  the continuation of a plain JS promise runs inside whichever call drains QuickJS's job
+  queue (another view's render or handler, or another mod's). A long-lived task awaits
+  only host promises it starts itself (sleeps, fs, exec); the surface's pump and Herdr's
+  writer loop poll a flag on a sleep for that reason.
 - **Fonts:** optical sizes come in steps (14, 16, 18, 24, 28, 32) instead of
   following every size, and a size/weight pair without a cut takes the nearest
   cut. Heading large/xl track −0.1px upstream; here they get the −1% of all other text.
@@ -171,8 +195,9 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   the whole window. Percent sizes (`90vw`, `85vh`) are of the pane. An overlay opened
   inside another stacks above it, and the keyboard goes to the topmost one and back
   when it closes. Hover styles under an overlay still react (gpui gives scripts no
-  occluding hitbox). A host draws `surface.renderOverlays()` over its area after
-  `renderContent()`; one that doesn't shows no modals.
+  occluding hitbox). An overlay is a view of its own; a host mounts the views
+  `surface.renderOverlays()` returns over its area after `renderContent()`; one that
+  doesn't shows no modals.
 - **Images:** gpui draws only local files, so the host turns a `src` into a cached
   file first (Herdr downloads with curl into `~/.config/herdr-app/opengpui/images/`,
   bounded to 256 MiB; local paths only under `$HOME`); an image is an empty box until

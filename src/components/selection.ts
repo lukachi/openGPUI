@@ -35,7 +35,7 @@ import type { RenderContext } from "../render/surface.ts";
 export { getStoredDefaultValue, normalizeSelection, toggleSelection, type SelectionDefaultValue, type SelectionType };
 
 /** The parts of RenderContext a field needs (and a test can supply). */
-export type FieldContext = Pick<RenderContext, "session" | "formName" | "form" | "streaming" | "after">;
+export type FieldContext = Pick<RenderContext, "session" | "formName" | "form" | "streaming" | "after" | "watch">;
 
 /**
  * useHydrateDefaultFieldValue: while the response is complete, a field with no stored
@@ -81,7 +81,7 @@ export function selectionField(
   const name = props.name;
   const type: SelectionType = (props.type as SelectionType | undefined) ?? fallbackType;
   const rules = parseStructuredRules(props.rules);
-  const existingValue = session.getFieldValue(formName, name);
+  const existingValue = ctx.watch(() => session.getFieldValue(formName, name));
   const selected = normalizeSelection(type, existingValue, props.defaultValue);
   const storedDefaultValue = getStoredDefaultValue(type, props.defaultValue);
 

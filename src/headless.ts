@@ -7,6 +7,7 @@ export * as editableTableModel from "./components/editable-table-model.ts";
 export { MarkdownParse, markdownCuts, parseMarkdown, plainParagraph, runPipeline, type MarkdownProfile } from "./markdown/parse.ts";
 export { interFace, openuiFonts, type Face, type FontResolver } from "./render/fonts.ts";
 export { readImageHeader, type ImageFormat, type ImageHeader } from "./render/imageHeader.ts";
+export { indexTree, sameValue, type CompareMemo, type TreeIndex } from "./render/invalidate.ts";
 export { cssColor, resolveTokens, toHex, typography, type TextStyle, type Tokens } from "./render/tokens.ts";
 export { parseResponseBundle, type ResponseBundle } from "./runtime/response.ts";
 export {

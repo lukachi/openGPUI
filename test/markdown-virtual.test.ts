@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ElementContent } from "hast";
 // Pure tree logic, run from source: it imports no gpui and nothing the build compiles.
-import { blockItems, CODE_GROUP_LINES, MIN_VIRTUAL_CHARS, RENDER_CHARS, TABLE_GROUP_ROWS, VIRTUAL_CHARS, virtualDecision, virtualRows, type VirtualRow } from "../src/markdown/blocks.ts";
+import { blockItems, CODE_GROUP_LINES, TABLE_GROUP_ROWS, VIRTUAL_CHARS, virtualDecision, virtualRows, type VirtualRow } from "../src/markdown/blocks.ts";
 import { parseMarkdown } from "./lib.ts";
 
 const shape = (text: string, profile: "plain" | "content") =>
@@ -35,37 +35,10 @@ describe("blockItems: the rows of a long markdown block", () => {
   });
 });
 
-describe("virtualDecision: how markdown blocks draw within a render", () => {
-  // A small deterministic generator: block sizes from tiny to well past VIRTUAL_CHARS.
-  let seed = 7;
-  const next = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
-
-  test("for any sequence of blocks, what one render draws in full stays within RENDER_CHARS", () => {
-    for (let render = 0; render < 2000; render++) {
-      let spent = 0;
-      let full = 0;
-      const blocks = Array.from({ length: 1 + Math.floor(next() * 40) }, () => Math.floor(next() ** 3 * 3 * VIRTUAL_CHARS));
-      for (const chars of blocks) {
-        const d = virtualDecision(spent, chars);
-        if (d.draw === "full") full += chars;
-        if (d.draw === "virtual") expect(chars > VIRTUAL_CHARS || chars >= MIN_VIRTUAL_CHARS).toBe(true);
-        if (d.draw === "plain") expect(chars).toBeLessThan(MIN_VIRTUAL_CHARS);
-        spent = d.spent;
-      }
-      expect(full).toBeLessThanOrEqual(RENDER_CHARS);
-      expect(spent).toBe(full);
-    }
-  });
-
-  test("a block longer than VIRTUAL_CHARS goes virtual whatever was spent; one that fits is drawn in full", () => {
-    expect(virtualDecision(0, VIRTUAL_CHARS + 1).draw).toBe("virtual");
-    expect(virtualDecision(RENDER_CHARS, VIRTUAL_CHARS * 5).draw).toBe("virtual");
-    expect(virtualDecision(0, Math.min(VIRTUAL_CHARS, RENDER_CHARS)).draw).toBe("full");
-  });
-
-  test("past the ceiling, a block too short for a scroll region draws plain", () => {
-    expect(virtualDecision(RENDER_CHARS, MIN_VIRTUAL_CHARS - 1).draw).toBe("plain");
-    expect(virtualDecision(RENDER_CHARS, MIN_VIRTUAL_CHARS).draw).toBe("virtual");
+describe("virtualDecision: how a markdown block draws", () => {
+  test("a block longer than VIRTUAL_CHARS goes virtual; one that fits is drawn in full", () => {
+    expect(virtualDecision(VIRTUAL_CHARS + 1)).toBe("virtual");
+    expect(virtualDecision(VIRTUAL_CHARS)).toBe("full");
   });
 });
 

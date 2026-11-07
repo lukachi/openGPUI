@@ -92,7 +92,7 @@ function toToolProvider(input: Tools | null | undefined): ToolProvider | null {
   };
 }
 
-interface FieldRegistration {
+export interface FieldRegistration {
   rules: ParsedRule[];
   getValue: () => unknown;
 }
