@@ -12,6 +12,7 @@ import { selectLibrary } from "../src/library.ts";
 import { isStreamingResponse, parseResponseBundle } from "../src/runtime/response.ts";
 import { Session } from "../src/runtime/session.ts";
 import SKILL from "../skills/opengpui/SKILL.md" with { type: "text" };
+import { version } from "../package.json";
 
 const USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's actions back
 
@@ -34,6 +35,7 @@ const USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's a
       close the pane or tab \`show\` opened
   opengpui skill
       print the agent skill: how to use opengpui and the pane
+  opengpui --version
 
 Exit codes: 0 ok, 1 check found problems or wait timed out, 2 bad usage,
 3 Herdr failed (not installed, not running, or the opengpui mod missing).`;
@@ -393,6 +395,10 @@ async function main(): Promise<void> {
     case "skill":
       noMoreArgs();
       process.stdout.write(SKILL);
+      return;
+    case "--version":
+      noMoreArgs();
+      console.log(`opengpui ${version}`);
       return;
     case undefined:
     case "help":

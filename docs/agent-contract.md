@@ -19,6 +19,7 @@ next to it with Node.js 18+ or Bun. Link it into PATH; `bun run install-herdr` l
 | `opengpui events <file>` | Prints every event since `show`. |
 | `opengpui close <file>` | Closes what `show` opened. |
 | `opengpui skill` | Prints the agent skill (`skills/opengpui/SKILL.md`), for an agent harness to install. |
+| `opengpui --version` | Prints `opengpui <version>`: the release the CLI and the mod beside it come from. |
 
 `show` opens the mod the CLI ships in, by its folder name, so a copy installed under another name
 (Herdr renames a mod whose name is taken) opens itself.

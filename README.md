@@ -84,6 +84,7 @@ React. Only the drawing is new.
   can't match, per component.
 - [Development](docs/development.md): building, the headless harness, the Herdr mod, porting a
   component.
+- [Changelog](CHANGELOG.md).
 
 ## License and credits
 
@@ -97,4 +98,4 @@ MIT, see [`LICENSE`](LICENSE).
 - [gpui-kit](https://gpui-kit.com) and [Herdr](https://herdr.dev): the native toolkit and the
   host.
 
-Each license also travels in the mod's `fonts/` and `icons/` folders.
+The mod carries these licenses in its `licenses/` folder (Inter's in `fonts/`).
