@@ -1,4 +1,4 @@
-// The agent contract (README "Agent contract"): where a shown file's events go, what
+// The agent contract (docs/agent-contract.md): where a shown file's events go, what
 // `opengpui check` refuses, how `show`/`wait` keep the log, and how a component subset is
 // closed. The CLI runs from the build, as an agent runs it; Herdr is a fake `herdr-app` on
 // PATH that logs its calls.

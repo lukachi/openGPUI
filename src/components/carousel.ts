@@ -3,7 +3,7 @@
 // Ported from react-ui at the pinned commit:
 //   Carousel  genui-lib/Carousel/index.tsx, components/Carousel/{Carousel.tsx,carousel.scss}
 //
-// Where gpui differs from the browser (see also README "Where gpui differs"):
+// Where gpui differs from the browser (see also docs/gpui-differences.md):
 // - The row scrolls by an offset the carousel owns (gpui-kit cannot scroll a div
 //   from code). The wheel and trackpad move it; after a pause (120ms) it snaps
 //   to the nearest card edge, as `scroll-snap-type: x mandatory` does. The

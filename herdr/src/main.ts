@@ -1,6 +1,6 @@
 // opengpui for Herdr: a pane or tab that shows an OpenUI Lang file and sends
 // what the person does back to the agent that wrote it. `opengpui show` opens it;
-// the agent contract (props, events, replies) is in README.md, "Agent contract".
+// the agent contract (props, events, replies) is docs/agent-contract.md.
 //
 // props (from pane.split / tab.new):
 //   src         the .oui file to show (absolute, or ~/…). Re-read whenever it changes.

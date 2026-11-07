@@ -1,5 +1,5 @@
 // opengpui: the agent's side of the Herdr surface. The contract it implements (commands,
-// events, replies, exit codes) is README.md's "Agent contract"; keep the two in step.
+// events, replies, exit codes) is docs/agent-contract.md; keep the two in step.
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";

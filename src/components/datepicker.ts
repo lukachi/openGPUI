@@ -18,7 +18,7 @@
 // does not close the calendar; a press outside it, or on the field, does.
 // `rules` register with the enclosing form and validate on every change, as upstream.
 // The field's sunk fill is see-through, so it draws without its shadow-s (gpui would
-// show the shadow through the fill: tokens.ts shadow(), README "Shadows").
+// show the shadow through the fill: tokens.ts shadow(), docs/gpui-differences.md "Shadows").
 //
 // Deliberate deviations (upstream behaviour kept out on purpose):
 // - Upstream's DatePicker.tsx keeps an internal copy of the value that it updates only

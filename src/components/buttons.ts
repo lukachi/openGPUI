@@ -6,7 +6,7 @@
 //   IconButton  components/IconButton/{IconButton.tsx,iconButton.scss}; genui-lib/IconButton is in misc.ts
 //
 // A secondary button's fill is transparent, so it draws without its shadow-m (gpui would
-// show the shadow through the fill: tokens.ts shadow(), README "Shadows"). Both are tab stops that
+// show the shadow through the fill: tokens.ts shadow(), docs/gpui-differences.md "Shadows"). Both are tab stops that
 // Enter and Space press, as `<button>`; upstream's scss has no focus rule, so the browser's own
 // outline shows there and none is drawn here (gpui scripts have no `focus-visible` style).
 import { ACTION_STEPS } from "@openuidev/lang-core";

@@ -11,7 +11,7 @@
 // becomes the weight; the optical size and -1% tracking live in the static
 // cuts a host ships (render/fonts.ts) and picks through `Tokens.fonts`. What
 // gpui cannot express is mapped to the nearest it can: custom box shadows
-// become gpui's shadow presets (see README "Where gpui differs").
+// become gpui's shadow presets (see docs/gpui-differences.md "Shadows").
 import type { Color, Element } from "gpui-kit";
 import { defaultDarkTheme, defaultLightTheme } from "openui-theme";
 import type { ChartPaletteKey, ColorTheme, EffectTheme, LayoutTheme, Theme, TypographyTheme } from "openui-theme-types";
@@ -273,8 +273,8 @@ export function isOpaque(color: Color): boolean {
  * Apply one of gpui's shadow presets to a box filled with `fill`. CSS paints a box-shadow
  * only outside the border box; gpui paints it under the whole box, so a fill that isn't
  * opaque (transparent, sunk, highlight, elevated) shows it through as a grey fill. Such a
- * box gets no shadow: the faint edge CSS draws outside it is the smaller loss (README
- * "Shadows"). `"covered"`: opaque content (a photo) covers the whole fill.
+ * box gets no shadow: the faint edge CSS draws outside it is the smaller loss
+ * (docs/gpui-differences.md "Shadows"). `"covered"`: opaque content (a photo) covers the whole fill.
  */
 export function shadow<E extends Element>(el: E, preset: ShadowPreset, fill: Color | "covered"): E {
   if (fill !== "covered" && !isOpaque(fill)) return el.shadow_none();

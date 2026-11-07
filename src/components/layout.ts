@@ -7,7 +7,7 @@
 //   Separator   genui-lib/Separator/index.tsx, components/Separator/{Separator.tsx,separator.scss}
 //
 // A sunk Card's fill is see-through, so it draws without its shadow-m (gpui would show the
-// shadow through the fill: tokens.ts shadow(), README "Shadows").
+// shadow through the fill: tokens.ts shadow(), docs/gpui-differences.md "Shadows").
 import { div, type Element } from "gpui-kit";
 import type { Component, Props } from "../render/surface.ts";
 import { shadow, textStyle, TRANSPARENT, typography, type Tokens } from "../render/tokens.ts";

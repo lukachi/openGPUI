@@ -488,7 +488,7 @@ export function codeBlock(
   if (options.static) return div().relative().w_full().child(highlighter);
 
   // CodeBlock.tsx draws lucide's `<Copy />` at its default size 24; the 16px `.openui-icon-button-icon`
-  // span squeezes the svg (a flex item) to 16, as the reference renderer measures.
+  // span squeezes the svg (a flex item) to 16, as Chromium lays it out.
   const copy = iconButton(ctx, {
     id: ctx.id(`${part}-copy`),
     icon: local.copied ? "CheckCheck" : "Copy",

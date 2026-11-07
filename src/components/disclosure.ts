@@ -5,7 +5,7 @@
 //   Accordion, AccordionItem genui-lib/Accordion/{schema.ts,index.tsx}, components/Accordion/{Accordion.tsx,accordion.scss}
 //   Steps, StepsItem         genui-lib/Steps/{schema.ts,index.tsx}, components/Steps/{Steps.tsx,steps.scss}
 //
-// Where gpui differs from the browser (see also README "Where gpui differs"):
+// Where gpui differs from the browser (see also docs/gpui-differences.md):
 // - Tabs: the list scrolls by an offset the list owns (gpui-kit cannot scroll a
 //   div from code): the wheel and trackpad move it, the chevron controls step it
 //   120px, a clicked tab is centred, all with a sliding transition like the
@@ -37,7 +37,7 @@
 //   Accordion inside one when it comes back; here it keeps its choice.
 // - Tabs: a hovered inactive tab keeps the clear variant's `shadow-s` upstream, which a
 //   browser paints outside the transparent tab only; gpui would paint it under the whole
-//   tab, so it gets none (README "Shadows").
+//   tab, so it gets none (docs/gpui-differences.md "Shadows").
 // - Steps: the title inherits its font like upstream (`typography(title, default)`
 //   names a group the typography map does not have, so the scss emits nothing).
 import { Accordion as BaseAccordion, AccordionHeader, AccordionItem as BaseAccordionItem, AccordionPanel, AccordionTrigger, Tab } from "gpui-base";

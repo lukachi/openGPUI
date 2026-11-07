@@ -12,7 +12,7 @@
 //   The row/value model and the table layout are in editable-table-model.ts; url cells
 //   go through upstream's own safeUrl (components/_shared/utils/safeUrl.ts, `openui-safe-url`).
 //   The changes bar's elevated fill is see-through, so it draws without its shadow-s (gpui
-//   would show the shadow through the fill: tokens.ts shadow(), README "Shadows").
+//   would show the shadow through the fill: tokens.ts shadow(), docs/gpui-differences.md "Shadows").
 //
 // Contract, as upstream: `name`, `columns` ({ type, key, header, width?, options? }) and
 // `data` ({ id, values } rows, values positional). Nothing is stored while cells are
