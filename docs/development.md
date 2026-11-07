@@ -184,6 +184,24 @@ content. Herdr writes them under `~/.config/herdr-app/opengpui/icons/` (`herdr/s
 harness into its scratch folder. Until the write lands, about a frame, the icon is an empty box
 of its size.
 
+## CI and releases
+
+`.github/workflows/ci.yml` runs on every pull request and push to main, on Linux: `bun install`,
+`bun run sync` (fonts through uv; types through `herdr-app types` from the pinned Herdr release,
+checked by sha256), `bun run check` (with `herdr-app check` on the mod) and `bun test`, with the
+CLI's contract tests on Node 18, the oldest it supports. `.upstream/` is cached by the pins.
+
+To release:
+
+1. Set `version` in `package.json` and add its `## <version>` section to `CHANGELOG.md`.
+2. Commit, tag `v<version>` and push the tag.
+
+The tag's run checks that it matches `package.json`, then the `release` job assembles the mod
+(`scripts/release.ts`), publishes a GitHub Release with `opengpui-v<version>.tar.gz` and the
+changelog section as notes, and commits the same folder to `gallery/opengpui/mods/` on main,
+where herdr.dev's gallery picks it up within the hour. `gallery/opengpui/RECIPE.md` and
+`preview.png` are kept by hand; update them when what the person sees changes.
+
 ## Updating OpenUI
 
 `bun scripts/sync.ts --to main` moves the pin, then makes the assets for it. The sync fails if the

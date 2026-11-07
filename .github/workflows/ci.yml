@@ -1,8 +1,13 @@
 name: CI
 
+# Every push to main and every pull request: sync, check, test.
+# A tag v<version> (package.json's version) also releases: a GitHub Release with
+# opengpui-v<version>.tar.gz, and the same mod folder committed to gallery/opengpui/mods
+# on main, where herdr.dev's gallery reads it.
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
 
 permissions:
@@ -17,6 +22,10 @@ jobs:
       HERDR_SHA256: 77b0be72a46ca14bb367365a04164641f914b3a69712bac391d39c56a959bef4
     steps:
       - uses: actions/checkout@v4
+
+      - name: Tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: test "v$(jq -r .version package.json)" = "$GITHUB_REF_NAME"
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -53,3 +62,55 @@ jobs:
       - run: bun run sync
       - run: bun run check
       - run: bun test
+
+      # tar keeps the CLI launcher executable, which an artifact's zip would not.
+      - name: Keep the build for the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: tar -czf build.tgz herdr/mods/opengpui/{mod.json,main.js,shared.js,fonts,cli}
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: build.tgz
+
+  release:
+    needs: check
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+      - run: tar -xzf build.tgz && rm build.tgz
+
+      - name: Assemble
+        run: bun scripts/release.ts
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v head="## $version" '$0 == head {on = 1; next} /^## / {on = 0} on' CHANGELOG.md > notes.md
+          test -s notes.md
+          gh release create "$GITHUB_REF_NAME" "dist/opengpui-$GITHUB_REF_NAME.tar.gz" --title "openGPUI $version" --notes-file notes.md
+
+      - name: Gallery folder on main
+        run: |
+          cp -R gallery/opengpui/mods "$RUNNER_TEMP/mods"
+          git fetch --quiet origin main
+          git checkout --quiet -B main origin/main
+          rm -rf gallery/opengpui/mods
+          cp -R "$RUNNER_TEMP/mods" gallery/opengpui/mods
+          git add gallery/opengpui/mods
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "gallery: opengpui $GITHUB_REF_NAME"
+          git push --quiet origin main
