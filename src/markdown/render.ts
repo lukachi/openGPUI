@@ -43,6 +43,7 @@ import type { ElementContent, Element as HastElement, Root, RootContent } from "
 import { div, type Color, type Element } from "gpui-kit";
 import { Link } from "gpui-base";
 import { tableText, tableView, type StaticTable, type TableCell } from "../components/tables.ts";
+import { INTER_CONTENT_EM } from "../render/fonts.ts";
 import type { RenderContext } from "../render/surface.ts";
 import { alpha, restyle, textStyle, typography, type TextStyle } from "../render/tokens.ts";
 import {
@@ -411,27 +412,35 @@ class Markdown {
     return out;
   }
 
-  /** .openui-markdown-renderer-code: a bordered sunk chip in body link type. */
+  /**
+   * .openui-markdown-renderer-code: a bordered sunk chip in body link type. CSS paints an
+   * inline box's background over the font's content area (Inter: ascent + descent), not its
+   * line height, and its padding and border don't grow the line box: the chip is that tall
+   * plus its padding and border, and the line keeps the surrounding text's height.
+   */
   private inlineCode(text: string, css: Css): Element {
     const t = this.t;
     const composite = !!this.ctx.scope.cardText?.composite;
+    // compositeCardBlock.scss: code-sm typography, line-height 1, inside a CompositeCardBlock.
+    const style = composite ? typography(t, "code", "small") : this.body;
     let el = textStyle(
       div()
         .flex_none()
         .max_w_full()
         .px(4)
         .py(2)
-        .my(-3) // inline padding and border don't grow a line box
         .rounded(4)
         .bg(t.sunk)
         .border_1()
         .border_color(t.borderDefault)
         .text_color(css.quote ? css.color : t.textNeutralPrimary),
-      // compositeCardBlock.scss: code-sm typography, line-height 1, inside a CompositeCardBlock.
-      composite ? typography(t, "code", "small") : this.body,
+      style,
     ).child(text.replace(/\s+/g, " "));
-    if (composite) el = el.line_height(1);
-    if (css.lineHeight) el = el.line_height(css.lineHeight);
+    if (composite) el = el.line_height(css.lineHeight ?? 1).my(-3);
+    else {
+      const line = (css.lineHeight ?? style.lineHeight) * style.size;
+      el = el.line_height(INTER_CONTENT_EM).my((line - INTER_CONTENT_EM * style.size) / 2 - 3);
+    }
     if (css.quote && css.italic) el = el.italic();
     return el;
   }

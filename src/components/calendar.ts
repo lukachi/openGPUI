@@ -305,6 +305,7 @@ export function calendarView(ctx: RenderContext, part: string, o: CalendarOption
         })
         .child(div().h(viewport).overflow_hidden().child(div().relative().top(-offset).flex().flex_col().children(rows))),
       t.shadowM,
+      t.foreground,
     );
   };
 

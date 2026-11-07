@@ -94,7 +94,7 @@ export const components: Components = {
   OverviewCardItem,
   ContextCardBlock: cardBlock(ContextCardBlock),
   ContextCardItem,
-  CompositeCardBlock: cardBlock(CompositeCardBlock),
+  CompositeCardBlock: view(CompositeCardBlock), // restyles none of its slots (composite.ts)
   CompositeCardItem,
   VisualCardBlock: cardBlock(VisualCardBlock),
   VisualCardItem,

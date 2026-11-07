@@ -184,16 +184,23 @@ if (asJson) {
   for (const line of lines) console.log(JSON.stringify(line));
 } else {
   const rel = (p: unknown) => String(p).replace(`${root}/`, "");
+  // The surface's last idle report before line `l` (the harness's "idle" lines): a file or step
+  // that settled while its surface still waits to draw a view is flagged, as Herdr's status
+  // file would keep `idle: false` for it.
+  const idleAt = (l: Line) =>
+    lines.slice(0, lines.indexOf(l)).findLast((i) => i.type === "idle" && i.src === l.src && i.mode === l.mode)?.idle === true;
   for (const l of lines.filter((l) => l.type === "settled")) {
     const done = lines.find((d) => d.type === "done" && d.src === l.src && d.mode === l.mode);
     console.log(
       `${rel(l.src)} ${l.mode}: load ${l.loadMs} ms, settled in ${l.settleMs} ms (${l.simulatedMs} ms simulated, ${l.renders} renders)` +
-        `${l.timedOut ? " NOT SETTLED" : ""}, total ${done?.ms ?? "?"} ms`,
+        `${l.timedOut ? " NOT SETTLED" : ""}${idleAt(l) ? "" : " NOT IDLE"}, total ${done?.ms ?? "?"} ms`,
     );
   }
   for (const l of lines.filter((l) => l.type === "shot")) console.log(`shot   ${rel(l.path)} (${l.ms} ms)`);
   for (const l of lines.filter((l) => l.type === "spec")) console.log(`spec   ${rel(l.path)}`);
-  for (const l of lines.filter((l) => l.type === "step")) console.log(`step   ${rel(l.src)} ${l.mode}: ${l.step} (${l.ms} ms${l.timedOut ? ", NOT SETTLED" : ""})`);
+  for (const l of lines.filter((l) => l.type === "step")) {
+    console.log(`step   ${rel(l.src)} ${l.mode}: ${l.step} (${l.ms} ms${l.timedOut ? ", NOT SETTLED" : ""}${idleAt(l) ? "" : ", NOT IDLE"})`);
+  }
   // A warning repeats once per render that triggers it: each distinct line once per file and mode.
   const seen = new Set<string>();
   for (const l of lines.filter((l) => ["action", "clipboard", "errors", "error", "log", "fatal", "message", "stderr"].includes(l.type))) {

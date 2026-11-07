@@ -5,6 +5,9 @@
 //   Card        genui-lib/Card/index.tsx, components/Card/{Card.tsx,card.scss}
 //   CardHeader  genui-lib/CardHeader/index.tsx, components/CardHeader/{CardHeader.tsx,cardHeader.scss}
 //   Separator   genui-lib/Separator/index.tsx, components/Separator/{Separator.tsx,separator.scss}
+//
+// A sunk Card's fill is see-through, so it draws without its shadow-m (gpui would show the
+// shadow through the fill: tokens.ts shadow(), README "Shadows").
 import { div, type Element } from "gpui-kit";
 import type { Component, Props } from "../render/surface.ts";
 import { shadow, textStyle, TRANSPARENT, typography, type Tokens } from "../render/tokens.ts";
@@ -98,7 +101,7 @@ function cardFrame(t: Tokens, variant: unknown, props: Props): Element {
     case "clear":
       return el.px(t.spaceL).rounded(t.radius3xl);
     case "sunk":
-      return shadow(el.p(t.spaceL).rounded(t.radius3xl).bg(t.sunk).border_color(t.borderDefault), t.shadowM);
+      return shadow(el.p(t.spaceL).rounded(t.radius3xl).bg(t.sunk).border_color(t.borderDefault), t.shadowM, t.sunk);
     default: // "card": no surface of its own upstream
       return el;
   }

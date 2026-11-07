@@ -205,7 +205,8 @@ export function stackedLegend(
       : [];
 
   let container = v_flex().id(ctx.id("stacked-legend")).items_center();
-  container = o.containerWidth ? container.w(o.containerWidth) : container.w_full();
+  // width: 100% of its flex-row parent, as a grow: a percentage would count in a row's intrinsic width.
+  container = o.containerWidth ? container.w(o.containerWidth) : container.flex_1().min_w_0();
   if (o.height !== undefined) container = container.h(o.height).justify_center();
   return container.children(showControls ? [header] : []).child(list).children(showMore);
 }

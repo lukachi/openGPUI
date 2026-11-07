@@ -42,6 +42,8 @@ export default class Harness extends View {
       icons: (file) => `icons/${file}.svg`,
       images: harnessImages(j.base, j.home, j.scratch),
     });
+    // As Herdr's status file does (herdr/src/main.ts): scripts/shot.ts flags a file that settled busy.
+    this.surface.onIdle = (idle) => emit(JSON.stringify({ type: "idle", idle }));
     this.session.setResponse(j.text, isStreamingResponse(j.text));
     this.session.update();
     if (j.follow) this.follow(cx);

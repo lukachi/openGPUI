@@ -17,6 +17,8 @@
 // spans January 1900 to December 2100 and nothing else is disabled. Picking a day
 // does not close the calendar; a press outside it, or on the field, does.
 // `rules` register with the enclosing form and validate on every change, as upstream.
+// The field's sunk fill is see-through, so it draws without its shadow-s (gpui would
+// show the shadow through the fill: tokens.ts shadow(), README "Shadows").
 //
 // Deliberate deviations (upstream behaviour kept out on purpose):
 // - Upstream's DatePicker.tsx keeps an internal copy of the value that it updates only
@@ -146,6 +148,7 @@ export function datePickerControl(ctx: RenderContext, o: DatePickerControl): Ele
       )
       .children(optional(chevron)),
     t.shadowS,
+    t.sunk,
   );
 
   if (o.inert) return div().w_full().child(input);
@@ -157,6 +160,7 @@ export function datePickerControl(ctx: RenderContext, o: DatePickerControl): Ele
     shadow(
       div().bg(t.foreground).border_1().border_color(t.borderInteractive).rounded(t.radius2xl).overflow_hidden(),
       t.shadowS,
+      t.foreground,
     ).child(
       calendarView(ctx, `cal${part}`, {
         mode,

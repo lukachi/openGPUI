@@ -86,11 +86,12 @@ export const menuRing = (t: Tokens): Color => colorMix(t.textNeutralPrimary, "#0
 
 /** `@mixin surface`: fill, radius, ring, shadow, vertical padding, clipped to its radius. */
 export function menuSurface<E extends Element>(t: Tokens, el: E): E {
+  const fill = menuBackground(t);
   return shadow(
     el
       .flex()
       .flex_col()
-      .bg(menuBackground(t))
+      .bg(fill)
       .text_color(t.textNeutralPrimary)
       .rounded(t.radius2xl)
       .border_1()
@@ -98,6 +99,7 @@ export function menuSurface<E extends Element>(t: Tokens, el: E): E {
       .overflow_hidden()
       .py(menuGutter(t)),
     "md",
+    fill,
   );
 }
 

@@ -56,7 +56,7 @@ import {
 } from "gpui-base";
 import { div, type Context, type Element, type Task } from "gpui-kit";
 import { optional, type Component, type RenderContext } from "../render/surface.ts";
-import { shadow, textStyle, typography } from "../render/tokens.ts";
+import { over, shadow, textStyle, typography } from "../render/tokens.ts";
 import { selectControl } from "./select.ts";
 import {
   canUseNative,
@@ -473,7 +473,8 @@ function slider(ctx: RenderContext, ui: Ui, native: Native | null, v: SliderView
         .items_center()
         .justify_center()
         .bg(t.foreground)
-        .hover((s) => s.bg(t.sunk))
+        // .openui-slider-thumb-inner turns sunk on hover over the outer thumb's foreground: opaque, the shadow stays.
+        .hover((s) => s.bg(over(t.sunk, t.foreground)))
         // Thumbs may not deliver hover themselves; the plain handle inside does.
         .on_hover((hovered, cx) => {
           const next = hovered ? i : ui.hover === i ? -1 : ui.hover;
@@ -483,6 +484,7 @@ function slider(ctx: RenderContext, ui: Ui, native: Native | null, v: SliderView
           }
         }),
       t.shadowS,
+      t.foreground,
     ).child(div().size(6).rounded(t.radius3xs).bg(t.interactiveAccentDefault));
     // `.openui-slider-thumb-value`: label small, 4px padding, a border-interactive outline, 35px above.
     const bubble = shadow(
@@ -491,6 +493,7 @@ function slider(ctx: RenderContext, ui: Ui, native: Native | null, v: SliderView
         typography(t, "label", "small"),
       ),
       t.shadowS,
+      t.foreground,
     ).child(formatNumber(v.shownValue[i]));
     const el = SliderThumb.new(state)
       .id(ctx.id(`thumb${i}`))

@@ -10,6 +10,9 @@
 // high, ListBlock at size small, EntityList small without header and footer, TagBlock sm, Button small.
 // The scope marks everything inside a composite card for its inline markdown rules
 // (`strong`/`em` inherit the slot's font at the medium weight, `code` is code-sm).
+// The card restyles none of its slots (it overrides their props only), so it is a plain view
+// (components/index.ts), not a card block with inline slots: a chart or list in a slot is a
+// view of its own, as anywhere else, and its cost and its hover stay out of the block's render.
 //
 // A clickable card's footer Button fires its own action and then the card's, as in React (react-ui's
 // Button never stops the click; ours bubbles it: buttons.ts `bubble`).
@@ -84,7 +87,7 @@ function compositeCard(ctx: RenderContext, item: ElementNode, index: number, cli
         : [],
     );
   if (!clickable) return box.bg(t.sunkLight).border_color(t.borderDefault);
-  return pressable(ctx, clickableShadow(box.bg(t.foreground).border_color(t.borderInteractive), t.shadowM), index, onClick);
+  return pressable(ctx, clickableShadow(box.bg(t.foreground).border_color(t.borderInteractive), t.shadowM, t.foreground), index, onClick);
 }
 
 /** getCompositeHeaderText: the header's first string among each of these props. */

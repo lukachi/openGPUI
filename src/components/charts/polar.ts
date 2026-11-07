@@ -221,10 +221,11 @@ export function polarChart(ctx: RenderContext, o: PolarOptions): Element {
       );
   }
 
+  // No width of its own: its block parent stretches it (a percentage would count in a row's
+  // intrinsic width, where CSS treats it as auto).
   const chart = v_flex()
     .id(ctx.id("chart"))
     .relative()
-    .w_full()
     .items_center()
     .on_size_change((s, cx) => {
       if (s.width === size.chartWidth) return;
@@ -253,9 +254,10 @@ export function polarChart(ctx: RenderContext, o: PolarOptions): Element {
       ...extra,
     });
 
+  // .chart-with-stacked-legend sets no width: a column's stretch fills it, while in a row
+  // (a row Stack) it takes its content's width, so a narrow chart keeps its legend below.
   const root = isRow
     ? h_flex()
-        .w_full()
         .relative()
         .gap(LAYOUT_GAP)
         .items_center()
@@ -272,12 +274,11 @@ export function polarChart(ctx: RenderContext, o: PolarOptions): Element {
             .child(legend({ height: STACKED_ROW_LAYOUT_HEIGHT })),
         )
     : v_flex()
-        .w_full()
         .relative()
         .gap(LAYOUT_GAP)
-        .items_center()
-        .child(div().w_full().min_w_0().child(chart))
-        .child(div().w_full().flex().justify_center().items_start().child(legend({ containerWidth: size.width })));
+        .items_stretch() // align-items: center, but both parts are width: 100%
+        .child(div().min_w_0().child(chart))
+        .child(div().flex().justify_center().items_start().child(legend({ containerWidth: size.width || undefined })));
   return root.id(ctx.id()).on_size_change((s, cx) => {
     if (s.width === size.width) return;
     size.width = s.width;

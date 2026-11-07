@@ -318,7 +318,9 @@ export function selectControl(o: SelectControl): Element {
         for (let i = range.start; i < range.end; i++) {
           const item = items[i]!;
           const isSelected = i === selected;
-          // components/Select SelectItem: label in item-text (secondary), the check on the trailing edge.
+          // components/Select SelectItem: the label, the check on the trailing edge. select.scss gives
+          // .openui-select-item-text the secondary color, but the pinned Radix leaves SelectItemText's
+          // className off its span, so the text inherits the item's primary (as calendar.ts lists do).
           const row = textStyle(
             menuRow(t, div().w_full().justify_between().relative().pr(t.spaceXl), {
               highlighted: isSelected || i === ui.hi,
@@ -329,7 +331,7 @@ export function selectControl(o: SelectControl): Element {
           )
             .cursor_default()
             .hover((s) => s.bg(t.highlight))
-            .child(div().flex_1().whitespace_nowrap().text_color(t.textNeutralSecondary).child(item.label));
+            .child(div().flex_1().whitespace_nowrap().text_color(t.textNeutralPrimary).child(item.label));
           out.push(
             isSelected
               ? row.child(div().absolute().right(6).top(9).child(ctx.icon("Check", { size: 16 })!))

@@ -36,7 +36,7 @@ describe("resolveTokens", () => {
     expect(t.spaceS).toBe(8);
     expect(t.radiusFull).toBe(9999);
     expect(t.textBodyDefaultHeavy).toEqual({ size: 16, lineHeight: 1.5, weight: 560, families: ["Inter", "sans-serif"] });
-    expect(t.shadowM).toBe("sm");
+    expect(t.shadowM).toBe("xs"); // measured against the reference (tokens.ts SHADOWS, README "Shadows")
     expect(t.background).toBe("#123456");
     expect(t.foreground).toMatch(/^#[0-9a-f]{8}$/);
   });

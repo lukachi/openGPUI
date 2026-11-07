@@ -309,6 +309,7 @@ function switchItem(ctx: RenderContext, o: SwitchOptions): Element {
       .bg(t.foreground)
       .transition("left", { duration: 150, easing: "ease-in-out" }),
     t.shadowS,
+    t.foreground,
   );
   // .openui-switch-item-root: 24×16, margin-top 2xs, 1px border (default; accent when checked),
   // sunk fill (accent when checked); unchecked and enabled: interactive border on hover;

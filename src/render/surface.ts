@@ -184,6 +184,8 @@ export class ViewRecord {
   /** Notified by the pump and not drawn since; or asked to redraw at the pump's next resume. */
   notified = false;
   dirty = false;
+  /** The host's frame when the pump created or notified it, until it draws: see Surface.awaitingDraw. */
+  waitFrom: number | null = null;
 
   constructor(
     readonly kind: ViewKind,
@@ -245,6 +247,8 @@ export class Surface {
   /** Actions handlers asked for (RenderContext.trigger): run from the pump, in the host's scope. */
   private actions: { label: string; formName: string | undefined; action: ActionArg }[] = [];
   private readonly timers = new Set<Task>();
+  /** Views whose entity gpui refused to release: tried again at every tick until it lets go. */
+  private readonly unreleased = new Set<ViewRecord>();
 
   /**
    * `tokens`: see resolveTokens(); OpenUI's light theme when omitted.
@@ -293,7 +297,10 @@ export class Surface {
     cx.spawn(async (cx) => {
       while (!this.closed) {
         await cx.sleep(this.pending ? 0 : TICK_MS);
-        if (this.closed || !this.pending) continue;
+        if (this.closed) continue;
+        // A refused release is retried every tick on its own, without a wake (that would spin the loop).
+        for (const rec of [...this.unreleased]) this.release(rec);
+        if (!this.pending) continue;
         this.pending = false;
         // A failure in one resume must not end the loop: every later redraw goes through it.
         try {
@@ -446,8 +453,10 @@ export class Surface {
       if (rec.kind === "host") host = true;
       else this.notifyView(cx, rec);
     }
-    const redrawHost = host || !sameValue(this.hostState(), this.hostSeen);
-    this.setIdle(!redrawHost && this.deferred.length === 0 && !this.pending && !this.awaitingDraw() && !this.working());
+    // While views wait to draw, the host draws too: after that frame, one still waiting is not on screen.
+    const waiting = this.awaitingDraw();
+    const redrawHost = host || waiting || !sameValue(this.hostState(), this.hostSeen);
+    this.setIdle(!redrawHost && this.deferred.length === 0 && !this.pending && !this.working());
     return redrawHost;
   }
 
@@ -455,11 +464,17 @@ export class Surface {
     records.set(rec.id, { surface: this, record: rec });
     if (rec.kind === "overlay") rec.order = ++this.overlayCount;
     rec.entity = createView(cx, RecordView, { id: rec.id });
+    rec.waitFrom = this.host.frame;
   }
 
-  /** A view the pump created or notified has not drawn since, or one asked to redraw. */
+  /**
+   * A view the pump created or notified that may still draw: until it draws, or until the
+   * host has drawn a frame since. A view on screen draws in the same frame as the host, so
+   * one that didn't is not on screen (a closed Accordion item's content, which its parent
+   * mounts but doesn't place) and must not hold idle. Or one asked to redraw at the next resume.
+   */
   private awaitingDraw(): boolean {
-    for (const rec of this.liveRecords()) if (rec.notified || rec.dirty || (rec.entity && rec.frame === 0)) return true;
+    for (const rec of this.liveRecords()) if (rec.dirty || (rec.waitFrom !== null && this.host.frame <= rec.waitFrom)) return true;
     return false;
   }
 
@@ -486,6 +501,9 @@ export class Surface {
     if (rec.kind === "host") return cx.notify();
     if (!rec.entity || rec.frame === 0) return;
     rec.notified = true;
+    // The first notify since the view last drew starts its wait: a hidden view whose reads keep
+    // differing is notified at every resume, and restarting the wait would redraw the host forever.
+    rec.waitFrom ??= this.host.frame;
     cx.notify(rec.entity);
   }
 
@@ -523,15 +541,26 @@ export class Surface {
   /** Release a view, the views it mounted, and its form registrations. Locals stay. */
   private release(rec: ViewRecord): void {
     if (rec.released) return;
-    // The entity first: should gpui refuse, the surface still holds the view and the pump retries.
-    rec.entity?.release();
+    // The entity first: should gpui refuse, the surface still holds the view, and the pump
+    // tries again at its next tick (not only at the next wake), without failing the resume.
+    try {
+      rec.entity?.release();
+    } catch (e) {
+      if (!this.unreleased.has(rec)) console.log(`[opengpui] view release refused, retrying: ${e}`);
+      this.unreleased.add(rec);
+      return;
+    }
+    this.unreleased.delete(rec);
     rec.entity = null;
     rec.released = true;
     for (const child of [...rec.mounted, ...rec.dropped]) if (child.parent === rec) this.release(child);
     rec.mounted.clear();
     rec.dropped.clear();
-    for (const [reg, { form, name }] of rec.fields) if (form.fields[name] === reg) delete form.fields[name];
-    rec.fields.clear();
+    // An interrupted render never reached end(): what it registered sits in nextFields only.
+    for (const regs of [rec.fields, rec.nextFields]) {
+      for (const [reg, { form, name }] of regs) if (form.fields[name] === reg) delete form.fields[name];
+      regs.clear();
+    }
     rec.reads = [];
     if (this.views.get(rec.key) === rec) this.views.delete(rec.key);
     records.delete(rec.id);
@@ -562,6 +591,7 @@ export class Surface {
     const owner = parent.view;
     rec.parent = owner;
     owner.mounted.add(rec);
+    this.unreleased.delete(rec); // mounted again before gpui let it go: it stays
     if (!sameScope(rec.scope, scope)) {
       rec.scope = scope;
       fresh = true;
@@ -610,11 +640,14 @@ export class Surface {
   /**
    * Start a render of `rec`. What it tracks and registers goes to `nextReads`/`nextFields`
    * and replaces the last render's in end(): a render gpui-shell interrupts never gets there,
-   * so the view keeps tracking (and its fields keep validating) what it drew last.
+   * so the view keeps tracking (and its fields keep validating) what it drew last. What the
+   * interrupted render registered joins the view's own fields, so end() or release() drops it.
    */
   private begin(rec: ViewRecord): RenderContext {
+    if (rec.rendering) for (const [reg, entry] of rec.nextFields) rec.fields.set(reg, entry);
     rec.rendering = true;
     rec.notified = false;
+    rec.waitFrom = null;
     rec.dirty = false;
     rec.frame++;
     rec.started = Date.now();

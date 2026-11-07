@@ -4,10 +4,13 @@
 //   Button      genui-lib/Button/index.tsx, components/Button/{Button.tsx,button.scss}
 //   Buttons     genui-lib/Buttons/index.tsx, components/Buttons/{Buttons.tsx,buttons.scss}
 //   IconButton  components/IconButton/{IconButton.tsx,iconButton.scss}; genui-lib/IconButton is in misc.ts
+//
+// A secondary button's fill is transparent, so it draws without its shadow-m (gpui would
+// show the shadow through the fill: tokens.ts shadow(), README "Shadows").
 import { ACTION_STEPS } from "@openuidev/lang-core";
 import { div, type Color, type Context, type Element } from "gpui-kit";
 import { optional, type Component, type RenderContext } from "../render/surface.ts";
-import { shadow, textStyle, TRANSPARENT, typography, type ShadowPreset, type Tokens } from "../render/tokens.ts";
+import { over, shadow, textStyle, TRANSPARENT, typography, type ShadowPreset, type Tokens } from "../render/tokens.ts";
 
 export type ButtonVariant = "primary" | "secondary" | "tertiary";
 export type ButtonSize = "extra-small" | "small" | "medium" | "large";
@@ -111,10 +114,10 @@ function paint(el: Element, l: Look, disabled: boolean, onClick: ((cx: Context) 
       .text_color(l.disabledFg ?? l.fg)
       .border_color(l.disabledBorder ?? l.border);
   }
-  let out = shadow(el.bg(l.bg).text_color(l.fg).border_color(l.border), l.shadow).cursor_pointer();
+  let out = shadow(el.bg(l.bg).text_color(l.fg).border_color(l.border), l.shadow, l.bg).cursor_pointer();
   out = out.hover((s) => {
     let h = l.hoverBg ? s.bg(l.hoverBg) : s;
-    if (l.hoverShadow) h = shadow(h, l.hoverShadow);
+    if (l.hoverShadow) h = shadow(h, l.hoverShadow, l.hoverBg ?? l.bg);
     return h;
   });
   out = out.active((s) => {
@@ -199,13 +202,29 @@ export function iconButton(
     onClick: (cx: Context) => void;
     /** The click goes on to the parents (react-ui's genui IconButton never stops it); default: it stops here. */
     bubble?: boolean;
+    /**
+     * The opaque fill the button sits on (a carousel's or tab list's chip). A see-through fill is
+     * drawn composited over it, so the button keeps the shadow gpui could not draw through it.
+     */
+    surface?: Color;
   },
 ): Element {
   const t = ctx.t;
   const size = ICON_BUTTON[o.size ?? "medium"];
   let el = div().id(o.id).flex().flex_none().items_center().justify_center().border_1().w(size.box).h(size.box);
   el = o.shape === "circle" ? el.rounded_full() : el.rounded(size.radius(t));
-  return paint(el, look(t, o.variant ?? "primary", false), !!o.disabled, o.onClick, o.bubble).children(
+  const l = look(t, o.variant ?? "primary", false);
+  const s = o.surface;
+  const onSurface: Look = s
+    ? {
+        ...l,
+        bg: over(l.bg, s),
+        hoverBg: l.hoverBg && over(l.hoverBg, s),
+        activeBg: l.activeBg && over(l.activeBg, s),
+        disabledBg: l.disabledBg && over(l.disabledBg, s),
+      }
+    : l;
+  return paint(el, onSurface, !!o.disabled, o.onClick, o.bubble).children(
     optional(ctx.icon(o.icon, { category: o.category, size: o.iconSize ?? size.icon })),
   );
 }
