@@ -12,10 +12,12 @@
 // refractor/all registers its ~300 grammars at import; gpui-shell's engine
 // interrupts that while loading a mod. They are registered in the same order
 // (a grammar may extend earlier ones), WARM_SLICE_MS of them per resume, by the task
-// of a view that shows a code block; until all are in (about 2 s in a fresh Herdr
-// window), code shows unhighlighted, then redraws. A grammar whose registration the engine
-// interrupted is skipped, and a watchdog redraws a view whose task died, which
-// starts another. refractor itself costs about 13 ms per kilobyte there (30 with
+// of a view that shows a code block; until all are in (well under a second in a fresh
+// Herdr window), code shows unhighlighted, then redraws. A grammar whose registration
+// throws (`reason`: its insertBefore assigns `constructor`, which gpui-shell's frozen
+// Object.prototype refuses) or the engine interrupted is skipped, and a watchdog redraws
+// a view whose task died, which starts another. refractor itself costs about 13 ms
+// per kilobyte there (30 with
 // drawing): code up to INLINE_CHARS is highlighted where it is drawn (past
 // HIGHLIGHT_MS of a render, one such block per render), longer code by a task of
 // the view, a line group per step, the most recently drawn first; it shows plain
@@ -74,7 +76,11 @@ async function warm(task: Spawned, session: RenderContext["session"]): Promise<v
       continue;
     }
     attempted = registered;
-    refractor.register(syntaxes[registered]!);
+    try {
+      refractor.register(syntaxes[registered]!);
+    } catch (e) {
+      console.log(`[opengpui] grammar ${registered} can't be registered here, skipping it: ${e}`);
+    }
     registered++;
     if (Date.now() - slice >= WARM_SLICE_MS) {
       await task.sleep(16);
@@ -271,7 +277,10 @@ function highlightLater(ctx: RenderContext, key: string, code: string, language:
           // Each step in a resume of its own: the first would otherwise run inside the pump's call.
           await task.sleep(16);
           state.resumed = Date.now();
-          const [key, job] = [...queue].at(-1)!;
+          const last = [...queue].at(-1);
+          // Another task (a watchdog's restart) may have drained the queue during the sleep.
+          if (!last) break;
+          const [key, job] = last;
           const g = job.group;
           const group = job.lines.slice(job.starts[g], job.starts[g + 1]).join("\n");
           const found = tokens(group, job.language);
