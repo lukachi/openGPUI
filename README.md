@@ -5,7 +5,7 @@ file, and openGPUI draws it as a real interface in a [Herdr](https://herdr.dev) 
 the agent. The person reads tables and charts, fills in forms, clicks buttons, and the answer
 goes back to the agent.
 
-![A release review drawn by openGPUI, light and dark](docs/screenshot.png)
+![A launch review an agent drew with openGPUI: metrics, charts, a table, a rollout plan and a form, in light and dark](docs/screenshot.png)
 
 ## Why
 
