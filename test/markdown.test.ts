@@ -183,6 +183,30 @@ describe("MarkdownParse (a long text parsed in pieces)", () => {
     }
   });
 
+  test("a skipped piece joins as its literal text in place, and the rest parses as usual", () => {
+    // A pipe table MarkDownRenderer (no GFM) reads as one paragraph: one piece that can't be cut.
+    const table = ["| a | **b** |", "|---|---|", ...Array.from({ length: 40 }, (_, i) => `| ${i} | \`x\` |`)].join("\n");
+    const text = `# Title\n\nBefore *it*.\n\n${table}\n\n## After\n\nEnd.`;
+    const parse = new MarkdownParse(text, "plain", 1);
+    let tree = null;
+    for (let i = 0; i < 1000 && !tree; i++) tree = !parse.scanning && parse.nextSize > table.length ? parse.skipPiece() : parse.step();
+    const whole = runPipeline(text, "plain");
+    const tags = (t: Root) => t.children.filter((c): c is Element => c.type === "element").map((c) => c.tagName);
+    expect(tags(tree!)).toEqual(tags(whole));
+    const blocks = tree!.children.filter((c): c is Element => c.type === "element");
+    // Its neighbours are exactly the pipeline's, positions included.
+    expect(blocks[1]).toStrictEqual(whole.children.filter((c): c is Element => c.type === "element")[1]);
+    expect(blocks[3]).toStrictEqual(whole.children.filter((c): c is Element => c.type === "element")[3]);
+    // The skipped block: one text node of its source (markup left literal), at its place in the text.
+    const skipped = blocks[2]!;
+    expect(skipped.children).toEqual([expect.objectContaining({ type: "text", value: table })]);
+    const at = text.indexOf(table);
+    expect(skipped.position).toEqual({
+      start: { line: 5, column: 1, offset: at },
+      end: { line: 5 + 41, column: table.length - table.lastIndexOf("\n"), offset: at + table.length },
+    });
+  });
+
   test("a long document is cut; definitions, HTML spans and fences keep it whole where needed", () => {
     const firstLines = (text: string, profile: (typeof PROFILES)[number]) =>
       markdownCuts(text, profile).map((at) => text.slice(at).trimStart().split("\n")[0]);

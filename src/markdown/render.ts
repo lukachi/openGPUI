@@ -593,6 +593,14 @@ const ROW_CHARS = 12_000;
  * widths of the others are estimated from their text.
  */
 const MEASURE_ROWS = 25;
+/**
+ * Source characters of rows probed for their height per frame (a row's build costs about
+ * 2.7 ms per kilobyte in the engine), at least one row: a long text's rows are all measured
+ * within a second or two of it drawing.
+ */
+const PROBE_CHARS = 6000;
+/** What a table group row counts as for PROBE_CHARS and the height estimate, per body row. */
+const TABLE_ROW_CHARS = 80;
 
 /** Words enough for a line wider than any pane: a virtual block's intrinsic width hint. */
 const WIDE_TEXT = "wide ".repeat(800);
@@ -619,6 +627,10 @@ interface VirtualState {
   measure: Map<string, { frame: number; tries: number }>;
   /** The tree the rows were last taken from. */
   tree: Root | null;
+  /** The rows' width, from a probe as wide as the list's rows. */
+  width: number;
+  /** Each row's height (by key) and the width it was drawn at, from its probe. */
+  heights: Map<string, { w: number; h: number }>;
 }
 
 /**
@@ -633,7 +645,7 @@ function virtualBlock(ctx: RenderContext, part: string, tree: Root, profile: "pl
   let rows = treeRows.get(tree);
   if (!rows) treeRows.set(tree, (rows = virtualRows(tree, profile)));
   const pieces = rows;
-  const local = ctx.local<VirtualState>({ measure: new Map(), tree: null }, `${part}-virtual`);
+  const local = ctx.local<VirtualState>({ measure: new Map(), tree: null, width: 0, heights: new Map() }, `${part}-virtual`);
   if (local.tree !== tree) {
     // A new tree (the text grew): forget the state of rows that are gone.
     if (local.tree) {
@@ -643,6 +655,7 @@ function virtualBlock(ctx: RenderContext, part: string, tree: Root, profile: "pl
         return row === undefined || keys.has(row) || keys.has(row.replace(/-(?:li|c|t)\d+$/, ""));
       });
       for (const key of local.measure.keys()) if (!keys.has(key)) local.measure.delete(key);
+      for (const key of local.heights.keys()) if (!keys.has(key)) local.heights.delete(key);
     }
     local.tree = tree;
   }
@@ -654,10 +667,17 @@ function virtualBlock(ctx: RenderContext, part: string, tree: Root, profile: "pl
     local.measure.set(key, { frame: ctx.frame, tries });
     if (tries < MEASURE_TRIES) ctx.wake();
   };
-  /** Row `k`, static (in the list) or with handlers (the measuring draw). */
-  const draw = (k: number, fixed: boolean): Element => {
+  /** Row `k`, static (in the list and its probe) or with handlers (the measuring draw); `provisional` hears that its tables lack widths. */
+  const draw = (k: number, fixed: boolean, provisional?: () => void): Element => {
     const r = pieces[k]!;
-    const ask: Row | null = fixed ? { unmeasured: () => askMeasure(r.key) } : null;
+    const ask: Row | null = fixed
+      ? {
+          unmeasured: () => {
+            provisional?.();
+            askMeasure(r.key);
+          },
+        }
+      : null;
     if (rowChars(r) > ROW_CHARS) {
       const node = r.kind === "li" ? listItems(r.node)[r.index]! : r.kind === "item" && r.item.kind === "block" ? r.item.node : null;
       const text = node ? textOf(node) : r.kind === "item" && r.item.kind === "inline" ? r.item.nodes.map(textOf).join("") : "";
@@ -675,18 +695,76 @@ function virtualBlock(ctx: RenderContext, part: string, tree: Root, profile: "pl
   };
 
   const n = pieces.length;
+  /** Row `k` as the list draws it: its gap above, padded back in from BLEED. */
+  const row = (k: number, provisional?: () => void): Element => {
+    const gap = k > 0 ? Math.max(pieces[k - 1]!.margins.mb, pieces[k]!.margins.mt) : 0;
+    // The list reaches BLEED past the block's left side (rows padded back in), so what a full draw
+    // lets overflow there, such as an ordered list's wide markers, isn't clipped.
+    return textStyle(div().w_full().flex().flex_col().pl(BLEED).text_color(color), body)
+      .when(gap > 0, (el) => el.pt(gap))
+      .child(edge(draw(k, true, provisional), k, n));
+  };
+
+  // gpui's list counts a row it hasn't drawn as 0 px tall, so its scrollbar measures against the
+  // rows drawn so far and slides up as scrolling draws more. Each row is therefore drawn once more
+  // in a probe (a few per frame, from the top), and the scrollbar gets the sum of their heights,
+  // with the rows not probed yet estimated from the probed ones' height per character.
+  const sizeOf = (k: number) => {
+    const r = pieces[k]!;
+    return r.kind === "table" ? (r.to - r.from) * TABLE_ROW_CHARS : rowChars(r);
+  };
+  const known = (key: string) => {
+    const m = local.heights.get(key);
+    return m !== undefined && Math.abs(m.w - local.width) < 0.5 ? m.h : null;
+  };
+  const wake = ctx.waker();
+  const probes: Element[] = [];
+  let probed = 0;
+  if (local.width > 0) {
+    for (let k = 0; k < n && (probes.length === 0 || probed < PROBE_CHARS); k++) {
+      const key = pieces[k]!.key;
+      if (known(key) !== null) continue;
+      probed += Math.max(sizeOf(k), 1);
+      // A row whose tables have no widths yet draws estimated widths: probed once they are measured.
+      let provisional = false;
+      const el = row(k, () => (provisional = true));
+      if (provisional) continue;
+      probes.push(
+        div()
+          .id(ctx.id(`${part}-probe-${key}`))
+          .w_full()
+          .on_size_change((size) => {
+            local.heights.set(key, { w: size.width, h: size.height });
+            wake();
+          })
+          .child(el),
+      );
+    }
+  }
+  let total = 2; // the list's 1px end rows
+  let measuredHeight = 0;
+  let measuredSize = 0;
+  const unknown: number[] = [];
+  for (let k = 0; k < n; k++) {
+    const h = known(pieces[k]!.key);
+    if (h === null) unknown.push(k);
+    else {
+      total += h;
+      measuredHeight += h;
+      measuredSize += sizeOf(k);
+    }
+  }
+  const line = body.size * body.lineHeight;
+  const perChar = measuredSize > 0 ? measuredHeight / measuredSize : line / Math.max(local.width / (body.size * 0.5), 1);
+  for (const k of unknown) total += Math.max(sizeOf(k) * perChar, line);
+
   const lazy = lazyRows(ctx, part, {
     count: n,
     key: (k) => pieces[k]!.key,
     left: BLEED,
-    row: (k) => {
-      const gap = k > 0 ? Math.max(pieces[k - 1]!.margins.mb, pieces[k]!.margins.mt) : 0;
-      // The list reaches BLEED past the block's left side (rows padded back in), so what a full draw
-      // lets overflow there, such as an ordered list's wide markers, isn't clipped.
-      return textStyle(div().w_full().flex().flex_col().pl(BLEED).text_color(color), body)
-        .when(gap > 0, (row) => row.pt(gap))
-        .child(edge(draw(k, true), k, n));
-    },
+    row: (k) => row(k),
+    // Until the rows' width is known nothing is measured or estimated: the list's own measure stands.
+    contentHeight: local.width > 0 ? total : undefined,
   });
 
   // Rows that asked last frame get their handled draw, which measures their tables.
@@ -710,6 +788,29 @@ function virtualBlock(ctx: RenderContext, part: string, tree: Root, profile: "pl
     .child(lazy[0]!)
     .when(measuring.length > 0, (el) =>
       el.child(div().absolute().top(0).left(0).w_full().h(0).overflow_hidden().child(div().w_full().flex().flex_col().children(measuring))),
+    )
+    // The height probes, as wide as the list's rows (BLEED past the left side), and a probe of that
+    // width alone: a new width (the pane resized) makes every height stale.
+    .child(
+      div()
+        .absolute()
+        .top(0)
+        .left(-BLEED)
+        .right(0)
+        .h(0)
+        .overflow_hidden()
+        .child(
+          div()
+            .id(ctx.id(`${part}-probe-width`))
+            .w_full()
+            .h(0)
+            .on_size_change((size) => {
+              if (Math.abs(size.width - local.width) < 0.5) return;
+              local.width = size.width;
+              wake();
+            }),
+        )
+        .children(probes),
     )
     .children(lazy.slice(1));
   // The region's content is out of flow (the list, the measuring draw), so it has no width of its own.

@@ -10,9 +10,10 @@
 // ticks, then redraws the views that asked. Each markdown text draws in a view of its
 // own (TextContent, MarkDownRenderer, Callout, a step's details: render/surface.ts),
 // so a page of many texts never adds up in one render; a long text is drawn through a
-// lazy list (blocks.ts virtualDecision). A parse step whose cost still passes what a
-// task resume can run (one huge list item, say) is not attempted: that text stays its
-// plain source (MAX_STEP_COST).
+// lazy list (blocks.ts virtualDecision). A piece whose parse still passes what a task
+// resume can run (one block markdownSplit can't cut: a long table in MarkDownRenderer,
+// one huge list item) is not attempted: that block draws as its literal text and the
+// rest of the text parses (MAX_STEP_COST, MarkdownParse.skipPiece).
 import type { Root } from "hast";
 import type { Context } from "gpui-kit";
 import type { RenderContext } from "../render/surface.ts";
@@ -33,7 +34,7 @@ const STEP_CHARS = 4000;
 /**
  * A single step that costs more than this (MarkdownParse.nextCost, about 240 ms in the
  * engine at 20 ms per kilobyte; a resume is interrupted at about 300–600 ms) is not run:
- * its text draws as plain source, rather than an interrupted task leaving every later
+ * its block draws as literal text, rather than an interrupted task leaving every later
  * text of the view unparsed.
  */
 const MAX_STEP_COST = 12_000;
@@ -58,8 +59,6 @@ const queues = new WeakMap<Session, Map<string, Waiting>>();
 const running = new WeakMap<Session, number>();
 /** Texts the pipeline threw on (the latest 50): they parse in render again, which reports the error as before. */
 const failed = new Set<string>();
-/** Texts with a step over MAX_STEP_COST (the latest 50): drawn as plain source. */
-const oversize = new Set<string>();
 const note = (set: Set<string>, key: string) => {
   set.add(key);
   if (set.size > 50) set.delete(set.values().next().value!);
@@ -82,7 +81,6 @@ export function markdownTree(ctx: RenderContext, part: string, text: string, pro
   const key = `${profile}\u0000${text}`;
   const mine = sites.get(site);
   if (mine?.key === key) return mine.tree;
-  if (oversize.has(key)) return null;
   const tree =
     readyMarkdown(text, profile) ??
     (failed.has(key) || (text.length <= SYNC_CHARS && ctx.renderTime < SYNC_MS) ? parseMarkdown(text, profile) : null);
@@ -124,16 +122,18 @@ async function drain(task: Spawned, session: Session, queue: Map<string, Waiting
       running.set(session, Date.now());
       for (const [site, { parse, wake }] of queue) {
         let threw = false;
-        if (!parse.tree && parse.nextCost > MAX_STEP_COST) {
-          console.log(`[opengpui] markdown too long to parse in one step (${Math.round(parse.nextCost)}): drawn as text`);
-          note(oversize, parse.key);
-          queue.delete(site);
-          continue;
-        }
-        while (!parse.tree && (spent === 0 || spent + RUN_COST + parse.nextSize <= STEP_CHARS) && parse.nextCost <= MAX_STEP_COST) {
-          spent += RUN_COST + parse.nextSize;
+        while (!parse.tree) {
+          // A cut scan step (MarkdownParse) gets a resume to itself: its cost isn't in characters parsed.
+          // A piece too costly for one resume joins as its literal text (skipPiece), which costs little.
+          const oversize = !parse.scanning && parse.nextCost > MAX_STEP_COST;
+          const cost = parse.scanning ? STEP_CHARS : oversize ? RUN_COST : RUN_COST + parse.nextSize;
+          if (spent > 0 && spent + cost > STEP_CHARS) break;
+          spent += cost;
           try {
-            parse.step();
+            if (oversize) {
+              console.log(`[opengpui] markdown block too long to parse in one step (${parse.nextSize} characters): drawn as text`);
+              parse.skipPiece();
+            } else parse.step();
           } catch (e) {
             console.log(`[opengpui] markdown parse failed: ${e}`);
             note(failed, parse.key);
@@ -146,9 +146,6 @@ async function drain(task: Spawned, session: Session, queue: Map<string, Waiting
         if (tree || threw) {
           queue.delete(site);
           ready.add(wake);
-        } else if (parse.nextCost > MAX_STEP_COST) {
-          note(oversize, parse.key);
-          queue.delete(site);
         }
         if (spent + RUN_COST > STEP_CHARS) break;
       }

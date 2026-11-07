@@ -22,11 +22,13 @@ interface LazyState {
  * `key`, drawn by `row`) and its scrollbar. `left` widens the list past the box's left side
  * (rows padded back in by the caller), for content a full draw lets overflow there. The
  * first and last rows should reach 1px over the end rows (`mt(-1)`, `mb(-1)`; see `edge`).
+ * `contentHeight`, the rows' whole height (end rows included) when the caller knows it, sizes
+ * the scrollbar's thumb: the list itself counts the rows it hasn't drawn as 0 px.
  */
 export function lazyRows(
   ctx: RenderContext,
   part: string,
-  o: { count: number; key: (k: number) => string; row: (k: number) => Element; left?: number },
+  o: { count: number; key: (k: number) => string; row: (k: number) => Element; left?: number; contentHeight?: number },
 ): Element[] {
   const local = ctx.local<LazyState>({ seen: { frame: -1, min: 0, max: 0 } }, `${part}-lazy`);
   const n = o.count;
@@ -59,7 +61,8 @@ export function lazyRows(
       if (!atEdge) cx.stop_propagation();
     })
     .child(rows);
-  return [wheel, Scrollbar.vertical(listId).absolute().inset_0()];
+  const bar = Scrollbar.vertical(listId).absolute().inset_0();
+  return [wheel, o.contentHeight === undefined ? bar : bar.scroll_size(0, o.contentHeight)];
 }
 
 /** Row `k` of `count` reaching 1px over the list's end rows, so its content sits where a full draw puts it. */

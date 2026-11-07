@@ -4,6 +4,18 @@ Releases are tagged `v<version>` from `package.json`'s `version`. Each one ships
 on herdr.dev (`gallery/opengpui/`) and as `opengpui-v<version>.tar.gz` on GitHub Releases. The
 [agent contract](docs/agent-contract.md) changes only with a note here.
 
+## 0.2.2
+
+- Fixed: a very long markdown text (hundreds of KB) no longer breaks its pane with gpui's
+  "interrupted" card. Finding where to cut it into pieces now runs in steps in the background
+  like the parsing itself, and a single block too long to parse in one step (a long table in
+  `MarkDownRenderer`) shows as its literal text instead of leaving the whole text unparsed.
+- Fixed: the scrollbar of a long markdown text no longer slides back up while scrolling down.
+  gpui's lazy list counts rows it hasn't drawn as 0 px tall; each row's height is now measured
+  in the background within a second or two, and the scrollbar takes their sum.
+- The skill tells agents to put GitHub-flavored markdown (tables, strikethrough) in `TextContent`:
+  upstream's `MarkDownRenderer` is plain CommonMark and shows a pipe table as text.
+
 ## 0.2.1
 
 - The skill asks agents to write panes to `~/.cache/opengpui/<project>-<topic>.oui`, out of the

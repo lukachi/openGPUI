@@ -47,6 +47,10 @@ Options, given the same way to `prompt`, `check` and `show`:
    colors instead of Herdr's). Show once: afterwards just rewrite the file. Showing a
    file again closes its earlier pane and starts a new event log.
 
+Markdown with tables, strikethrough or task lists goes in `TextContent` (GitHub-flavored, as
+upstream's): `MarkDownRenderer` is plain CommonMark, so a pipe table there shows as a paragraph
+of `|` characters.
+
 ## 3. Get the answer
 
 A button sends an event: `@ToAssistant("message", {context})`, or a button

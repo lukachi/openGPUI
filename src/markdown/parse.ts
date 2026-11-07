@@ -187,7 +187,27 @@ const DEFINITION = /^ {0,3}\[(?!\^)((?:[^\]\\\n]|\\.)+)\]:[ \t]*(?:<[^>\n]*>|\S+
  * `]:` line outside code (a footnote, a definition that may span lines or repeats a label)
  * or with lone CR line endings is not cut at all. test/markdown.test.ts pins the cuts.
  */
-export function markdownSplit(text: string, profile: MarkdownProfile): { cuts: Cut[]; definitions: string } {
+export function markdownSplit(text: string, profile: MarkdownProfile): Split {
+  const steps = splitSteps(text, profile);
+  for (;;) {
+    const next = steps.next();
+    if (next.done) return next.value;
+  }
+}
+
+export interface Split {
+  cuts: Cut[];
+  definitions: string;
+}
+
+/**
+ * Lines markdownSplit reads between two yields of splitSteps: in gpui-shell's engine a whole
+ * long document's scan (1,900 lines) ran past a call's budget, so MarkdownParse scans in steps.
+ */
+const SPLIT_LINES = 250;
+
+/** markdownSplit, yielding every SPLIT_LINES lines; its return value is the split. */
+function* splitSteps(text: string, profile: MarkdownProfile): Generator<void, Split, void> {
   const whole = { cuts: [], definitions: "" };
   if (/\r(?!\n)/.test(text)) return whole;
   const cuts: Cut[] = [];
@@ -211,6 +231,7 @@ export function markdownSplit(text: string, profile: MarkdownProfile): { cuts: C
   const lines = text.split("\n");
   let at = 0;
   for (let i = 0; i < lines.length; i++) {
+    if (i > 0 && i % SPLIT_LINES === 0) yield;
     const line = lines[i]!;
     const start = at;
     at += line.length + 1;
@@ -313,13 +334,16 @@ const PIECE_CACHE_SIZE = 400;
  * markdownSplit allows (into pieces of about PIECE_CHARS), each piece runs the pipeline
  * on its own (behind a table's header rows, with the document's link definitions), and
  * the trees are joined with positions moved to the whole text's, a list or table cut in
- * two merged back into one. The result equals parseMarkdown's and lands in its cache.
+ * two merged back into one. The result equals parseMarkdown's (unless a piece was skipped:
+ * skipPiece) and lands in its cache. The cuts are found in steps too (the first steps scan).
  * Pieces are cached too, so a response that grows while streaming parses only its new end.
  */
 export class MarkdownParse {
   readonly key: string;
-  private readonly starts: Cut[];
-  private readonly definitions: string;
+  /** The cut scan, until it is done; then the pieces' starts. */
+  private splitting: Generator<void, Split, void> | null;
+  private starts: Cut[] = [];
+  private definitions = "";
   private readonly trees: Root[] = [];
   private result: Root | null = null;
 
@@ -327,14 +351,23 @@ export class MarkdownParse {
     readonly text: string,
     readonly profile: MarkdownProfile,
     /** Characters a piece holds at most where it can be cut; tests cut at every allowed place. */
-    pieceChars = PIECE_CHARS,
+    private readonly pieceChars = PIECE_CHARS,
   ) {
     this.key = `${profile}\u0000${text}`;
-    const split = markdownSplit(text, profile);
+    // Scanned by step(), not here: the parse is made in a render, which a long text's scan overruns.
+    this.splitting = splitSteps(text, profile);
+  }
+
+  /** Scan the next SPLIT_LINES lines for cuts; once the scan is done, group the cuts into pieces. */
+  private scan(): void {
+    const next = this.splitting!.next();
+    if (!next.done) return;
+    this.splitting = null;
+    const split = next.value;
     const starts: Cut[] = [{ at: 0, join: "block" }];
     let previous: Cut | null = null;
-    for (const cut of [...split.cuts, { at: text.length, join: "block" as const }]) {
-      if (cut.at - starts.at(-1)!.at > pieceChars && previous && previous.at > starts.at(-1)!.at) starts.push(previous);
+    for (const cut of [...split.cuts, { at: this.text.length, join: "block" as const }]) {
+      if (cut.at - starts.at(-1)!.at > this.pieceChars && previous && previous.at > starts.at(-1)!.at) starts.push(previous);
       previous = cut;
     }
     this.starts = starts;
@@ -346,15 +379,20 @@ export class MarkdownParse {
     return this.result ?? cache.get(this.key) ?? null;
   }
 
+  /** True while the next step scans for cuts rather than parsing a piece. */
+  get scanning(): boolean {
+    return this.splitting !== null && !this.tree;
+  }
+
   private piece(i: number): string {
     const cut = this.starts[i]!;
     const body = this.text.slice(cut.at, this.starts[i + 1]?.at ?? this.text.length);
     return `${cut.prefix ?? ""}${body}${this.definitions ? `\n\n${this.definitions}\n` : ""}`;
   }
 
-  /** Characters the next step parses (0 when done). */
+  /** Characters the next step parses (0 when done or scanning). */
   get nextSize(): number {
-    if (this.tree) return 0;
+    if (this.tree || this.scanning) return 0;
     const i = this.trees.length;
     return (this.starts[i + 1]?.at ?? this.text.length) - this.starts[i]!.at;
   }
@@ -364,7 +402,7 @@ export class MarkdownParse {
    * fiftieth (the parser only scans them), so a long fence doesn't look like a long text.
    */
   get nextCost(): number {
-    if (this.tree) return 0;
+    if (this.tree || this.scanning) return 0;
     const i = this.trees.length;
     let cost = 0;
     let fence: string | null = null;
@@ -381,10 +419,14 @@ export class MarkdownParse {
     return cost;
   }
 
-  /** Parse the next piece; after the last, join them. Returns the tree when done. */
+  /** Scan for cuts, or parse the next piece; after the last, join them. Returns the tree when done. */
   step(): Root | null {
     const done = this.tree;
     if (done) return done;
+    if (this.splitting) {
+      this.scan();
+      return null;
+    }
     const i = this.trees.length;
     const single = this.starts.length === 1;
     const piece = single ? this.text : this.piece(i);
@@ -397,6 +439,35 @@ export class MarkdownParse {
         if (pieces.size > PIECE_CACHE_SIZE) pieces.delete(pieces.keys().next().value!);
       }
     }
+    return this.add(tree);
+  }
+
+  /**
+   * Don't parse the next piece: it joins as one paragraph of its literal source. For a piece
+   * whose parse would pass what one task resume may run (budget.ts MAX_STEP_COST: one block
+   * markdownSplit can't cut, such as a long table, which MarkDownRenderer reads as one
+   * paragraph), so the rest of the text still parses.
+   */
+  skipPiece(): Root | null {
+    const done = this.tree;
+    if (done || this.scanning) return done;
+    const cut = this.starts[this.trees.length]!;
+    const prefix = cut.prefix ?? "";
+    const body = this.text.slice(cut.at, this.starts[this.trees.length + 1]?.at ?? this.text.length);
+    const value = body.trim();
+    const lead = body.slice(0, body.length - body.trimStart().length);
+    const lines = (s: string) => s.split("\n").length - 1;
+    // Positions in the piece's own terms (behind its prefix), as the pipeline's would be: join() moves them.
+    const offset = prefix.length + lead.length;
+    const start = { line: 1 + lines(prefix + lead), column: lead.length - lead.lastIndexOf("\n"), offset };
+    const end = { line: start.line + lines(value), column: value.includes("\n") ? value.length - value.lastIndexOf("\n") : start.column + value.length, offset: offset + value.length };
+    const position = { start, end };
+    const children: Root["children"] = value ? [{ type: "element", tagName: "p", properties: {}, children: [{ type: "text", value, position }], position }] : [];
+    return this.add({ type: "root", children, position });
+  }
+
+  /** A piece's tree in; after the last, the joined tree. */
+  private add(tree: Root): Root | null {
     this.trees.push(tree);
     if (this.trees.length < this.starts.length) return null;
     this.result = remember(this.key, this.join());
