@@ -1,4 +1,4 @@
-// The host module tools/oui-harness exports to the script (src/main.rs, `host_module`).
+// The host module the harness host (tools/harness/host) exports to the script (src/main.rs, `host_module`).
 declare module "oui-harness" {
   export interface Job {
     /** The .oui file's text. */

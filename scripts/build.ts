@@ -2,9 +2,9 @@
 //   dist/opengpui.js               the library (gpui-kit and gpui-base stay host imports)
 //   herdr/mods/opengpui/main.js    the Herdr mod: opengpui's own code, loaded once per tab
 //   herdr/mods/opengpui/shared.js  the packages it imports, loaded once per Herdr engine (bundleSplit)
-//   herdr/mods/opengpui/fonts/     the Inter cuts it ships (bun scripts/assets.ts)
+//   herdr/mods/opengpui/fonts/     the Inter cuts it ships (bun scripts/sync.ts)
 //   herdr/mods/opengpui/cli/opengpui.mjs  the agent CLI, for Node 18+ or Bun (cli/opengpui runs it)
-//   harness/app/{main,shared}.js   the headless harness's script (tools/oui-harness), split the same way
+//   tools/harness/app/{main,shared}.js  the headless harness's script (tools/harness), split the same way
 // lucide icons travel inside shared.js as data (src/render/lucide.ts).
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -19,8 +19,7 @@ function copyAssets(): void {
   const to = join(root, "herdr", "mods", "opengpui", "fonts");
   rmSync(to, { recursive: true, force: true });
   cpSync(from, to, { recursive: true, filter: (src) => !src.endsWith(".stamp.json") });
-  // Icon folders of builds before icons became data.
-  for (const old of [join("herdr", "mods", "opengpui", "icons"), join("harness", "app", "icons")]) rmSync(join(root, old), { recursive: true, force: true });
+  rmSync(join(root, "herdr", "mods", "opengpui", "icons"), { recursive: true, force: true }); // from builds before icons became data
 }
 
 // gpui-shell throws on browser timers. Upstream React renderers (genui-lib
@@ -88,7 +87,7 @@ async function bundle(
 // Herdr runs every tab of a mod as a load of its own in one engine, whose heap
 // (256 MiB) no load gives back: gpui-shell keeps every module it has evaluated
 // until the engine ends. One whole bundle cost about 14 MiB of that per tab
-// before drawing anything (bun scripts/shot.ts --shared-vm measures it), most
+// before drawing anything (bun run shot --shared-vm measures it), most
 // of it the packages: zod and OpenUI's libraries, refractor's grammars,
 // unified and micromark, d3, date-fns. So main.js holds opengpui's own code
 // (OWN_CODE) and every package it imports, with SHARED_FILES, goes into
@@ -106,9 +105,9 @@ async function bundle(
 // gpui-shell evaluates it with `promise.finish()`, which runs every promise job
 // already queued, FIFO, inside the new tab's application scope. When loads
 // follow each other without a frame between (oui-harness reproduces it), a
-// job the previous load's init left runs as this tab's (the Herdr issue draft
-// in notes/reports/2026-11-07-heap.md asks for a way around it).
-const OWN_CODE = ["src", "herdr/src", "harness/src"].map((dir) => join(root, dir) + "/");
+// job the previous load's init left runs as this tab's (only Herdr can offer a way
+// around it).
+const OWN_CODE = ["src", "herdr/src", "tools/harness/script"].map((dir) => join(root, dir) + "/");
 const SHARED_FILES = [join(root, "src", "markdown", "grammars.ts"), join(root, "src", "upstream", "timers.ts")];
 const KEY_PLACEHOLDER = "@@OPENGPUI_SHARED_KEY@@";
 
@@ -239,7 +238,7 @@ const gpui = ["gpui-kit", "gpui-base", "gpui"];
 const sizes = {
   "dist/opengpui.js": await bundle("src/index.ts", "dist/opengpui.js", { external: gpui }),
   ...prefixed("herdr/mods/opengpui", await bundleSplit("herdr/src/main.ts", "herdr/mods/opengpui", [...gpui, "herdr"])),
-  ...prefixed("harness/app", await bundleSplit("harness/src/main.ts", "harness/app", [...gpui, "oui-harness"])),
+  ...prefixed("tools/harness/app", await bundleSplit("tools/harness/script/main.ts", "tools/harness/app", [...gpui, "oui-harness"])),
   "dist/opengpui-headless.js": await bundle("src/headless.ts", "dist/opengpui-headless.js", { target: "bun" }),
   "herdr/mods/opengpui/cli/opengpui.mjs": await bundle("bin/opengpui.ts", "herdr/mods/opengpui/cli/opengpui.mjs", { target: "node", plugins: [hostStubs] }),
 };

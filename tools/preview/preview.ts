@@ -1,9 +1,9 @@
 // Show .oui files with this checkout's build in a Herdr window of its own, take a
 // screenshot of each, and close them again. For the Herdr integration only (props,
 // events file, hc replies, --look herdr, pane chrome); to look at UI, use
-// scripts/shot.ts, which draws offscreen without Herdr.
+// `bun run shot`, which draws offscreen without Herdr.
 //
-//   bun scripts/preview.ts <file.oui>... [options]
+//   bun run preview <file.oui>... [options]      (bun tools/preview/preview.ts)
 //     --look openui|herdr   whose colors to draw with (default openui)
 //     --mode light|dark     the window's appearance; `light,dark` shoots both (default light)
 //     --library openui|chat
@@ -46,7 +46,7 @@ const IDLE_SETTLE_MS = 300;
 const STATUS_MS = 5000;
 const STATUS_POLL_MS = 50;
 
-const root = join(import.meta.dir, "..");
+const root = join(import.meta.dir, "..", "..");
 const checkout = basename(root).toLowerCase().replace(/[^a-z0-9-]+/g, "-");
 const home = process.env.OPENGPUI_PREVIEW_HOME ?? join(homedir(), ".config", `herdr-preview-${checkout}`);
 // herdr-core's socket path has to fit in 103 bytes, so the session name stays short.
@@ -79,7 +79,7 @@ const files = args.map((f) => resolve(f));
 const single = files.length === 1 && modes.length === 1;
 if (!files.length || modes.some((m) => !["light", "dark"].includes(m)) || ((outOption || keep) && !single)) {
   console.error(
-    "usage: bun scripts/preview.ts <file.oui>... [--look openui|herdr] [--mode light|dark|light,dark] [--library name] [--wait ms] [--settle ms] [--out file.png] [--keep] [--mod name]\n" +
+    "usage: bun run preview <file.oui>... [--look openui|herdr] [--mode light|dark|light,dark] [--library name] [--wait ms] [--settle ms] [--out file.png] [--keep] [--mod name]\n" +
       "       --out and --keep take one file and one mode",
   );
   process.exit(2);
@@ -201,13 +201,13 @@ function readStatus(path: string): { text: string; idle: boolean } | null {
  * 10 s over a page that had long drawn), and its views don't render, so the surface
  * never turns idle. A click makes gpui draw a frame; a hover or a key does not. So
  * while waiting and before each shot this clicks the status bar's empty middle through
- * scripts/poke.ts (OuiPoke.app, which needs Accessibility). Without OuiPoke a covered
+ * poke.ts (OuiPoke.app, which needs Accessibility). Without OuiPoke a covered
  * window's shots may be stale.
  */
 function nudge(): void {
   if (nudgeAt === null || !existsSync(pokeApp)) return;
   const poke = (argv: string[]) =>
-    Bun.spawnSync(["bun", join(root, "scripts", "poke.ts"), ...argv], {
+    Bun.spawnSync(["bun", join(import.meta.dir, "poke.ts"), ...argv], {
       env: { ...process.env, OPENGPUI_PREVIEW_HOME: home },
       stdout: "pipe",
       stderr: "pipe",

@@ -29,7 +29,7 @@
   "include": [
     "src",
     "herdr/src",
-    "harness/src",
+    "tools/harness/script",
     "types/gpui-kit.d.ts"
   ]
 }

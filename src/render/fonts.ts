@@ -7,7 +7,7 @@
 // gpui applies none of the variable axes and has no letter spacing, so the
 // Herdr mod ships static cuts at exactly the (optical size, weight) pairs that
 // typography uses, with the tracking baked into the glyph advances.
-// scripts/assets.ts generates the cuts from this table; `interFace` picks one.
+// scripts/sync.ts generates the cuts from this table; `interFace` picks one.
 // This module is pure data: the build scripts import it too.
 
 /** OpenUI's `letter-spacing` for non-code text (TRACKING), in em. */

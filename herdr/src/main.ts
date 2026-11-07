@@ -73,7 +73,7 @@ export default class OpenGpui extends View {
   private pendingEvents: string[] = [];
   private writeError: string | null = null;
   private lastErrorReport = "";
-  /** opengpui/status/<name>.json: whether the surface is idle, for tools that wait on it (scripts/preview.ts). */
+  /** opengpui/status/<name>.json: whether the surface is idle, for tools that wait on it (tools/preview/preview.ts). */
   private statusPath = "";
   private pendingStatus: string | null = null;
   /** The body's height inside its padding, as last told to the surface. */

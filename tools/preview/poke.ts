@@ -1,14 +1,14 @@
 // Pointer and keyboard input for this checkout's background preview window
-// (scripts/preview.ts --keep), through tools/oui-poke (OuiPoke.app).
+// (bun run preview … --keep), through oui-poke/ built into OuiPoke.app.
 //
-//   bun scripts/poke.ts build                       build and sign ~/Applications/OuiPoke.app
-//   bun scripts/poke.ts info
-//   bun scripts/poke.ts click <x> <y> [--count n] [--button right] [--cmd]
-//   bun scripts/poke.ts hover <x> <y>
-//   bun scripts/poke.ts drag <x1> <y1> <x2> <y2> [--steps n]
-//   bun scripts/poke.ts scroll <x> <y> <dx> <dy> [--steps n]   (pixels; negative dy reveals what is below)
-//   bun scripts/poke.ts key <keycode> [--cmd] [--shift] [--alt] [--ctrl]
-//   bun scripts/poke.ts type <text>
+//   bun tools/preview/poke.ts build                  build and sign ~/Applications/OuiPoke.app
+//   bun tools/preview/poke.ts info
+//   bun tools/preview/poke.ts click <x> <y> [--count n] [--button right] [--cmd]
+//   bun tools/preview/poke.ts hover <x> <y>
+//   bun tools/preview/poke.ts drag <x1> <y1> <x2> <y2> [--steps n]
+//   bun tools/preview/poke.ts scroll <x> <y> <dx> <dy> [--steps n]   (pixels; negative dy reveals what is below)
+//   bun tools/preview/poke.ts key <keycode> [--cmd] [--shift] [--alt] [--ctrl]
+//   bun tools/preview/poke.ts type <text>
 //   --px    x/y are pixels of a `herdr-app shot` of the window (divided by its scale)
 //
 // Coordinates are window points from the window's top-left corner. Events go only to
@@ -21,8 +21,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { homedir, tmpdir } from "node:os";
 import { basename, join } from "node:path";
 
-const root = join(import.meta.dir, "..");
-const src = join(root, "tools", "oui-poke");
+const root = join(import.meta.dir, "..", "..");
+const src = join(import.meta.dir, "oui-poke");
 const app = join(homedir(), "Applications", "OuiPoke.app");
 const checkout = basename(root).toLowerCase().replace(/[^a-z0-9-]+/g, "-");
 const home = process.env.OPENGPUI_PREVIEW_HOME ?? join(homedir(), ".config", `herdr-preview-${checkout}`);
@@ -57,7 +57,7 @@ function previewPid(): number {
     const files = Bun.spawnSync(["lsof", "-a", "-p", String(pid), "-Fn"], { stdout: "pipe" }).stdout.toString();
     if (files.includes(sock)) return pid;
   }
-  throw new Error(`no preview window for ${home}; open one with: bun scripts/preview.ts <file> --keep`);
+  throw new Error(`no preview window for ${home}; open one with: bun run preview <file> --keep`);
 }
 
 function poke(pid: number, argv: string[]): string {
@@ -80,7 +80,7 @@ const px = args.includes("--px");
 if (px) args.splice(args.indexOf("--px"), 1);
 const action = args[0];
 if (!action) {
-  console.error("usage: bun scripts/poke.ts build|info|click|move|drag|scroll|key|type …");
+  console.error("usage: bun tools/preview/poke.ts build|info|click|move|drag|scroll|key|type …");
   process.exit(2);
 }
 build();

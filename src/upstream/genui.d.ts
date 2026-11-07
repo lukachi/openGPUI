@@ -28,7 +28,7 @@ declare module "openui-icon-fallbacks" {
   export function getFallbackIconName(category?: string): string;
 }
 
-// Every lucide icon: SVG file name → the markup inside its <svg> root (scripts/assets.ts).
+// Every lucide icon: SVG file name → the markup inside its <svg> root (scripts/sync.ts).
 declare module "openui-lucide-svgs" {
   const svgs: Record<string, string>;
   export default svgs;

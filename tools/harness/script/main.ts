@@ -1,4 +1,4 @@
-// opengpui under the headless harness (tools/oui-harness): one .oui file drawn
+// opengpui under the headless harness (tools/harness/host): one .oui file drawn
 // the way the Herdr mod draws a pane's content area, with OpenUI's own look,
 // and nothing from Herdr. The harness hands over the file and its options
 // through the "oui-harness" host module and reads actions and errors back as
@@ -8,7 +8,7 @@
 import type { ActionEvent, OpenUIError } from "@openuidev/lang-core";
 import { div, View, type Context } from "gpui-kit";
 import { clock, emit, fonts, job, response } from "oui-harness";
-import { components, isStreamingResponse, openuiFonts, resolveTokens, selectLibrary, Session, Surface, textStyle, typography } from "../../src/index.ts";
+import { components, isStreamingResponse, openuiFonts, resolveTokens, selectLibrary, Session, Surface, textStyle, typography } from "../../../src/index.ts";
 import { harnessIcons, harnessImages } from "./images.ts";
 
 // The harness runs time on a simulated clock: sleeps and timers return at once
@@ -42,7 +42,7 @@ export default class Harness extends View {
       icons: harnessIcons(j.scratch),
       images: harnessImages(j.base, j.home, j.scratch),
     });
-    // As Herdr's status file does (herdr/src/main.ts): scripts/shot.ts flags a file that settled busy.
+    // As Herdr's status file does (herdr/src/main.ts): shot.ts flags a file that settled busy.
     this.surface.onIdle = (idle) => emit(JSON.stringify({ type: "idle", idle }));
     this.session.setResponse(j.text, isStreamingResponse(j.text));
     this.session.update();

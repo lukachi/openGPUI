@@ -8,6 +8,8 @@
   "include": [
     "./*.ts",
     "../bin/*.ts",
+    "../tools/harness/shot.ts",
+    "../tools/preview/*.ts",
     "../types/gpui-kit.d.ts",
     "../src/upstream/genui.d.ts",
     "../test/*.ts"

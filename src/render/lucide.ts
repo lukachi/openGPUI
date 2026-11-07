@@ -1,5 +1,5 @@
 // lucide icons as data. Every icon's SVG markup comes in with the bundle
-// (scripts/assets.ts → .upstream/assets/lucide/svgs.json, about 340 KB), and gpui's
+// (scripts/sync.ts → .upstream/assets/lucide/svgs.json, about 340 KB), and gpui's
 // `svg()` draws only files, so a host writes the icons a page draws to files of its
 // own, once each: nothing ships one file per icon.
 import svgs from "openui-lucide-svgs";

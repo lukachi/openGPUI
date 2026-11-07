@@ -127,5 +127,5 @@ text; a non-zero exit is the tool's error. `description` and the JSON Schemas on
 ## Internal
 
 The mod's props (set by `show`; listed in `herdr/src/main.ts`), the idle status file
-`opengpui/status/<events stem>.json` (for `scripts/preview.ts`), and `wait`'s and `close`'s
+`opengpui/status/<events stem>.json` (for `tools/preview/preview.ts`), and `wait`'s and `close`'s
 bookkeeping beside the events file (`<stem>-<tag>.cursor`, `.shown.json`).

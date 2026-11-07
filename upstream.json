@@ -3,7 +3,7 @@
   "commit": "fe9171c769cafa2d0ac9606d856e210d87782140",
   "note": "lang-core and react-ui/src/genui-lib are built from this commit",
   "assets": {
-    "note": "Shipped with the Herdr mod; scripts/assets.ts fetches, verifies and builds them",
+    "note": "Shipped with the Herdr mod; scripts/sync.ts fetches, verifies and builds them",
     "inter": {
       "version": "4.1",
       "url": "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip",

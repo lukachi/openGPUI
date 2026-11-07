@@ -10,7 +10,7 @@ import { Buffer } from "buffer";
 import { createHash } from "crypto";
 import { exists, mkdir, readFile, writeFile } from "fs/promises";
 import { join, resolve } from "path";
-import { readImageHeader, type IconWriter, type ImageLoader, type LoadedImage } from "../../src/index.ts";
+import { readImageHeader, type IconWriter, type ImageLoader, type LoadedImage } from "../../../src/index.ts";
 
 /** The Surface `icons` option: each icon's SVG goes into `scratch`/icons, which parallel harness processes share. */
 export function harnessIcons(scratch: string): IconWriter {

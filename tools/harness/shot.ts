@@ -1,8 +1,8 @@
-// Draw .oui files offscreen with the headless harness (tools/oui-harness) and
-// write PNGs: the real core on the gpui-shell runtime Herdr embeds, with no
-// window on screen, no focus change and no Herdr.
+// Draw .oui files offscreen with the headless harness (host/, the Rust host; script/, what it
+// runs) and write PNGs: the real core on the gpui-shell runtime Herdr embeds, with no window on
+// screen, no focus change and no Herdr.
 //
-//   bun scripts/shot.ts <file.oui>... [options]
+//   bun run shot <file.oui>... [options]      (bun tools/harness/shot.ts)
 //     --mode light,dark     one shot per mode (default light)
 //     --library openui|chat (default openui)
 //     --width <px>          viewport, logical px; shots are 2x (default 1280)
@@ -40,7 +40,7 @@
 //                           a stalled task about two seconds in)
 //     --json                print the harness's JSON lines as they are
 //     --heap                print the script heap after each file's load (QuickJS's own
-//                           count, after a full collection; tools/oui-harness/src/heap.rs)
+//                           count, after a full collection; host/src/heap.rs)
 //     --shared-vm           load every file in one runtime, as Herdr runs every mod tab in one
 //                           VM: each file's window stays open like a tab, then all are closed
 //                           in order as Herdr closes a tab; prints the heap after each load
@@ -57,7 +57,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
-const root = join(import.meta.dir, "..");
+const root = join(import.meta.dir, "..", "..");
 const args = process.argv.slice(2);
 
 function option(name: string): string | undefined {
@@ -117,7 +117,7 @@ if (
   !(width > 0 && height > 0 && jobs > 0 && (quiet == null || Number(quiet) >= 0)) ||
   !(Number.isInteger(repeat) && repeat >= 1 && (repeat === 1 || sharedVm))
 ) {
-  console.error("usage: bun scripts/shot.ts <file.oui>... [--mode light,dark] [--library openui|chat] [--width 1280] [--height 820]");
+  console.error("usage: bun run shot <file.oui>... [--mode light,dark] [--library openui|chat] [--width 1280] [--height 820]");
   console.error("                          [--steps steps.json] [--tools tools.json] [--out dir] [--spec] [--jobs 4] [--quiet 2500] [--json]");
   console.error("                          [--heap] [--shared-vm [--repeat n]]");
   process.exit(2);
@@ -139,7 +139,7 @@ function run(argv: string[]): void {
 
 const began = Date.now();
 run(["bun", "scripts/build.ts"]);
-const crate = join(root, "tools", "oui-harness");
+const crate = join(root, "tools", "harness", "host");
 run(["cargo", "build", "--release", "--quiet", "--manifest-path", join(crate, "Cargo.toml")]);
 const binary = join(crate, "target", "release", "oui-harness");
 const built = Date.now() - began;
@@ -170,7 +170,7 @@ interface Line {
   [key: string]: unknown;
 }
 
-/** A "heap" line (tools/oui-harness/src/heap.rs), in MiB. */
+/** A "heap" line (host/src/heap.rs), in MiB. */
 interface HeapLine extends Line {
   type: "heap";
   after: string;
@@ -196,7 +196,7 @@ const processes = sharedVm ? 1 : Math.min(jobs, items.length);
 const outcomes = await Promise.all(
   Array.from({ length: processes }, async (_, p) => {
     const job = {
-      app: join(root, "harness", "app"),
+      app: join(root, "tools", "harness", "app"),
       fonts: join(root, ".upstream", "assets", "fonts"),
       width,
       height,

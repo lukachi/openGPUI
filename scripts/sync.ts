@@ -1,19 +1,23 @@
-// Fetch, verify and build what the mod ships, into .upstream/assets:
-//   fonts/          static Inter cuts at OpenUI's (optical size, weight) pairs,
-//                   tracked -1% (src/render/fonts.ts says which), plus the OFL
-//   lucide/         the lucide icons at the version react-ui depends on, as data the
-//                   bundle carries (src/render/lucide.ts):
-//     svgs.json       icon file name → the SVG's inner markup (every lucide SVG has the
-//                     same root element, which lucide.ts writes back)
-//     map.js          lucide-react's icon name → file table, which upstream's icon
-//                     resolver (components/_shared/icons) is compiled against
-//     LICENSE.txt     lucide's ISC license
-// Pins are upstream.json "assets". Font cutting runs fontTools' command-line
-// tools through `uvx` (https://docs.astral.sh/uv/). Work is skipped when the
-// output already matches the pins.
-//   bun scripts/assets.ts
+// Everything the build reads that is not in git, made from the pins in upstream.json:
+//   .upstream/openui/       OpenUI checked out at the pinned commit (lang-core and react-ui
+//                           are compiled from it; see upstream-plugin.ts)
+//   .upstream/assets/fonts/ static Inter cuts at OpenUI's (optical size, weight) pairs,
+//                           tracked -1% (src/render/fonts.ts says which), plus the OFL
+//   .upstream/assets/lucide/  the lucide icons at the version react-ui depends on, as data
+//                           the bundle carries (src/render/lucide.ts):
+//     svgs.json               icon file name → the SVG's inner markup (every lucide SVG has
+//                             the same root element, which lucide.ts writes back)
+//     map.js                  lucide-react's icon name → file table, which upstream's icon
+//                             resolver (components/_shared/icons) is compiled against
+//     LICENSE.txt             lucide's ISC license
+//   types/                  gpui-kit.d.ts and herdr.d.ts from the installed Herdr
+// Font cutting runs fontTools' command-line tools through `uvx`
+// (https://docs.astral.sh/uv/). Work is skipped when the output already matches the pins.
+//   bun scripts/sync.ts              (bun run sync)
+//   bun scripts/sync.ts --to main    move the OpenUI pin to that ref first
 import { $ } from "bun";
-import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { INTER_CUTS, INTER_ITALIC_CUTS, INTER_TRACKING_EM, interFamily } from "../src/render/fonts.ts";
 
@@ -22,9 +26,10 @@ const LUCIDE_ROOT =
   'xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
 
 const root = join(import.meta.dir, "..");
+const pinFile = join(root, "upstream.json");
 const out = join(root, ".upstream", "assets");
 const cache = join(out, "cache");
-const pins = (await Bun.file(join(root, "upstream.json")).json()).assets as {
+const pins = (await Bun.file(pinFile).json()).assets as {
   inter: { version: string; url: string; sha256: string };
   lucide: { version: string; staticIntegrity: string };
   fonttools: string;
@@ -33,7 +38,36 @@ const pins = (await Bun.file(join(root, "upstream.json")).json()).assets as {
 // Latin with extensions, Greek, Cyrillic, punctuation, currency, arrows, math, shapes.
 const UNICODES = "U+0000-024F,U+0300-036F,U+0370-03FF,U+0400-04FF,U+1E00-1EFF,U+2000-206F,U+20A0-20CF,U+2100-214F,U+2190-21FF,U+2200-22FF,U+25A0-25FF";
 
-mkdirSync(cache, { recursive: true });
+// ── OpenUI at the pin ──
+
+async function upstream(): Promise<void> {
+  const pin = await Bun.file(pinFile).json();
+  const dir = join(root, ".upstream", "openui");
+  if (!existsSync(join(dir, ".git"))) {
+    await $`git clone --filter=blob:none --no-checkout ${pin.repo} ${dir}`.quiet();
+  }
+  const toIndex = process.argv.indexOf("--to");
+  if (toIndex > 0) {
+    const ref = process.argv[toIndex + 1];
+    await $`git -C ${dir} fetch --quiet origin ${ref}`;
+    pin.commit = (await $`git -C ${dir} rev-parse FETCH_HEAD`.text()).trim();
+    await Bun.write(pinFile, JSON.stringify(pin, null, 2) + "\n");
+  } else {
+    await $`git -C ${dir} fetch --quiet origin ${pin.commit}`.nothrow();
+  }
+  await $`git -C ${dir} -c advice.detachedHead=false checkout --quiet --force ${pin.commit}`;
+  console.log(`upstream openui at ${pin.commit}`);
+
+  // Type-checking reads the npm @openuidev/lang-core declarations while the build
+  // compiles the pinned source: they must be the same release.
+  const upstreamVersion = (await Bun.file(join(dir, "packages", "lang-core", "package.json")).json()).version;
+  const typesVersion = (await Bun.file(join(root, "node_modules", "@openuidev", "lang-core", "package.json")).json()).version;
+  if (upstreamVersion !== typesVersion) {
+    throw new Error(`lang-core ${upstreamVersion} at the pin, but ${typesVersion} for types: run \`bun add -d @openuidev/lang-core@${upstreamVersion}\``);
+  }
+}
+
+// ── Downloads ──
 
 /** Download `url` once into the cache, checking an SRI integrity or a sha256 hex digest. */
 async function fetchPinned(url: string, file: string, check: { sha256: string } | { integrity: string }): Promise<string> {
@@ -130,7 +164,7 @@ async function icons(): Promise<void> {
   const map = entries.map(([name, file]) => `  ${JSON.stringify(name)}: () => ${JSON.stringify(file)},`).join("\n");
   await Bun.write(
     join(dir, "map.js"),
-    `// Generated by scripts/assets.ts from lucide-react ${version} dynamicIconImports.\nexport default {\n${map}\n};\n`,
+    `// Generated by scripts/sync.ts from lucide-react ${version} dynamicIconImports.\nexport default {\n${map}\n};\n`,
   );
   rmSync(work, { recursive: true, force: true });
   await stampDone(dir, stamp);
@@ -234,6 +268,24 @@ async function fonts(): Promise<void> {
   console.log(`fonts    ${count} Inter ${pins.inter.version} cuts`);
 }
 
+// ── Types from Herdr ──
+
+// The gpui-kit and herdr declarations are generated by the runtime that executes mods and must
+// not be committed (the files say so): a copy is only ever as current as its Herdr.
+function types(): void {
+  const home = process.env.HERDR_APP_HOME ?? join(homedir(), ".config", "herdr-app");
+  mkdirSync(join(root, "types"), { recursive: true });
+  for (const name of ["gpui-kit.d.ts", "herdr.d.ts"]) {
+    const from = join(home, name);
+    if (!existsSync(from)) throw new Error(`${from} is missing: start herdr-app once so it writes its types`);
+    copyFileSync(from, join(root, "types", name));
+  }
+  console.log(`types    <- ${home}`);
+}
+
+await upstream();
+mkdirSync(cache, { recursive: true });
 await icons();
 await fonts();
 console.log(`assets   ${out}`);
+types();

@@ -8,10 +8,11 @@ harness.
 
 ```sh
 bun install
-bun run sync           # pinned OpenUI checkout, Inter and lucide assets (upstream.json); gpui/herdr types from Herdr
+bun run sync           # scripts/sync.ts: pinned OpenUI checkout, Inter and lucide assets (upstream.json), gpui/herdr types from Herdr
 bun run check          # typecheck, build, herdr-app check on the mod
 bun run test           # build, then session/library/token tests against the built headless bundle
-bun run install-herdr  # copy the mod into ~/.config/herdr-app/mods/opengpui, link `opengpui` into ~/.local/bin
+bun run install-herdr  # build, then install the release folder into ~/.config/herdr-app/mods/opengpui and link `opengpui` into ~/.local/bin
+bun run release        # build, then gallery/opengpui/mods/opengpui and dist/opengpui-v<version>.tar.gz
 ```
 
 Built against herdr-app 0.1.13 (gpui-shell 0.7.1), OpenUI lang-core 1.1.0, Inter 4.1,
@@ -23,17 +24,18 @@ d3-scale 4.0.2 and d3-shape 3.2.0.
 | Path | What |
 |---|---|
 | `src/runtime/` | `Session`: one response's parse, `$state` store, queries/mutations, forms, validation, actions, errors. Framework-free port of react-lang's state hook. |
-| `src/render/` | `Surface`: draws a session with gpui-kit as retained nested views (the root, each costly or stateful component, each overlay) and redraws only the views a change touches (`invalidate.ts`); owns the pump task that creates them and the retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. `fonts.ts`: the Inter cuts and how a stack resolves to them. `icons.ts`/`lucide.ts`: upstream's lucide lookup and the SVG layout a host ships. |
+| `src/render/` | `Surface`: draws a session with gpui-kit as retained nested views (the root, each costly or stateful component, each overlay) and redraws only the views a change touches (`invalidate.ts`); owns the pump task that creates them and the retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. `fonts.ts`: the Inter cuts and how a stack resolves to them. `icons.ts`/`lucide.ts`: upstream's lucide lookup and the icons' SVG markup a host writes to files. |
 | `src/markdown/` | Markdown as react-ui draws it: react-markdown's own pipeline (unified, remark, the plugins each renderer passes) into an HTML tree, drawn with react-ui's markdown styles; code blocks highlighted by the same Prism grammars and themes. |
 | `src/components/` | One renderer per OpenUI component. `charts/` holds the chart renderers and their shared foundation (its `index.ts` documents the API). |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries; `subsetLibrary()` to prompt only what is implemented, `selectLibrary()` for a host's choice of library and component subset. |
 | `src/upstream/` | Stubs and shims that let upstream's code compile and run without React or the DOM. |
 | `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js` and `shared.js`); `contract.ts`: the events path rule and event shape the mod and the CLI share; `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
-| `harness/` | The headless harness's script (`harness/src/main.ts` → `harness/app/main.js` and `shared.js`): the mod's content area without Herdr, for `scripts/shot.ts`. |
-| `tools/` | `oui-harness` (Rust): runs the harness script offscreen on Herdr's gpui-shell. `oui-poke` (Swift): input for a Herdr preview window. |
 | `bin/opengpui.ts` | The agent CLI ([agent contract](agent-contract.md)), built for Node 18+ or Bun into the mod's `cli/opengpui.mjs`, next to its launcher `cli/opengpui`. The skill is built into it (`opengpui skill`). |
 | `skills/opengpui/` | Agent skill: how an agent uses the CLI and the pane. |
-| `scripts/` | Upstream sync, assets (Inter cuts, lucide SVGs), build (a Bun plugin that compiles upstream without React), install, and the tools below. |
+| `gallery/opengpui/` | The mod as herdr.dev's gallery serves it: `RECIPE.md`, `preview.png`, and the release build in `mods/opengpui/`. |
+| `scripts/` | The pipeline: `sync.ts` (pins → `.upstream/`, `types/`), `build.ts` with `upstream-plugin.ts` (compiles upstream without React), `release.ts` (the mod folder people get), `install.ts` (that folder into a Herdr home). |
+| `tools/harness/` | The headless harness: `shot.ts` drives it, `host/` (Rust) runs `script/` (→ `app/main.js` and `shared.js`, the mod's content area without Herdr) offscreen on Herdr's gpui-shell, `checks/` holds its own regression check. |
+| `tools/preview/` | Herdr-only checks: `preview.ts` (a preview Herdr window), `poke.ts` and `oui-poke/` (Swift: input for that window). |
 
 Outputs:
 
@@ -45,9 +47,9 @@ Outputs:
 ## Looking at UI: the headless harness
 
 ```sh
-bun scripts/shot.ts file.oui... [--mode light,dark] [--library chat] [--width 1280] [--height 820]
-                    [--steps steps.json] [--tools tools.json] [--out dir] [--spec] [--jobs 4]
-                    [--heap] [--shared-vm [--repeat n]]
+bun run shot file.oui... [--mode light,dark] [--library chat] [--width 1280] [--height 820]
+                         [--steps steps.json] [--tools tools.json] [--out dir] [--spec] [--jobs 4]
+                         [--heap] [--shared-vm [--repeat n]]
 ```
 
 It builds this checkout and draws each file offscreen, with the real core on the gpui-shell
@@ -59,7 +61,7 @@ No window appears and nothing takes focus, so it runs beside the person's work a
   point, drag, wheel (both axes), keys, typing, a window resize, simulated time, the clipboard's
   text, and a new text for the file (framed without its end line, it streams, as when an agent
   writes it). `{ "shot": "name" }` saves `<file>-<mode>-<name>.png`; the full list is in
-  `scripts/shot.ts`. Each step runs until settled, or `"settle": ms` long to catch a short state.
+  `tools/harness/shot.ts`. Each step runs until settled, or `"settle": ms` long to catch a short state.
 - `--tools` answers Query/Mutation tools: `{ "<name>": { "result", "error", "delay" } }`.
 - `--spec` writes the element description and the ids a step can name.
 - Gpui-base's own animations draw their end state (reduced motion).
@@ -70,7 +72,7 @@ No window appears and nothing takes focus, so it runs beside the person's work a
   shows its tooltip.
 - The actions the session sends and every error and runtime warning are printed. A file whose
   surface still reports itself busy when it settles (what Herdr's status file reports) is marked
-  NOT IDLE, as is a step after which it does. `harness/checks/idle-loop.oui` with its `.json`
+  NOT IDLE, as is a step after which it does. `tools/harness/checks/idle-loop.oui` with its `.json`
   steps must report neither.
 
 `--shared-vm` loads every file into one runtime, as Herdr runs every tab of a mod in one engine:
@@ -82,7 +84,7 @@ Herdr's engine keeps until its own GC threshold and counts against the limit, so
 start cleaner than in Herdr: read the "before GC" column for how close a window is to running
 out.
 
-The drawing comes from `tools/oui-harness`, a Rust host on GPUI's headless app context
+The drawing comes from `tools/harness/host`, a Rust host on GPUI's headless app context
 (simulated clock, Metal offscreen renderer) pinned to the herdr-app tag of the installed Herdr.
 It refuses to run when Herdr's `~/.config/herdr-app/gpui-kit.d.ts` says Herdr's runtime has
 moved (see its `Cargo.toml`).
@@ -90,8 +92,8 @@ moved (see its `Cargo.toml`).
 ## Herdr-only checks: preview and poke
 
 ```sh
-bun scripts/preview.ts file.oui... [--mode light|dark|light,dark] [--look openui|herdr] [--wait ms] [--keep]
-bun scripts/poke.ts click|hover|drag|scroll|key|type …
+bun run preview file.oui... [--mode light|dark|light,dark] [--look openui|herdr] [--wait ms] [--keep]
+bun tools/preview/poke.ts click|hover|drag|scroll|key|type …
 ```
 
 `preview.ts` is for the Herdr integration only (props, the events file, `hc` replies,
@@ -102,7 +104,7 @@ file in a new tab, and saves a screenshot to `tmp/preview/` once the tab reports
 stays so for 300 ms. Then it closes the tab. Checkouts never wait for each other.
 
 `poke.ts` gives that preview window pointer and keyboard input (open it with `--keep`). A small
-macOS helper, `tools/oui-poke` built into `~/Applications/OuiPoke.app`, posts events straight to
+macOS helper, `tools/preview/oui-poke` built into `~/Applications/OuiPoke.app`, posts events straight to
 the preview window's process, so the person's pointer, focus and own Herdr window are untouched;
 it refuses any process that isn't a preview window.
 
@@ -140,7 +142,7 @@ react-ui renders.
 
 OpenUI draws Inter as a variable font: its `wght` axis is set per style, its optical size follows
 the font size, and text is tracked −1%. gpui applies no variable axes and has no letter spacing,
-so the mod ships static cuts of Inter instead, made by `scripts/assets.ts`:
+so the mod ships static cuts of Inter instead, made by `scripts/sync.ts`:
 
 1. Download the pinned Inter release (`upstream.json` `assets.inter`, checked by sha256) into
    `.upstream/assets/cache/`.
@@ -159,7 +161,7 @@ and after one of these changes:
 - a new Inter release or fontTools version in `upstream.json`;
 - a type size and weight pair added to `INTER_CUTS` or `INTER_ITALIC_CUTS` (a new pair in a
   component's typography needs one, or text falls back to the nearest cut);
-- the tracking or the character set in `src/render/fonts.ts` / `scripts/assets.ts`.
+- the tracking or the character set in `src/render/fonts.ts` / `scripts/sync.ts`.
 
 `bun run build` copies the cuts into the mod's `fonts/`. Herdr loads a mod's fonts at start and
 on a look change; `install-herdr` reloads the look when they change. gpui keeps the faces it
@@ -169,7 +171,7 @@ installer says so). A host without the cuts keeps its own UI font.
 ## Icons
 
 lucide's icons at the version react-ui depends on, checked against upstream's lockfile and
-`upstream.json`. `scripts/assets.ts` turns them into `.upstream/assets/lucide/`: `svgs.json` (each
+`upstream.json`. `scripts/sync.ts` turns them into `.upstream/assets/lucide/`: `svgs.json` (each
 icon's markup inside the `<svg>` root they all share, about 340 KB), `map.js` (lucide-react's name
 table, which upstream's own lookup with fuzzy matching and category fallbacks is compiled against)
 and lucide's license.
@@ -184,10 +186,10 @@ of its size.
 
 ## Updating OpenUI
 
-`bun scripts/sync-upstream.ts --to main` moves the pin. The sync fails if the pinned `lang-core`
-version differs from the `@openuidev/lang-core` dev dependency used for types; bump that too,
-then run `bun run check` and the tests. `bun scripts/assets.ts` then checks that `upstream.json`
-still pins the lucide release react-ui depends on.
+`bun scripts/sync.ts --to main` moves the pin, then makes the assets for it. The sync fails if the
+pinned `lang-core` version differs from the `@openuidev/lang-core` dev dependency used for types,
+or if `upstream.json` no longer pins the lucide release react-ui depends on; bump those, then run
+`bun run check` and the tests.
 
 ## Porting a component
 
@@ -226,5 +228,5 @@ under `.upstream/openui/packages/react-ui/src/`:
    what they hold in views as anywhere else. A costly piece that is not a node (a step's
    markdown) goes through `ctx.piece(part, input, draw)`; a page-level overlay through
    `ctx.overlay(part, draw)`.
-6. `bun run check`, then look at `bun scripts/shot.ts file.oui --mode light,dark` against
+6. `bun run check`, then look at `bun run shot file.oui --mode light,dark` against
    upstream's scss and its render on [openui.com](https://openui.com).

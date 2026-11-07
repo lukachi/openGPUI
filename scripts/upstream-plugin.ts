@@ -3,7 +3,7 @@
 // examples stay exactly upstream's, while everything React (renderers, hooks,
 // react itself) becomes an inert stub that is never called. Upstream's lucide
 // icon-name resolver compiles for real, against the name → SVG file table
-// scripts/assets.ts generates in place of lucide-react's import map, and the
+// scripts/sync.ts generates in place of lucide-react's import map, and the
 // icons themselves come in as data (`openui-lucide-svgs`).
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -89,7 +89,7 @@ export function upstreamPlugin(): BunPlugin {
       // Lucide icon lookup by name, with upstream's fuzzy matching and category fallbacks.
       build.onResolve({ filter: /^openui-icons$/ }, () => ({ path: join(ICONS, "dynamicIconImports.ts") }));
       build.onResolve({ filter: /^openui-icon-fallbacks$/ }, () => ({ path: join(ICONS, "categoryFallbacks.ts") }));
-      // Every lucide icon's SVG markup (scripts/assets.ts), drawn through src/render/lucide.ts. One object
+      // Every lucide icon's SVG markup (scripts/sync.ts), drawn through src/render/lucide.ts. One object
       // literal: as a JSON module Bun would declare a variable per key, and lucide has a `key` icon.
       build.onResolve({ filter: /^openui-lucide-svgs$/ }, () => ({ path: LUCIDE_SVGS, namespace: "opengpui-lucide" }));
       build.onLoad({ filter: /.*/, namespace: "opengpui-lucide" }, (args) => ({

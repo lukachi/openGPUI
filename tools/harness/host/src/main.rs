@@ -5,8 +5,8 @@
 //!
 //!   oui-harness <job.json | ->
 //!
-//! The job (written by scripts/shot.ts) names the script directory
-//! (harness/app, the bundle of harness/src/main.ts), the fonts to register,
+//! The job (written by tools/harness/shot.ts) names the script directory
+//! (tools/harness/app, the bundle of tools/harness/script/main.ts), the fonts to register,
 //! the viewport, and one item per file and mode: steps to run, each followed
 //! by a settle, and shots to write. Progress, actions and errors come out on
 //! stdout as JSON lines.
@@ -399,7 +399,7 @@ fn check_pin() -> Result<()> {
         .nth(1)
         .map(|rest| rest.trim().trim_end_matches('.'))
         .ok_or_else(|| anyhow!("{}: line 3 does not name a gpui-shell version: {line:?}", path.display()))?;
-    let moved = "Move the pin to the installed Herdr: every `tag` in tools/oui-harness/Cargo.toml to its \
+    let moved = "Move the pin to the installed Herdr: every `tag` in tools/harness/host/Cargo.toml to its \
                  herdr-app version (and GPUI_SHELL_VERSION in src/main.rs to line 3), then \
                  `cargo build --release` there.";
     if herdr != GPUI_SHELL_VERSION {

@@ -47,7 +47,7 @@ export function eventsPath(herdrHome: string, src: string | null): string {
   return join(herdrHome, "opengpui", "events", `${name}.jsonl`);
 }
 
-/** The surface's idle report for the pane logging to `events` (internal: scripts/preview.ts waits on it). */
+/** The surface's idle report for the pane logging to `events` (internal: tools/preview/preview.ts waits on it). */
 export function statusPath(herdrHome: string, events: string): string {
   return join(herdrHome, "opengpui", "status", `${events.split("/").pop()!.replace(/\.jsonl$/, "")}.json`);
 }
