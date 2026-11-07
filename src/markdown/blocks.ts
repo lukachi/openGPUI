@@ -66,33 +66,20 @@ export function blockItems(nodes: ElementContent[]): BlockItem[] {
 }
 
 /**
- * Markdown source one block may have and still be drawn in full on every render.
- * Drawing costs about 2.7 ms per kilobyte in Herdr's engine (one element per word,
+ * Markdown source one block may have and still be drawn in full on every render of its
+ * view. Drawing costs about 2.7 ms per kilobyte in Herdr's engine (one element per word,
  * every frame) and a render is interrupted at about 50 ms; past this, the block's
- * top-level pieces go through a lazy list that builds only what is on screen.
+ * top-level pieces go through a lazy list that builds only what is on screen. Each
+ * markdown text draws in a view of its own (render/surface.ts), so this bounds a render.
  */
 export const VIRTUAL_CHARS = 6_000;
-/**
- * Markdown source one render draws in full across all its blocks: render-budget's measured
- * ~16 ms, a hard ceiling. A block that would pass it goes through a list when it has at
- * least MIN_VIRTUAL_CHARS (a shorter one in a viewport-high scroll region would be mostly
- * empty space) and is drawn as its plain source text otherwise. So a page of many short
- * blocks shows the ones past the ceiling plain; virtualizing the whole surface would lift that.
- */
-export const RENDER_CHARS = 6_000;
-export const MIN_VIRTUAL_CHARS = 1_000;
 
-/** How a markdown block is drawn: in full, through a lazy list, or as its plain source. */
-export type BlockDraw = "full" | "virtual" | "plain";
+/** How a markdown block is drawn: in full, or through a lazy list. */
+export type BlockDraw = "full" | "virtual";
 
-/**
- * How a markdown block of `chars` source characters is drawn, given the characters this
- * render already drew in full (`spent`), and what is spent after it.
- */
-export function virtualDecision(spent: number, chars: number): { draw: BlockDraw; spent: number } {
-  if (chars > VIRTUAL_CHARS) return { draw: "virtual", spent };
-  if (spent + chars > RENDER_CHARS) return { draw: chars >= MIN_VIRTUAL_CHARS ? "virtual" : "plain", spent };
-  return { draw: "full", spent: spent + chars };
+/** How a markdown block of `chars` source characters is drawn. */
+export function virtualDecision(chars: number): BlockDraw {
+  return chars > VIRTUAL_CHARS ? "virtual" : "full";
 }
 
 // ── Margins ──

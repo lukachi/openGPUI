@@ -19,7 +19,7 @@
 // allow no handlers, a table takes the widths an earlier handled draw measured and
 // scrolls sideways natively (tableView `static`).
 import { isElementNode } from "@openuidev/lang-core";
-import { div, type Color, type Context, type Element, type ScrollWheelEvent } from "gpui-kit";
+import { div, type Color, type Context, type Element, type Entity, type ScrollWheelEvent } from "gpui-kit";
 import type { Component, RenderContext } from "../render/surface.ts";
 import { textStyle, typography, type TextStyle, type Tokens } from "../render/tokens.ts";
 import { iconButton } from "./buttons.ts";
@@ -36,7 +36,7 @@ export const Col: Component = {
 };
 
 export interface TableCell {
-  content: (Element | string)[];
+  content: (Element | Entity | string)[];
   /** TableHead/TableCell `align` (.openui-table-align-*). */
   align?: "left" | "center" | "right";
 }
@@ -127,7 +127,7 @@ export function tableView(
   const lefts = layout ? layout.widths.map((_, i) => layout.widths.slice(0, i).reduce((a, b) => a + b, 0)) : [];
 
   /** Content that reports its natural width under `key` (static: the same box, unreported). */
-  const measure = (key: string, content: (Element | string)[]) => {
+  const measure = (key: string, content: (Element | Entity | string)[]) => {
     const box = div().flex().flex_row().flex_none().items_center().whitespace_nowrap();
     if (fixed) return box.children(content);
     return box

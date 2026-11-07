@@ -6,8 +6,9 @@
 //     --mode light|dark     the window's appearance; `light,dark` shoots both (default light)
 //     --library openui|chat
 //     --wait <ms>           the longest a tab may take to settle before its shot (default 15000)
-//     --settle <ms>         how long the window must stay unchanged to count as settled (default
-//                           3500: code highlighting starts ~3 s after a window loads the mod)
+//     --settle <ms>         without an idle signal (a build that writes none): how long the window
+//                           must stay unchanged to count as settled (default 3000: code
+//                           highlighting starts ~2 s after a window loads the mod)
 //     --out <file.png>      one file and one mode only; default tmp/preview/<file>-<look>-<mode>.png
 //     --keep                leave the tab open (for a person to click through); one file and mode
 //     --mod <name>          mod folder to install as (default opengpui-<checkout folder>)
@@ -17,8 +18,10 @@
 // herdr-core session), started in the background on first use, so worktrees never
 // wait for each other. A lock keeps two previews of the same checkout apart.
 //
-// A shot is taken once the window has stopped changing for --settle ms (parsing,
-// highlighting and image loads all show up as changes), not after a fixed sleep.
+// A shot is taken once the tab reports itself idle (opengpui/status/<name>.json: no
+// parse, highlight, image load or view left to draw) and the report stood for
+// IDLE_SETTLE_MS, which covers layout's own redraws (measuring). A build that reports
+// nothing is shot once the window has stopped changing for --settle ms instead.
 //
 // Herdr keeps every mod build it loads in its JS heap, so after a few builds a window
 // fails mod loads with "out of memory"; the window is therefore restarted every
@@ -30,6 +33,13 @@ import { basename, join, resolve } from "node:path";
 
 const RESTART_EVERY = 2;
 const SHOT_EVERY_MS = 250;
+const pokeApp = join(homedir(), "Applications", "OuiPoke.app");
+let nudgeAt: [number, number] | null | undefined;
+/** How long an idle report must stand before the shot: redraws from measuring (on_size_change) settle in it. */
+const IDLE_SETTLE_MS = 300;
+/** How long a tab has to write its first status before the shot falls back to pixel settling. */
+const STATUS_MS = 5000;
+const STATUS_POLL_MS = 50;
 
 const root = join(import.meta.dir, "..");
 const checkout = basename(root).toLowerCase().replace(/[^a-z0-9-]+/g, "-");
@@ -56,7 +66,7 @@ const look = option("--look") ?? "openui";
 const modes = (option("--mode") ?? "light").split(",");
 const library = option("--library");
 const waitMs = Number(option("--wait") ?? 15_000);
-const settleMs = Number(option("--settle") ?? 3500);
+const settleMs = Number(option("--settle") ?? 3000);
 const outOption = option("--out");
 const modName = option("--mod") ?? `opengpui-${checkout}`;
 const keep = flag("--keep");
@@ -134,11 +144,14 @@ try {
       const stem = basename(file).replace(/\.[^.]*$/, "");
       const out = resolve(outOption ?? join(root, "tmp", "preview", `${stem}-${look}-${mode}.png`));
       const events = join(home, "opengpui", "events", `${modName}-${stem}.jsonl`);
+      // The host writes its idle state next to the events, under the events file's name.
+      const statusPath = join(home, "opengpui", "status", `${modName}-${stem}.json`);
+      rmSync(statusPath, { force: true });
       const props = { src: file, events, look, title: `${modName}: ${stem}`, ...(library ? { library } : {}) };
       tab = herdr("tab.new", { name: `${stem} (${modName})`, mod: modName, props }).tab;
       writeFileSync(countPath, String(count() + 1));
       mkdirSync(join(out, ".."), { recursive: true });
-      const took = await shootSettled(out);
+      const took = await shootSettled(out, statusPath);
       console.log(`shot   ${out} (${took})`);
       const errors = status()?.errors ?? [];
       if (errors.length) console.log(`errors ${JSON.stringify(errors)}`);
@@ -163,12 +176,89 @@ function count(): number {
   return existsSync(countPath) ? Number(readFileSync(countPath, "utf8")) || 0 : 0;
 }
 
-/** Shoots until the window has looked the same for settleMs (or waitMs passed); keeps the last shot. */
-async function shootSettled(out: string): Promise<string> {
+/** The tab's status report, and whether it says idle (a report caught mid-write says nothing). */
+function readStatus(path: string): { text: string; idle: boolean } | null {
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch {
+    return null;
+  }
+  try {
+    return { text, idle: (JSON.parse(text) as { idle?: boolean }).idle === true };
+  } catch {
+    return { text, idle: false };
+  }
+}
+
+/**
+ * gpui stops drawing a window that is fully covered (its display link follows the
+ * occlusion state), and a background preview window usually is: its last frame then
+ * stays in `herdr-app shot` while the view changes underneath (seen: "Loading…" for
+ * 10 s over a page that had long drawn), and its views don't render, so the surface
+ * never turns idle. A click makes gpui draw a frame; a hover or a key does not. So
+ * while waiting and before each shot this clicks the status bar's empty middle through
+ * scripts/poke.ts (OuiPoke.app, which needs Accessibility). Without OuiPoke a covered
+ * window's shots may be stale.
+ */
+function nudge(): void {
+  if (nudgeAt === null || !existsSync(pokeApp)) return;
+  const poke = (argv: string[]) =>
+    Bun.spawnSync(["bun", join(root, "scripts", "poke.ts"), ...argv], {
+      env: { ...process.env, OPENGPUI_PREVIEW_HOME: home },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+  if (nudgeAt === undefined) {
+    const info = poke(["info"]);
+    if (info.exitCode !== 0) {
+      nudgeAt = null;
+      console.log(`note   no poke (${info.stderr.toString().trim().split("\n").pop()}); shots of a covered window may be stale`);
+      return;
+    }
+    const { width, height } = JSON.parse(info.stdout.toString()) as { width: number; height: number };
+    nudgeAt = [Math.round(width * 0.6), height - 8];
+  }
+  poke(["click", String(nudgeAt[0]), String(nudgeAt[1])]);
+}
+
+/**
+ * Shoots once the tab's idle report has stood for IDLE_SETTLE_MS and still stands after the
+ * shot; without any report within STATUS_MS, once the window has looked the same for settleMs.
+ * Gives up after waitMs, keeping the last shot.
+ */
+async function shootSettled(out: string, statusPath: string): Promise<string> {
   const begin = Date.now();
+  let nudged = 0;
+  while (Date.now() - begin < waitMs) {
+    if (Date.now() - nudged >= SHOT_EVERY_MS) {
+      nudge();
+      nudged = Date.now();
+    }
+    const report = readStatus(statusPath);
+    if (report === null) {
+      if (Date.now() - begin >= STATUS_MS) return shootUnchanged(out, begin);
+    } else if (report.idle) {
+      await Bun.sleep(IDLE_SETTLE_MS);
+      nudge();
+      if (readStatus(statusPath)?.text !== report.text) continue;
+      run(["herdr-app", "shot", out]);
+      if (readStatus(statusPath)?.text === report.text) return `idle after ${Date.now() - begin} ms`;
+      continue;
+    }
+    await Bun.sleep(STATUS_POLL_MS);
+  }
+  nudge();
+  run(["herdr-app", "shot", out]);
+  return `not idle after ${waitMs} ms`;
+}
+
+/** Shoots until the window has looked the same for settleMs (or waitMs passed); keeps the last shot. */
+async function shootUnchanged(out: string, begin: number): Promise<string> {
   let last = "";
   let sameSince = Date.now();
   for (;;) {
+    nudge();
     run(["herdr-app", "shot", out]);
     const hash = createHash("sha1").update(readFileSync(out)).digest("hex");
     const now = Date.now();
@@ -176,9 +266,9 @@ async function shootSettled(out: string): Promise<string> {
       last = hash;
       sameSince = now;
     } else if (now - sameSince >= settleMs) {
-      return `settled after ${now - begin} ms`;
+      return `settled after ${now - begin} ms (no idle signal)`;
     }
-    if (now - begin >= waitMs) return `still changing after ${waitMs} ms`;
+    if (now - begin >= waitMs) return `still changing after ${waitMs} ms (no idle signal)`;
     await Bun.sleep(SHOT_EVERY_MS);
   }
 }
@@ -199,12 +289,18 @@ async function ensureWindow(mode: string): Promise<void> {
 }
 
 async function startWindow(): Promise<void> {
-  // A fresh home opens with the welcome over everything; mark it seen, as finishing
-  // it would.
+  // A fresh home opens with the welcome and "What's new" over everything; mark both
+  // seen, as finishing them would.
   const sharedPath = join(home, "shared.json");
   const shared = existsSync(sharedPath) ? JSON.parse(readFileSync(sharedPath, "utf8")) : {};
   if (shared["frame.welcomed"] !== "finished") {
     writeFileSync(sharedPath, JSON.stringify({ ...shared, "frame.welcomed": "finished" }, null, 2) + "\n");
+  }
+  const notesPath = join(home, "update-notes.json");
+  if (!existsSync(notesPath)) {
+    const plist = readFileSync("/Applications/Herdr.app/Contents/Info.plist", "utf8");
+    const version = plist.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/)?.[1];
+    if (version) writeFileSync(notesPath, JSON.stringify({ last_run: version, presented: [version] }) + "\n");
   }
   // -n: a second instance beside the person's; -g: in the background, without focus.
   // HC_SESSION gives it its own herdr-core, so its spaces and tabs never show up in

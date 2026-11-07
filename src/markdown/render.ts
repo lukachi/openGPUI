@@ -37,8 +37,8 @@
 // draw (of a long table, its first rows; its other rows' widths are estimated from
 // their text). A fence or table cut into groups scrolls sideways one group at a time.
 // A row whose source still passes ROW_CHARS (one huge paragraph or item) draws as
-// its plain text. Past the per-render ceiling, a block too short to go virtual draws
-// as its plain source text (blocks.ts RENDER_CHARS).
+// its plain text. Every markdown text draws in a view of its own (render/surface.ts),
+// so no limit spans the page: a short block is always drawn in full.
 import type { ElementContent, Element as HastElement, Root, RootContent } from "hast";
 import { div, type Color, type Element } from "gpui-kit";
 import { Link } from "gpui-base";
@@ -55,11 +55,12 @@ import {
   tableRows,
   textOf,
   virtualRows,
+  virtualDecision,
   type BlockItem,
   type VirtualRow,
 } from "./blocks.ts";
 import { codeBlock } from "./code.ts";
-import { blockDraw, markdownTree } from "./budget.ts";
+import { markdownTree } from "./budget.ts";
 import { edge, lazyRows } from "./lazy.ts";
 import type { MarkdownProfile } from "./parse.ts";
 
@@ -548,11 +549,9 @@ export function markdownBlock(
   const body = o.body ?? typography(ctx.t, "body", "default");
   const color = ctx.t.textNeutralPrimary;
   const tree = markdownTree(ctx, part, text, o.profile);
-  // Until a long text is parsed (markdown/budget.ts), and for a short block past the render's
-  // ceiling (blocks.ts RENDER_CHARS): the text itself, in the block's style.
-  const draw = tree ? blockDraw(ctx, text.length) : "plain";
-  if (!tree || draw === "plain") return textStyle(div().w_full().flex().flex_col().text_color(color), body).child(div().child(text));
-  if (draw === "virtual") return virtualBlock(ctx, part, tree, o.profile, body, color);
+  // Until a long text is parsed (markdown/budget.ts): the text itself, in the block's style.
+  if (!tree) return textStyle(div().w_full().flex().flex_col().text_color(color), body).child(div().child(text));
+  if (virtualDecision(text.length) === "virtual") return virtualBlock(ctx, part, tree, o.profile, body, color);
   const md = new Markdown(ctx, part, o.profile, body);
   const css = md.css(body, color);
   // `> *:first-child { margin-top: 0 }`, `> *:last-child { margin-bottom: 0 }`

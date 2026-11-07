@@ -16,12 +16,26 @@ export type Look = "herdr" | "openui";
 
 const isHex = (v: unknown): v is Color => typeof v === "string" && v.startsWith("#");
 
+/** The tokens last made, and what they were made from. */
+let last: { key: string; tokens: Tokens } | null = null;
+
+/**
+ * The tokens for `look` in Herdr's current settings, theme and fonts. The same object while
+ * none of those changed, so a host can hand them to Surface.setTokens on every render: new
+ * tokens redraw every view (and a font resolver, being a function, never compares equal).
+ */
 export function herdrTokens(look: Look): Tokens {
-  const mode = settings().dark === false ? "light" : "dark";
-  const installed = new Set(fonts());
+  const dark = settings().dark;
+  const installed = fonts();
+  const h = look === "herdr" ? theme() : null;
+  const key = JSON.stringify([look, dark, installed, h]);
+  if (last?.key !== key) last = { key, tokens: makeTokens(look, dark === false ? "light" : "dark", new Set(installed), h) };
+  return last.tokens;
+}
+
+function makeTokens(look: Look, mode: "light" | "dark", installed: Set<string>, h: ReturnType<typeof theme> | null): Tokens {
   const base = { fonts: openuiFonts((family) => installed.has(family)) };
-  if (look === "openui") return resolveTokens(mode, base);
-  const h = theme();
+  if (look === "openui" || !h) return resolveTokens(mode, base);
   const pick = (...names: string[]): Color | undefined => names.map((n) => h[n]).find(isHex);
   const fg = pick("foreground");
   const bg = pick("background");

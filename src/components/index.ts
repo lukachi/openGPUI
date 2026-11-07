@@ -1,6 +1,6 @@
 // The renderer for each OpenUI component name. A name missing here draws a
 // "not supported yet" placeholder, and subsetLibrary() keeps it out of prompts.
-import type { Components } from "../render/surface.ts";
+import type { Component, Components } from "../render/surface.ts";
 import { Button, Buttons } from "./buttons.ts";
 import { Carousel } from "./carousel.ts";
 import {
@@ -55,40 +55,48 @@ import { Select, SelectItem } from "./select.ts";
 import { Slider } from "./slider.ts";
 import { Col, Table } from "./tables.ts";
 
+/**
+ * Drawn in a retained view of its own (Component.view): its render costs grow with its
+ * content, or it owns state that redraws often (hover, measuring, typing, loads).
+ */
+const view = (c: Component): Component => ({ ...c, view: true });
+/** A card block: a view whose slots draw inline in it, since it restyles them; what they hold may be views. */
+const cardBlock = (c: Component): Component => ({ ...c, view: true, inlineChildren: true });
+
 export const components: Components = {
   // Layout
   Stack,
   Card,
-  Tabs,
+  Tabs: view(Tabs),
   TabItem,
-  Accordion,
+  Accordion: view(Accordion),
   AccordionItem,
-  Steps,
+  Steps: view(Steps),
   StepsItem,
-  Carousel,
+  Carousel: view(Carousel),
   Separator,
   Modal,
   // Content
   CardHeader,
-  TextContent,
-  MarkDownRenderer,
-  Callout,
+  TextContent: view(TextContent),
+  MarkDownRenderer: view(MarkDownRenderer),
+  Callout: view(Callout),
   TextCallout,
-  Image,
-  ImageBlock,
-  ImageGallery,
-  CodeBlock,
+  Image: view(Image),
+  ImageBlock: view(ImageBlock),
+  ImageGallery: view(ImageGallery),
+  CodeBlock: view(CodeBlock),
   InlineHeader,
   // Cards
-  SnippetCardBlock,
+  SnippetCardBlock: cardBlock(SnippetCardBlock),
   SnippetCardItem,
-  OverviewCardBlock,
+  OverviewCardBlock: cardBlock(OverviewCardBlock),
   OverviewCardItem,
-  ContextCardBlock,
+  ContextCardBlock: cardBlock(ContextCardBlock),
   ContextCardItem,
-  CompositeCardBlock,
+  CompositeCardBlock: cardBlock(CompositeCardBlock),
   CompositeCardItem,
-  VisualCardBlock,
+  VisualCardBlock: cardBlock(VisualCardBlock),
   VisualCardItem,
   // Card building blocks
   Text,
@@ -102,27 +110,27 @@ export const components: Components = {
   TagBlock,
   Tag,
   Icon,
-  EntityList,
-  ListBlock,
+  EntityList: view(EntityList),
+  ListBlock: view(ListBlock),
   ListItem,
   // Tables
-  Table,
+  Table: view(Table),
   Col,
-  EditableTable,
+  EditableTable: view(EditableTable),
   // Charts (2D)
-  BarChart,
-  LineChart,
-  AreaChart,
-  RadarChart,
-  HorizontalBarChart,
+  BarChart: view(BarChart),
+  LineChart: view(LineChart),
+  AreaChart: view(AreaChart),
+  RadarChart: view(RadarChart),
+  HorizontalBarChart: view(HorizontalBarChart),
   Series,
   // Charts (1D)
-  PieChart,
-  RadialChart,
-  SingleStackedBarChart,
+  PieChart: view(PieChart),
+  RadialChart: view(RadialChart),
+  SingleStackedBarChart: view(SingleStackedBarChart),
   Slice,
   // Charts (Scatter)
-  ScatterChart,
+  ScatterChart: view(ScatterChart),
   ScatterSeries,
   Point,
   // Lists & follow-ups (chat library)
@@ -135,21 +143,21 @@ export const components: Components = {
   Form,
   FormControl,
   Label,
-  Input,
-  TextArea,
-  Select,
+  Input: view(Input),
+  TextArea: view(TextArea),
+  Select: view(Select),
   SelectItem,
-  DatePicker,
-  Slider,
-  CheckBoxGroup,
+  DatePicker: view(DatePicker),
+  Slider: view(Slider),
+  CheckBoxGroup: view(CheckBoxGroup),
   CheckBoxItem,
-  RadioGroup,
+  RadioGroup: view(RadioGroup),
   RadioItem,
-  SwitchGroup,
+  SwitchGroup: view(SwitchGroup),
   SwitchItem,
-  Chips,
+  Chips: view(Chips),
   ChipItem,
-  OptionCards,
+  OptionCards: view(OptionCards),
   OptionCard,
   // Buttons
   Button,

@@ -3,23 +3,23 @@
 // gpui-shell interrupts a JS call that runs about 50 ms, and an interrupted call
 // can leave the engine unable to draw any view. In that engine the markdown
 // pipeline costs about a millisecond per short string and 20 ms per kilobyte, so
-// the first render of a long response cannot parse all of its markdown. A render
-// therefore gets a tree only when it costs nothing (cached, or plain text: parse.ts
-// readyMarkdown) or is short and the render is still young; anything else is
-// queued, the caller draws the text plain, and a task of the view parses the queue
-// in bounded steps (MarkdownParse) across ticks, then redraws. Drawing a parsed
-// tree costs too (one element per word, every frame), so a long block, or one past
-// what a render may draw in full, is drawn through a lazy list or plain (blockDraw).
-// A parse step whose cost still passes what a task resume can run (one huge list
-// item, say) is not attempted: that text stays its plain source (MAX_STEP_COST).
+// the first render of a long text cannot parse it. A render therefore gets a tree
+// only when it costs nothing (cached, or plain text: parse.ts readyMarkdown) or is
+// short and the render is still young; anything else is queued, the caller draws the
+// text plain, and a task parses the queue in bounded steps (MarkdownParse) across
+// ticks, then redraws the views that asked. Each markdown text draws in a view of its
+// own (TextContent, MarkDownRenderer, Callout, a step's details: render/surface.ts),
+// so a page of many texts never adds up in one render; a long text is drawn through a
+// lazy list (blocks.ts virtualDecision). A parse step whose cost still passes what a
+// task resume can run (one huge list item, say) is not attempted: that text stays its
+// plain source (MAX_STEP_COST).
 import type { Root } from "hast";
 import type { Context } from "gpui-kit";
 import type { RenderContext } from "../render/surface.ts";
 import type { Session } from "../runtime/session.ts";
-import { virtualDecision, type BlockDraw } from "./blocks.ts";
 import { MarkdownParse, parseMarkdown, readyMarkdown, type MarkdownProfile } from "./parse.ts";
 
-/** A render parses a text itself only while it is younger than this… */
+/** A render parses a text itself only while its view's render is younger than this… */
 const SYNC_MS = 8;
 /** …and only a text this short (the pipeline costs about 20 ms per kilobyte in the engine). */
 const SYNC_CHARS = 300;
@@ -41,14 +41,20 @@ const MAX_STEP_COST = 12_000;
 const DRAIN_STALE_MS = 1000;
 /** What one pipeline run costs regardless of its length, in characters. */
 const RUN_COST = 100;
-/** How often a running queue redraws its view to show what is parsed so far. */
+/** How often a running queue redraws the views whose texts it parsed so far. */
 const REDRAW_MS = 250;
 
 type Spawned = Parameters<Parameters<Context["spawn"]>[0]>[0];
 
-/** Parses waiting per view (its session), by the render site that asked. */
-const queues = new WeakMap<Session, Map<string, MarkdownParse>>();
-/** When each view's drain last resumed. */
+/** A text waiting for the drain, and how to redraw the view that asked for it. */
+interface Waiting {
+  parse: MarkdownParse;
+  wake: () => void;
+}
+
+/** Parses waiting per session, by the render site that asked. */
+const queues = new WeakMap<Session, Map<string, Waiting>>();
+/** When each session's drain last resumed. */
 const running = new WeakMap<Session, number>();
 /** Texts the pipeline threw on (the latest 50): they parse in render again, which reports the error as before. */
 const failed = new Set<string>();
@@ -58,24 +64,9 @@ const note = (set: Set<string>, key: string) => {
   set.add(key);
   if (set.size > 50) set.delete(set.values().next().value!);
 };
-/** Markdown characters each view drew in full in its current render. */
-const drawn = new WeakMap<Session, { frame: number; chars: number }>();
-/** The tree each render site drew last, with its text's key, per view. */
+/** The tree each render site drew last, with its text's key, per session. */
 type Shown = Map<string, { key: string; tree: Root }>;
 const shown = new WeakMap<Session, Shown>();
-
-/**
- * How this render draws a markdown text of `chars` characters (blocks.ts virtualDecision),
- * counting what the view's render already drew in full. Counted in document order, so the
- * same blocks go virtual or plain every frame.
- */
-export function blockDraw(ctx: RenderContext, chars: number): BlockDraw {
-  let drawnNow = drawn.get(ctx.session);
-  if (!drawnNow || drawnNow.frame !== ctx.frame) drawn.set(ctx.session, (drawnNow = { frame: ctx.frame, chars: 0 }));
-  const decision = virtualDecision(drawnNow.chars, chars);
-  drawnNow.chars = decision.spent;
-  return decision.draw;
-}
 
 /**
  * The tree for `text`, or what to draw while it is parsed later: the tree this render
@@ -101,7 +92,9 @@ export function markdownTree(ctx: RenderContext, part: string, text: string, pro
     return tree;
   }
   if (!queue) queues.set(ctx.session, (queue = new Map()));
-  if (queue.get(site)?.key !== key) queue.set(site, new MarkdownParse(text, profile));
+  const waiting = queue.get(site);
+  if (waiting?.parse.key === key) waiting.wake = ctx.waker();
+  else queue.set(site, { parse: new MarkdownParse(text, profile), wake: ctx.waker() });
   const resumed = running.get(ctx.session);
   if (resumed === undefined || Date.now() - resumed > DRAIN_STALE_MS) {
     running.set(ctx.session, Date.now());
@@ -112,13 +105,24 @@ export function markdownTree(ctx: RenderContext, part: string, text: string, pro
   return mine?.tree ?? null;
 }
 
-async function drain(task: Spawned, session: Session, queue: Map<string, MarkdownParse>, sites: Shown): Promise<void> {
+/** True while texts of `session` wait for the drain: their views draw them plain until it parses them. */
+export function markdownPending(session: Session): boolean {
+  return (queues.get(session)?.size ?? 0) > 0;
+}
+
+async function drain(task: Spawned, session: Session, queue: Map<string, Waiting>, sites: Shown): Promise<void> {
   let redrawn = Date.now();
+  /** Views whose texts parsed since they last redrew. */
+  const ready = new Set<() => void>();
+  const redraw = () => {
+    for (const wake of ready) wake();
+    ready.clear();
+  };
   try {
     while (queue.size) {
       let spent = 0;
       running.set(session, Date.now());
-      for (const [site, parse] of queue) {
+      for (const [site, { parse, wake }] of queue) {
         let threw = false;
         if (!parse.tree && parse.nextCost > MAX_STEP_COST) {
           console.log(`[opengpui] markdown too long to parse in one step (${Math.round(parse.nextCost)}): drawn as text`);
@@ -139,8 +143,10 @@ async function drain(task: Spawned, session: Session, queue: Map<string, Markdow
         }
         const tree = parse.tree;
         if (tree) sites.set(site, { key: parse.key, tree });
-        if (tree || threw) queue.delete(site);
-        else if (parse.nextCost > MAX_STEP_COST) {
+        if (tree || threw) {
+          queue.delete(site);
+          ready.add(wake);
+        } else if (parse.nextCost > MAX_STEP_COST) {
           note(oversize, parse.key);
           queue.delete(site);
         }
@@ -149,11 +155,11 @@ async function drain(task: Spawned, session: Session, queue: Map<string, Markdow
       await task.sleep(16);
       if (queue.size && Date.now() - redrawn >= REDRAW_MS) {
         redrawn = Date.now();
-        task.notify();
+        redraw();
       }
     }
   } finally {
     running.delete(session);
   }
-  task.notify();
+  redraw();
 }

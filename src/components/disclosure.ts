@@ -417,10 +417,11 @@ export const Steps: Component = {
     const list = items.map((item, i) => {
       const last = i === items.length - 1;
       const details = item.props.details;
-      // genui Steps: a string is drawn by components/MarkDownRenderer, anything else is rendered as a node.
+      // genui Steps: a string is drawn by components/MarkDownRenderer (in a view of its own, as
+      // a MarkDownRenderer node would be), anything else is rendered as a node.
       const body =
         typeof details === "string"
-          ? [markdownBlock(ctx, `step${i}`, details, { profile: "plain" }).w_auto()]
+          ? [ctx.piece(`step${i}`, details, (o, text) => markdownBlock(o, `step${i}`, text, { profile: "plain" }).w_auto())]
           : ctx.children(details, `step${i}`);
 
       // .openui-step-connector: number (24px circle, padding 2xs 0) over a 1px line that grows to the next step.

@@ -12,6 +12,7 @@ function setup(formName: string | null = "f") {
     form: formName === null ? null : session.form(formName),
     streaming: false,
     after: (fn: () => void) => void deferred.push(fn),
+    watch: <T>(read: () => T) => read(),
   };
   /** Run what a render deferred to the pump, as the surface does. */
   const pump = () => deferred.splice(0).forEach((fn) => fn());

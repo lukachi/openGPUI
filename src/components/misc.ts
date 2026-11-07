@@ -257,7 +257,7 @@ export const IconButton: Component = {
       disabled: ctx.streaming,
       bubble: true,
       onClick: () => {
-        void ctx.trigger(label, props.action);
+        ctx.trigger(label, props.action);
       },
     });
   },

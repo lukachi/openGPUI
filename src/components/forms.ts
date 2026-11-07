@@ -18,9 +18,9 @@ import { textStyle, typography } from "../render/tokens.ts";
 export const Form: Component = {
   render(props, ctx) {
     const name = String(props.name ?? "form");
-    // Fields register their rules while rendering; start each pass from none, so a
-    // field the response removed no longer blocks submission (upstream unregisters on unmount).
-    if (!ctx.streaming) ctx.session.form(name).fields = {};
+    // Fields register their rules while rendering, each in the view that draws it; a view
+    // that draws again without a field, or goes, drops its registration (Surface), so a field
+    // the response removed no longer blocks submission (upstream unregisters on unmount).
     const inner = ctx.child("form", { ...ctx.scope, formName: name });
     // FormRenderer: <div role="form" style="display:flex; flex-direction:column; gap:16px">
     return div()

@@ -11,9 +11,9 @@
 //
 // refractor/all registers its ~300 grammars at import; gpui-shell's engine
 // interrupts that while loading a mod. They are registered in the same order
-// (a grammar may extend earlier ones), one per resume, by the task of a view
-// that shows a code block; until all are in (about 5 s in a fresh Herdr window),
-// code shows unhighlighted, then redraws. A grammar whose registration the engine
+// (a grammar may extend earlier ones), WARM_SLICE_MS of them per resume, by the task
+// of a view that shows a code block; until all are in (about 2 s in a fresh Herdr
+// window), code shows unhighlighted, then redraws. A grammar whose registration the engine
 // interrupted is skipped, and a watchdog redraws a view whose task died, which
 // starts another. refractor itself costs about 13 ms per kilobyte there (30 with
 // drawing): code up to INLINE_CHARS is highlighted where it is drawn (past
@@ -37,22 +37,35 @@ import { CODE_GROUP_CHARS, CODE_GROUP_LINES, lineGroups } from "./blocks.ts";
 import { edge, lazyRows } from "./lazy.ts";
 
 let registered = 0;
+/** How long one resume of the warming task registers grammars before it yields (a resume is interrupted at a few hundred ms). */
+const WARM_SLICE_MS = 40;
 
 type Spawned = Parameters<Parameters<Context["spawn"]>[0]>[0];
 
-/** When each view's warming task last resumed: a view whose task stopped (killed) starts another. */
+/** When each session's warming task last resumed: a session whose task stopped (killed) starts another. */
 const warming = new WeakMap<RenderContext["session"], number>();
+/** The views waiting for the grammars, per session: each redraws once they are all in. */
+const warmWaiting = new WeakMap<RenderContext["session"], Map<object, () => void>>();
 /** The grammar the last registration started on: if a task starts there again, that one was killed. */
 let attempted = -1;
 
+/** Redraw the views of `session` waiting for the grammars. */
+function wakeWarmWaiting(session: RenderContext["session"]): void {
+  const waiting = warmWaiting.get(session);
+  if (!waiting) return;
+  for (const wake of waiting.values()) wake();
+  waiting.clear();
+}
+
 /**
- * Register refractor/all's next grammars, in its order, one per resume, until all are in;
- * then redraw the view. Every waiting view's task takes part through the shared count, so a
- * view that closes doesn't strand the others. gpui-shell interrupts a resume that runs too
+ * Register refractor/all's next grammars, in its order, WARM_SLICE_MS per resume, until all are in;
+ * then redraw the views waiting. Every session's task takes part through the shared count, so
+ * a session that closes doesn't strand the others. gpui-shell interrupts a resume that runs too
  * long and the task dies with it: a grammar whose registration was interrupted (`tsx`, which
  * clones two large grammars, was in the engine) is skipped by the next task.
  */
-async function warm(task: Spawned, session: RenderContext["session"], redraw: () => void): Promise<void> {
+async function warm(task: Spawned, session: RenderContext["session"]): Promise<void> {
+  let slice = Date.now();
   while (registered < syntaxes.length) {
     warming.set(session, Date.now());
     if (attempted === registered) {
@@ -63,39 +76,49 @@ async function warm(task: Spawned, session: RenderContext["session"], redraw: ()
     attempted = registered;
     refractor.register(syntaxes[registered]!);
     registered++;
-    await task.sleep(16);
+    if (Date.now() - slice >= WARM_SLICE_MS) {
+      await task.sleep(16);
+      slice = Date.now();
+    }
   }
   warming.delete(session);
-  redraw();
+  wakeWarmWaiting(session);
 }
 
-/** Views with a watchdog: it redraws the view while warming has stalled, which starts a new warming task. */
+/** Sessions with a watchdog: it redraws the waiting views while warming has stalled, which starts a new warming task. */
 const watched = new WeakSet<RenderContext["session"]>();
 
-/** Start the view's warming task unless one is running (it resumed within the last second). */
-function ensureWarm(ctx: RenderContext, fromRow: boolean): void {
-  const resumed = warming.get(ctx.session);
-  if (resumed !== undefined && Date.now() - resumed < 1000) return;
-  warming.set(ctx.session, Date.now());
+/** Wait for the grammars in this view; start the session's warming task unless one is running (it resumed within the last second). */
+function ensureWarm(ctx: RenderContext): void {
   const session = ctx.session;
+  let waiting = warmWaiting.get(session);
+  if (!waiting) warmWaiting.set(session, (waiting = new Map()));
+  waiting.set(ctx.view, ctx.waker());
+  const resumed = warming.get(session);
+  if (resumed !== undefined && Date.now() - resumed < 1000) return;
+  warming.set(session, Date.now());
   const watch = !watched.has(session);
   watched.add(session);
   ctx.after((cx) => {
-    cx.spawn((task) => warm(task, session, () => ctx.wake()));
+    cx.spawn((task) => warm(task, session));
     if (watch) {
       cx.spawn(async (task) => {
         while (!highlightingReady()) {
           await task.sleep(1000);
-          if (Date.now() - (warming.get(session) ?? 0) > 1000) ctx.wake();
+          if (Date.now() - (warming.get(session) ?? 0) > 1000) wakeWarmWaiting(session);
         }
         watched.delete(session);
       });
     }
   });
-  if (fromRow) ctx.wake(); // a row runs after the render, so its after() needs a wake of its own
 }
 
 const highlightingReady = () => registered === syntaxes.length;
+
+/** True while code of `session` waits for grammars or for its highlighting task: it draws plain until then. */
+export function highlightPending(session: RenderContext["session"]): boolean {
+  return (warmWaiting.get(session)?.size ?? 0) > 0 || (jobs.get(session)?.queue.size ?? 0) > 0;
+}
 
 type Style = Record<string, string>;
 type Theme = Record<string, Style>;
@@ -167,11 +190,11 @@ const INLINE_CHARS = 300;
  */
 const TASK_GROUP_LINES = 40;
 const TASK_GROUP_CHARS = 1_000;
-/** How often a view's highlighting task redraws the view while blocks are still waiting. */
+/** How often a session's highlighting task redraws the views whose code it finished. */
 const REDRAW_MS = 250;
-/** A view's highlighting task that hasn't resumed for this long was killed: a new one may start. */
+/** A session's highlighting task that hasn't resumed for this long was killed: a new one may start. */
 const TASK_STALE_MS = 1000;
-/** Code waiting for a view's highlighting task, newest last (drawn most recently: on screen). */
+/** Code waiting for a session's highlighting task, newest last (drawn most recently: on screen). */
 interface Job {
   code: string;
   language: string;
@@ -181,11 +204,13 @@ interface Job {
   group: number;
   out: Segment[];
   failed?: boolean;
+  /** The views that drew this code, and how to redraw each once it is highlighted. */
+  waiting: Map<object, () => void>;
 }
 const jobs = new WeakMap<RenderContext["session"], { queue: Map<string, Job>; resumed: number | null; watched: boolean }>();
-/** Per view, the render that last highlighted new code. */
-const highlightedIn = new WeakMap<RenderContext["session"], number>();
-/** Jobs a view keeps waiting at most: past this, the least recently drawn are dropped (and asked again when drawn). */
+/** Per view, its render that last highlighted new code. */
+const highlightedIn = new WeakMap<object, number>();
+/** Jobs a session keeps waiting at most: past this, the least recently drawn are dropped (and asked again when drawn). */
 const QUEUE_SIZE = 64;
 
 function tokens(code: string, language: string): Segment[] | null {
@@ -198,39 +223,49 @@ function tokens(code: string, language: string): Segment[] | null {
 }
 
 /**
- * Queue `code` for the view's highlighting task, which takes the most recently drawn code
- * first, a line group per step, and redraws the view as each block is done.
+ * Queue `code` for the session's highlighting task, which takes the most recently drawn code
+ * first, a line group per step, and redraws the views that drew each block once it is done.
  */
 function highlightLater(ctx: RenderContext, key: string, code: string, language: string): void {
   let view = jobs.get(ctx.session);
   if (!view) jobs.set(ctx.session, (view = { queue: new Map(), resumed: null, watched: false }));
   const queue = view.queue;
-  const job = queue.get(key);
+  let job = queue.get(key);
   queue.delete(key);
-  if (job) queue.set(key, job);
-  else {
+  if (!job) {
     const lines = code.split("\n");
-    queue.set(key, { code, language, lines, starts: lineGroups(lines, TASK_GROUP_LINES, TASK_GROUP_CHARS), group: 0, out: [] });
-    if (queue.size > QUEUE_SIZE) queue.delete(queue.keys().next().value!);
+    job = { code, language, lines, starts: lineGroups(lines, TASK_GROUP_LINES, TASK_GROUP_CHARS), group: 0, out: [], waiting: new Map() };
   }
+  job.waiting.set(ctx.view, ctx.waker());
+  queue.set(key, job);
+  if (queue.size > QUEUE_SIZE) queue.delete(queue.keys().next().value!);
   view.resumed = Date.now();
   const state = view;
   const watch = !view.watched;
   view.watched = true;
   ctx.after((cx) => {
     // The engine kills a resume that runs too long, and its task with it, silently: while code
-    // waits and no task has resumed for a second, the watchdog redraws, which starts another.
+    // waits and no task has resumed for a second, the watchdog redraws the views waiting, which
+    // starts another.
     if (watch) {
       cx.spawn(async (task) => {
         while (queue.size) {
           await task.sleep(1000);
-          if (queue.size && (state.resumed === null || Date.now() - state.resumed > TASK_STALE_MS)) ctx.wake();
+          if (queue.size && (state.resumed === null || Date.now() - state.resumed > TASK_STALE_MS)) {
+            for (const waiting of queue.values()) for (const wake of waiting.waiting.values()) wake();
+          }
         }
         state.watched = false;
       });
     }
     cx.spawn(async (task) => {
       let redrawn = Date.now();
+      /** Views whose code finished since they last redrew. */
+      const ready = new Set<() => void>();
+      const redraw = () => {
+        for (const wake of ready) wake();
+        ready.clear();
+      };
       try {
         while (queue.size) {
           // Each step in a resume of its own: the first would otherwise run inside the pump's call.
@@ -248,20 +283,20 @@ function highlightLater(ctx: RenderContext, key: string, code: string, language:
             queue.delete(key);
             // A block a group of which failed shows plain, and is tried again when next drawn.
             if (!job.failed) remember(key, job.out);
-            // The pump redraws (a notify from this task, spawned in the pump, didn't redraw the view):
-            // when the queue is empty, or a quarter second on, so a page of many blocks isn't redrawn per block.
+            for (const wake of job.waiting.values()) ready.add(wake);
+            // When the queue is empty, or a quarter second on, so a page of many blocks isn't redrawn per block.
             if (!queue.size || Date.now() - redrawn >= REDRAW_MS) {
               redrawn = Date.now();
-              ctx.wake();
+              redraw();
             }
           }
         }
       } finally {
         state.resumed = null;
+        redraw();
       }
     });
   });
-  ctx.wake(); // from a lazy list's row the render's own wake has passed
 }
 
 /**
@@ -282,11 +317,11 @@ function highlight(ctx: RenderContext, mine: { key: string; segments: Segment[] 
       highlightLater(ctx, key, code, language);
       return plain(code);
     }
-    if (budgeted && ctx.renderTime > HIGHLIGHT_MS && highlightedIn.get(ctx.session) === ctx.frame) {
-      ctx.after(() => {}); // the pump redraws, and the next render highlights more
+    if (budgeted && ctx.renderTime > HIGHLIGHT_MS && highlightedIn.get(ctx.view) === ctx.frame) {
+      ctx.after(() => {}); // the view redraws, and its next render highlights more
       return plain(code);
     }
-    highlightedIn.set(ctx.session, ctx.frame);
+    highlightedIn.set(ctx.view, ctx.frame);
     const found = tokens(code, language);
     if (!found) return plain(code);
     segments = found;
@@ -345,7 +380,7 @@ export function codeBlock(
   const pre = theme['pre[class*="language-"]'] ?? {};
   const codeTag = { ...theme['code[class*="language-"]'], ...theme[`code[class*="language-${language}"]`] };
   const local = ctx.local({ hovered: false, copied: false, highlight: { key: "", segments: null as Segment[] | null } }, part);
-  if (language && language !== "text" && !highlightingReady()) ensureWarm(ctx, !!options.static);
+  if (language && language !== "text" && !highlightingReady()) ensureWarm(ctx);
 
   const preSize = px(pre.fontSize) ?? inheritedSize;
   const size = px(codeTag.fontSize) ?? preSize;

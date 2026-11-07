@@ -158,7 +158,7 @@ export const VisualCardBlock: Component = {
       const { id, body, tag, bgImageSrc, bgImageAlt } = item.props;
       const bodyValue = stringProp(body, "value");
       const tagText = stringProp(tag, "text");
-      void ctx.trigger(
+      ctx.trigger(
         bodyValue || tagText || (typeof id === "string" ? id : "") || `Visual card ${index + 1}`,
         withItemContext(props.action, {
           itemIndex: index,

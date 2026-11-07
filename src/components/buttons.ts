@@ -241,7 +241,7 @@ export const Button: Component = {
       onClick: () => {
         const form = ctx.form;
         if (form && variant === "primary" && needsValidation(props.action) && !form.validateForm()) return;
-        void ctx.trigger(label, props.action);
+        ctx.trigger(label, props.action);
       },
     });
   },

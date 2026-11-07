@@ -298,7 +298,7 @@ export const ListBlock: Component = {
               subtitle: p.subtitle ? String(p.subtitle) : undefined,
               image: variant === "image" ? (p.image as { src: string; alt: string } | undefined) : undefined,
               actionLabel: hasAction && p.actionLabel ? String(p.actionLabel) : undefined,
-              onClick: hasAction ? () => void ctx.session.triggerAction(title, undefined, action) : undefined,
+              onClick: hasAction ? () => ctx.action(title, undefined, action) : undefined,
               variant,
               size,
               index,
@@ -332,7 +332,7 @@ export const FollowUpBlock: Component = {
           // space-between, full width, primary, left. The text takes the rest (flex 1) and breaks long words.
           return textStyle(
             GButton.new(ctx.id(`followup${i}`))
-              .on_click(() => void ctx.session.triggerAction(text, undefined))
+              .on_click(() => ctx.action(text, undefined))
               .flex()
               .flex_row()
               .items_center()

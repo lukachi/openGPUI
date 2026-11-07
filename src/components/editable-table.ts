@@ -197,7 +197,7 @@ export const EditableTable: Component = {
 
     // useState(toRows(existingValue || initialData)) and the effect that resets it when either changes:
     // the same data object (or the same columns) skips reading and comparing it again.
-    const existingValue = session.getFieldValue(name, name) as EditableDataRow[] | undefined;
+    const existingValue = ctx.watch(() => session.getFieldValue(name, name) as EditableDataRow[] | undefined);
     const rawSource: unknown = existingValue || props.data;
     const sourceData = () => existingValue || readData(props.data);
     const sourceKeys = columnKeys.join("\n");
@@ -756,7 +756,7 @@ export const EditableTable: Component = {
       const handleSubmit = (cx: Context) => {
         const saved = st.rows;
         session.setFieldValue(name, "EditableTable", name, fromRows(columnKeys, saved));
-        void session.triggerAction("Save Changes", name);
+        ctx.action("Save Changes", name);
         st.changed = 0;
         st.baseline = baselineOf(saved);
         cx.notify();

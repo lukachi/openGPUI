@@ -42,7 +42,7 @@
 //   Thumbnails are not keyboard focusable (upstream: Tab, then Enter/Space).
 import { div, svg, type Context, type Element, type FocusHandle, type ScrollWheelEvent } from "gpui-kit";
 import { fitImage, type ImageState, type ObjectFit } from "../render/images.ts";
-import { optional, type Component, type RenderContext } from "../render/surface.ts";
+import { optional, type Component, type OverlayContent, type RenderContext } from "../render/surface.ts";
 import { textStyle, typography, TRANSPARENT } from "../render/tokens.ts";
 import { button, ICON_BUTTON, iconButton } from "./buttons.ts";
 import { textBlock } from "./content.ts";
@@ -315,7 +315,7 @@ export const ImageGallery: Component = {
       local.offset = 0;
       cx.notify();
     };
-    if (local.open) galleryModal(ctx, images, states, local);
+    if (local.open) ctx.overlay("gallery", (o) => galleryModal(o, images, states, local));
     const cells = visible.map((item, i) => {
       const cell = grid.cells[i]!;
       const alt = item.alt || `Gallery image ${i + 1}`;
@@ -383,10 +383,13 @@ const galleryLocal = (): GalleryLocal => ({ selected: 0, hovered: -1, open: fals
 const THUMB_HEIGHT = 116;
 const THUMB_MIN_WIDTH = 174;
 
-/** components/ImageGallery GalleryModal, drawn as a surface overlay over the pane (its viewport). */
-function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageState[], local: GalleryLocal): void {
+/**
+ * components/ImageGallery GalleryModal, drawn as a surface overlay over the pane (its viewport):
+ * the overlay's own handlers close it, so it draws nothing once closed.
+ */
+function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageState[], local: GalleryLocal): OverlayContent {
+  if (!local.open) return null;
   const t = ctx.t;
-  const slot = ctx.overlay();
   const close = (cx: Context) => {
     local.open = false;
     cx.notify();
@@ -567,7 +570,7 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
         cx.notify();
       }
     });
-  slot((focus ? backdrop.track_focus(focus) : backdrop).children(local.width > 0 ? [content] : []), focus);
+  return { el: (focus ? backdrop.track_focus(focus) : backdrop).children(local.width > 0 ? [content] : []), focus };
 }
 
 // ── ImageText, ImageTextLarge ──
