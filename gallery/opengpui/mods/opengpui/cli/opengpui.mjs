@@ -108709,9 +108709,9 @@ __export(exports_formatters, {
 // bin/opengpui.ts
 init_src();
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync as mkdirSync2, readFileSync as readFileSync2, realpathSync, renameSync, rmSync, writeFileSync as writeFileSync2 } from "node:fs";
 import { homedir } from "node:os";
-import { basename, dirname, join as join2, resolve as resolve2 } from "node:path";
+import { basename, dirname as dirname2, join as join3, resolve as resolve2 } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // herdr/src/contract.ts
@@ -167207,13 +167207,19 @@ Options, given the same way to \`prompt\`, \`check\` and \`show\`:
 ## 2. Write, check, show
 
 1. Write the whole file at once (write to a temp file and rename if your tool
-   writes in pieces): the pane reports errors in whatever it reads. Put it under
-   your home folder (Herdr mods read only there), under 1 MiB, \`root = …\` first.
-2. \`opengpui check ui/review.oui\`: parses it as the pane will. It prints each
+   writes in pieces): the pane reports errors in whatever it reads. Under 1 MiB,
+   \`root = …\` first. Where:
+   - A pane is part of the conversation, not of the project: write it to
+     \`~/.cache/opengpui/<project>-<topic>.oui\` (create the folder), never into the
+     repository. For the same topic, rewrite the same file instead of adding new ones.
+   - Herdr mods read only under the home folder, so not \`/tmp\` or \`$TMPDIR\`.
+   - Never delete these files yourself. If the person asks to keep one, copy it where
+     they say. \`~/.cache/opengpui/\` is theirs to clear whenever they like.
+2. \`opengpui check ~/.cache/opengpui/shop-deploy.oui\`: parses it as the pane will. It prints each
    problem (unknown component, wrong argument, a name used but never defined, a
    statement root never reaches, an unclosed bracket, a Diagram id that matches
    nothing) and exits 1; fix until it prints \`ok:\`.
-3. \`opengpui show ui/review.oui --title "Deploy review"\` opens the pane right of
+3. \`opengpui show ~/.cache/opengpui/shop-deploy.oui --title "Deploy review"\` opens the pane right of
    your terminal (\`--down\` below, \`--tab\` a new tab; \`--look openui\` for OpenUI's own
    colors instead of Herdr's). Show once: afterwards just rewrite the file. Showing a
    file again closes its earlier pane and starts a new event log.
@@ -167231,16 +167237,16 @@ Choose how you receive events when you \`show\`:
 - **Reply (default when \`$HC_TERMINAL_ID\` is set):** end your turn. The event is
   typed into your terminal as your next message:
   \`\`\`
-  [opengpui /abs/ui/review.oui] continue_conversation: Approve deploy
-  {"at":"…","src":"/abs/ui/review.oui","type":"continue_conversation","message":"Approve deploy","params":{"context":{"id":42}},"formName":"review","formState":{"review":{"note":"ship it"}}}
+  [opengpui /Users/you/.cache/opengpui/shop-deploy.oui] continue_conversation: Approve deploy
+  {"at":"…","src":"/Users/you/.cache/opengpui/shop-deploy.oui","type":"continue_conversation","message":"Approve deploy","params":{"context":{"id":42}},"formName":"review","formState":{"review":{"note":"ship it"}}}
   \`\`\`
-- **Wait:** \`opengpui show … --no-reply\`, then \`opengpui wait ui/review.oui --timeout 100\`
+- **Wait:** \`opengpui show … --no-reply\`, then \`opengpui wait ~/.cache/opengpui/shop-deploy.oui --timeout 100\`
   blocks until an event and prints each one you haven't seen yet as a JSON line
   (none is lost between \`show\` and \`wait\`). Keep \`--timeout\` below your shell tool's
   time limit (default 110 s); exit 1 means nothing yet: run \`wait\` again.
   Don't combine it with replies: you'd get every event twice.
 
-\`opengpui events ui/review.oui\` prints every event since \`show\`.
+\`opengpui events ~/.cache/opengpui/shop-deploy.oui\` prints every event since \`show\`.
 
 Reading an event: \`message\` is what the button said; \`params.context\` is
 \`@ToAssistant\`'s second argument; \`formState\` is \`{ "<form>": { "<field>": value } }\`
@@ -167264,7 +167270,7 @@ If the file has errors once complete, the pane lists them and sends an event of
 \`"type": "errors"\` (\`errors: [{ code, message, hint, component, statementId }]\`).
 Fix the file; the pane redraws.
 
-\`opengpui close ui/review.oui\` closes the pane when you're done with it.
+\`opengpui close ~/.cache/opengpui/shop-deploy.oui\` closes the pane when you're done with it.
 
 ## Diagrams
 
@@ -167303,6 +167309,32 @@ text). It runs with the person's rights: only define tools you would run yoursel
 Exit codes: 0 ok, 1 \`check\` found problems or \`wait\` timed out, 2 bad usage (the
 message says what), 3 Herdr failed: \`no Herdr window\` means Herdr isn't running,
 \`no mod "opengpui"\` that the mod isn't installed. Then say so and fall back to text.
+
+## Updating
+
+\`show\` and \`opengpui --version\` print \`opengpui <new> is out (this is <old>)\` with the
+release's tarball and the mod folder when a newer release exists (they ask GitHub at most once
+a day). Tell the person once, with what changed
+(https://github.com/lukachi/openGPUI/releases/latest), and update only if they agree:
+
+\`\`\`sh
+tmp=$(mktemp -d)
+curl -fL <release tarball> | tar -xz -C "$tmp"     # unpacks to $tmp/opengpui
+herdr-app check "$tmp/opengpui"
+rm -rf <mod folder> && mv "$tmp/opengpui" <mod folder>
+opengpui --version                                  # the new version
+\`\`\`
+
+- This replaces the person's own copy of this mod, under its current name: it's an update, not
+  adding a gallery mod, so Herdr's "never overwrite, rename" rule doesn't apply. Touch nothing
+  else under the Herdr home.
+- \`opengpui\` on PATH links into the mod folder, so it is updated too.
+- Herdr reloads the mod in place: open panes pick up the new build. Fonts load only when Herdr
+  starts: if the release changed them, suggest a restart when it suits the person (terminals
+  keep running).
+- If this skill is installed as a file (a project's or your skills folder), refresh it:
+  \`opengpui skill > <that SKILL.md>\`.
+- \`OPENGPUI_NO_UPDATE_CHECK=1\` turns the check off.
 `;
 
 // skills/opengpui/examples/architecture.oui
@@ -167411,8 +167443,71 @@ var EXAMPLES = [
   { name: "sequence", about: "Sequence: messages between participants in order, a block, steps", source: sequence_default },
   { name: "timeline", about: "Timeline: a roadmap by lane with dates, dependencies and milestones", source: timeline_default }
 ];
+
+// bin/update.ts
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join as join2 } from "node:path";
+var LATEST = "https://api.github.com/repos/lukachi/openGPUI/releases/latest";
+var RELEASES = "https://github.com/lukachi/openGPUI/releases/latest";
+var DAY_MS2 = 24 * 60 * 60 * 1000;
+var TIMEOUT_MS = 1500;
+function newer(a, b) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0;i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (d)
+      return d > 0;
+  }
+  return false;
+}
+function read(path) {
+  try {
+    const v = JSON.parse(readFileSync(path, "utf8"));
+    return typeof v.checkedAt === "number" ? v : null;
+  } catch {
+    return null;
+  }
+}
+async function ask(previous) {
+  const checked = { ...previous, checkedAt: Date.now() };
+  try {
+    const res = await fetch(LATEST, { headers: { accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    if (!res.ok)
+      return checked;
+    const release = await res.json();
+    const tag = release.tag_name;
+    if (!tag?.startsWith("v"))
+      return checked;
+    const tarball = release.assets?.find((a) => a.name?.endsWith(".tar.gz"))?.browser_download_url;
+    return { checkedAt: checked.checkedAt, version: tag.slice(1), url: tarball ?? RELEASES };
+  } catch {
+    return checked;
+  }
+}
+async function updateNotice(home, current, modFolder) {
+  if (process.env.OPENGPUI_NO_UPDATE_CHECK)
+    return null;
+  const cache = join2(home, "opengpui", "update-check.json");
+  let checked = read(cache);
+  if (!checked || Date.now() - checked.checkedAt > DAY_MS2) {
+    checked = await ask(checked);
+    try {
+      mkdirSync(dirname(cache), { recursive: true });
+      writeFileSync(cache, JSON.stringify(checked));
+    } catch {}
+  }
+  if (!checked.version || !newer(checked.version, current))
+    return null;
+  return [
+    `opengpui ${checked.version} is out (this is ${current}). Tell the person; update only if they agree (\`opengpui skill\`, "Updating").`,
+    `  release: ${checked.url ?? RELEASES}`,
+    `  mod folder: ${modFolder}`
+  ].join(`
+`);
+}
 // package.json
-var version3 = "0.2.0";
+var version3 = "0.2.1";
 
 // bin/opengpui.ts
 var USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's actions back
@@ -167453,9 +167548,10 @@ class CliError extends Error {
 var usage = (message) => new CliError(2, `${message}
 
 ${USAGE}`);
-var HERDR_HOME = process.env.HERDR_APP_HOME ?? join2(homedir(), ".config", "herdr-app");
-var MOD = basename(dirname(dirname(fileURLToPath2(import.meta.url))));
-var LAUNCHER = join2(dirname(fileURLToPath2(import.meta.url)), "opengpui");
+var HERDR_HOME = process.env.HERDR_APP_HOME ?? join3(homedir(), ".config", "herdr-app");
+var MOD_FOLDER = dirname2(dirname2(fileURLToPath2(import.meta.url)));
+var MOD = basename(MOD_FOLDER);
+var LAUNCHER = join3(dirname2(fileURLToPath2(import.meta.url)), "opengpui");
 var exitWhenDone = false;
 var args = process.argv.slice(2);
 function flag(name) {
@@ -167499,7 +167595,7 @@ var componentsOption = () => option("--components")?.split(",").map((s) => s.tri
 function readTools(path) {
   let tools;
   try {
-    tools = JSON.parse(readFileSync(path, "utf8"));
+    tools = JSON.parse(readFileSync2(path, "utf8"));
   } catch (e) {
     throw new CliError(2, `can't read tools file ${path}: ${e.message}`);
   }
@@ -167554,7 +167650,7 @@ function agentPane(terminal) {
 function readEvents(path) {
   if (!existsSync(path))
     return [];
-  const text = readFileSync(path, "utf8");
+  const text = readFileSync2(path, "utf8");
   return text.slice(0, text.lastIndexOf(`
 `) + 1).split(`
 `).filter(Boolean);
@@ -167563,7 +167659,7 @@ var cursorPath = (events) => events.replace(/\.jsonl$/, ".cursor");
 var shownPath = (events) => events.replace(/\.jsonl$/, ".shown.json");
 function readShown(events) {
   try {
-    const record = JSON.parse(readFileSync(shownPath(events), "utf8"));
+    const record = JSON.parse(readFileSync2(shownPath(events), "utf8"));
     if (!record || typeof record !== "object" || !("place" in record) || !("target" in record))
       return null;
     const { place, target } = record;
@@ -167611,7 +167707,7 @@ async function main() {
       if (!existsSync(file))
         throw new CliError(2, `${file} does not exist`);
       const tools = toolsFile ? readTools(resolve2(toolsFile)) : null;
-      const text = readFileSync(file, "utf8");
+      const text = readFileSync2(file, "utf8");
       const { library } = source;
       const problems = [];
       const warnings = [];
@@ -167710,7 +167806,7 @@ async function main() {
           console.log(`closed the earlier ${earlier.place === "tab" ? "tab" : "pane"} of ${file}`);
         } catch {}
       }
-      mkdirSync(dirname(events), { recursive: true });
+      mkdirSync2(dirname2(events), { recursive: true });
       for (const path of [events, cursorPath(events), shownPath(events)])
         rmSync(path, { force: true });
       const place = tab ? "tab" : down ? "down" : "right";
@@ -167719,10 +167815,13 @@ async function main() {
       const target = place === "tab" ? opened.tab : opened.pane;
       if (typeof target !== "string" || !target)
         throw new CliError(3, `herdr-app answered without a ${place === "tab" ? "tab" : "pane"} id: ${JSON.stringify(opened)}`);
-      writeFileSync(shownPath(events), JSON.stringify({ place, target }));
+      writeFileSync2(shownPath(events), JSON.stringify({ place, target }));
       console.log(`showing ${file} (${place === "tab" ? "new tab" : place})`);
       console.log(`events: ${events}`);
       console.log(reply ? `replies: sent to terminal ${reply}` : "replies: none; use opengpui wait");
+      const notice = await updateNotice(HERDR_HOME, version3, MOD_FOLDER);
+      if (notice)
+        console.error(notice);
       return;
     }
     case "events": {
@@ -167740,14 +167839,14 @@ async function main() {
       if (!readShown(events))
         throw new CliError(2, `nothing shows ${file}: run opengpui show first`);
       const cursor = cursorPath(events);
-      const printed = existsSync(cursor) ? Number(readFileSync(cursor, "utf8")) || 0 : 0;
+      const printed = existsSync(cursor) ? Number(readFileSync2(cursor, "utf8")) || 0 : 0;
       const started = Date.now();
       for (;; ) {
         const lines = readEvents(events);
         if (lines.length > printed) {
           for (const line of lines.slice(printed))
             console.log(line);
-          writeFileSync(cursor, String(lines.length));
+          writeFileSync2(cursor, String(lines.length));
           return;
         }
         if (seconds > 0 && Date.now() - started > seconds * 1000)
@@ -167794,7 +167893,7 @@ opengpui examples <name> prints one.`);
         throw new CliError(2, "layout <in.json> <out.json>");
       let graph;
       try {
-        graph = JSON.parse(readFileSync(input, "utf8"));
+        graph = JSON.parse(readFileSync2(input, "utf8"));
       } catch (e) {
         throw new CliError(2, `can't read a sized graph from ${input}: ${e instanceof Error ? e.message : e}`);
       }
@@ -167808,14 +167907,18 @@ opengpui examples <name> prints one.`);
 `)[0]}`);
       }
       const partial = `${output}.${process.pid}.tmp`;
-      writeFileSync(partial, JSON.stringify(layout));
+      writeFileSync2(partial, JSON.stringify(layout));
       renameSync(partial, output);
       return;
     }
-    case "--version":
+    case "--version": {
       noMoreArgs();
       console.log(`opengpui ${version3}`);
+      const notice = await updateNotice(HERDR_HOME, version3, MOD_FOLDER);
+      if (notice)
+        console.log(notice);
       return;
+    }
     case undefined:
     case "help":
     case "--help":
