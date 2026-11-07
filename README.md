@@ -28,8 +28,8 @@ flowchart LR
 | `src/markdown/` | Markdown as react-ui draws it: react-markdown's own pipeline (unified, remark, the plugins each renderer passes) into an HTML tree, drawn with react-ui's markdown styles; code blocks highlighted by the same Prism grammars and themes. |
 | `src/components/` | One renderer per OpenUI component. Missing ones draw a "not supported yet" box and are left out of prompts. `charts/` holds the chart renderers and their shared foundation (its `index.ts` documents the API). |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries; `subsetLibrary()` to prompt only what is implemented, `selectLibrary()` for a host's choice of library and component subset. |
-| `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js`); `contract.ts`: the events path rule and event shape the mod and the CLI share; `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
-| `harness/` | The headless harness's script (`harness/src/main.ts` → `harness/app/main.js`): the mod's content area without Herdr, for `scripts/shot.ts`. |
+| `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js` and `shared.js`, see below); `contract.ts`: the events path rule and event shape the mod and the CLI share; `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
+| `harness/` | The headless harness's script (`harness/src/main.ts` → `harness/app/main.js` and `shared.js`): the mod's content area without Herdr, for `scripts/shot.ts`. |
 | `tools/` | `oui-harness` (Rust): runs the harness script offscreen on Herdr's gpui-shell. `oui-poke` (Swift): input for a Herdr preview window. |
 | `bin/opengpui.ts` | The agent CLI: `prompt`, `check`, `show`, `wait`, `events`, `close` (see "Agent contract"). |
 | `skills/opengpui/` | Agent skill: how an agent uses the CLI and the pane. |
@@ -168,6 +168,15 @@ Rust host on GPUI's headless app context (simulated clock, Metal offscreen rende
 pinned to the herdr-app tag of the installed Herdr; it refuses to run when Herdr's
 `~/.config/herdr-app/gpui-kit.d.ts` says Herdr's runtime has moved (see its `Cargo.toml`).
 
+`--shared-vm` loads every file into one runtime, as Herdr runs every tab of a mod in one
+engine: each window stays open like a tab, then all close in order as Herdr closes a tab
+(`--repeat n` opens the list n times). It prints the script heap (QuickJS's own count,
+after a full collection, against gpui-shell's 256 MiB limit) at start, after each load and
+after each close; `--heap` prints it after each load of a normal run. Each measurement
+collects garbage, which Herdr's engine keeps until its own GC threshold and counts against
+the limit, so later loads start cleaner than in Herdr: read the "before GC" column for how
+close a window is to running out.
+
 `bun scripts/preview.ts file.oui... [--mode light|dark|light,dark] [--look openui|herdr]
 [--wait ms] [--keep]` is for the Herdr integration only (props, the events file, `hc`
 replies, `--look herdr`, the pane chrome): it installs this checkout as its own mod
@@ -204,6 +213,20 @@ Outputs (`dist/`):
 - `opengpui.js`: the library for gpui-shell hosts (`gpui-kit` and `gpui-base` stay imports).
 - `opengpui-headless.js`: libraries, prompts and `Session` without gpui, for Bun/Node.
 - `opengpui-cli.js`: the CLI.
+
+The mod is two scripts. Herdr loads a mod's `main.js` again for every tab, into the one
+engine all mods share, and never frees a loaded module, so `main.js` holds only opengpui's
+own code (about 1.7 MiB of that engine's 256 MiB per tab). The packages it imports (zod,
+OpenUI's lang-core and libraries, refractor and its grammars, unified/micromark, d3,
+date-fns, …) are `shared.js`: the first tab imports it and keeps it on `globalThis` under
+its content hash, and later tabs of the same build use that copy (about 24 MiB once; the
+grammars are registered once). Before, every tab cost about 18 MiB that closing it never
+gave back, and ten tabs ran a window out of memory. `scripts/build.ts` (`bundleSplit`)
+does the split, and fails when a module lands in both scripts (a module with state, such
+as `src/upstream/timers.ts`, must be one copy: it is listed in `SHARED_FILES`). The cost:
+the import is a top-level `await`, so gpui-shell finishes each load by running every
+promise job already queued, in the new tab's scope. When loads follow each other without
+a frame between, a job the previous tab's `init` queued runs as the new tab's.
 
 The mod also ships `fonts/` and `icons/` (copied from `.upstream/assets` at build):
 

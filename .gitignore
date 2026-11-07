@@ -12,6 +12,7 @@ node_modules/
 # Build output (bun run build)
 dist/
 herdr/mods/opengpui/main.js
+herdr/mods/opengpui/shared.js
 herdr/mods/opengpui/fonts/
 herdr/mods/opengpui/icons/
 harness/app/

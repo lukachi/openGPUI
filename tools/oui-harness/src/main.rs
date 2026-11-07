@@ -11,6 +11,12 @@
 //! by a settle, and shots to write. Progress, actions and errors come out on
 //! stdout as JSON lines.
 //!
+//! Each item gets a runtime of its own, unless the job sets `sharedVm`: then
+//! all load into one, as Herdr runs every mod tab in one engine, each window
+//! stays open like a tab, and once all are loaded they are closed in order as
+//! Herdr closes a tab. `heap` lines (heap.rs) give the script heap at start,
+//! after each load and after each close (`heap` alone: after each load).
+//!
 //! Settled means: no runnable task, no script `render` for `quiet_ms` of
 //! simulated time, and no timer due before those ms are up. Time is simulated
 //! (GPUI's test scheduler): a `cx.sleep` or timer costs no wall time, the
@@ -18,16 +24,17 @@
 //! runs ahead by the simulated time too, so the core's wall-clock watchdogs
 //! see sleeps pass as they would in Herdr.
 
+mod heap;
 mod log;
 
 use anyhow::{Context as _, Result, anyhow, bail};
 use gpui::{
-    AnyWindowHandle, App, AssetSource, HeadlessAppContext, InputEvent as _, KeyDownEvent, KeyUpEvent,
+    AnyWindowHandle, App, AssetSource, Entity, HeadlessAppContext, InputEvent as _, KeyDownEvent, KeyUpEvent,
     Keystroke, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels, Point, ScrollDelta,
     ScrollWheelEvent, SharedString, Window, point, px, size,
 };
 use gpui_base::test_support;
-use gpui_shell::{AppAssets, Capabilities, HostModule, HostValue, ScriptView, ShellRuntime};
+use gpui_shell::{AppAssets, Capabilities, HostModule, HostValue, ScriptView, ShellRoot, ShellRuntime};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -48,7 +55,7 @@ const GPUI_SHELL_VERSION: &str = "0.7.1";
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Job {
-    /// The script directory: main.js and its icons.
+    /// The script directory: main.js, the shared.js it imports, and its icons.
     app: PathBuf,
     /// Font files (.ttf/.otf) to register before anything renders.
     fonts: Option<PathBuf>,
@@ -60,6 +67,14 @@ struct Job {
     quiet_ms: u64,
     #[serde(default = "default_max")]
     max_ms: u64,
+    /// One runtime for every item, as Herdr runs every mod copy in one VM:
+    /// each item's window stays open like a tab, and once all are loaded they
+    /// are closed one by one as Herdr closes a tab. Implies `heap`.
+    #[serde(default)]
+    shared_vm: bool,
+    /// A "heap" line (heap.rs) after each load and each close.
+    #[serde(default)]
+    heap: bool,
     items: Vec<Item>,
 }
 
@@ -179,6 +194,13 @@ fn run() -> Result<()> {
         .map_err(|e| anyhow!(e.message().to_owned()))?;
     let home = std::env::var("HOME").unwrap_or_default();
     let viewport = size(px(job.width), px(job.height));
+    let shared = if job.shared_vm { Some(ShellRuntime::new_isolated()?) } else { None };
+    let shared_heap = shared.as_ref().map(heap::Heap::find).transpose()?;
+    if let Some(heap) = &shared_heap {
+        emit_heap(heap, "start", "", "", 0);
+    }
+    // The windows a shared runtime keeps open, as tabs: label, mode, window, root.
+    let mut tabs: Vec<(String, String, AnyWindowHandle, Entity<ShellRoot>)> = Vec::new();
 
     for item in &job.items {
         let started = Instant::now();
@@ -212,28 +234,41 @@ fn run() -> Result<()> {
                 .clipboard_write(true),
         );
 
-        // A runtime per file: one VM keeps every load of the 2.7 MB script, and
-        // after about ten loads its heap runs out (loads fail with `Null"null"`,
-        // regexps with "out of memory", as Herdr's own windows do after a few
-        // tabs). A fresh one costs nothing measurable next to the load itself.
-        let runtime = ShellRuntime::new_isolated()?;
+        // A runtime per file unless the job shares one: one VM keeps every load
+        // of the 2.7 MB script (gpui-shell never frees a module generation), as
+        // Herdr's one runtime does. A fresh one costs nothing measurable next to
+        // the load itself.
+        let runtime = match &shared {
+            Some(runtime) => runtime.clone(),
+            None => ShellRuntime::new_isolated()?,
+        };
         let failed: Rc<RefCell<Option<String>>> = Rc::default();
         let failure = failed.clone();
+        let mounted: Rc<RefCell<Option<Entity<ShellRoot>>>> = Rc::default();
+        let mount = mounted.clone();
         let loader = runtime.clone();
         let root = app.clone();
         let window: AnyWindowHandle = cx
-            .open_window(viewport, move |window, cx| match loader.try_load(&root, window, cx) {
-                Ok(root) => root,
-                Err(error) => {
-                    *failure.borrow_mut() = Some(format!("{error:#}"));
-                    loader.load(&root, window, cx)
-                }
+            .open_window(viewport, move |window, cx| {
+                let root = match loader.try_load(&root, window, cx) {
+                    Ok(root) => root,
+                    Err(error) => {
+                        *failure.borrow_mut() = Some(format!("{error:#}"));
+                        loader.load(&root, window, cx)
+                    }
+                };
+                *mount.borrow_mut() = Some(root.clone());
+                root
             })?
             .into();
+        let root = mounted.borrow_mut().take().ok_or_else(|| anyhow!("the window has no root"))?;
         if let Some(error) = failed.borrow_mut().take() {
             emit(json!({ "type": "error", "src": label, "mode": item.mode, "message": error }));
             cx.update_window(window, |_, window, _| window.remove_window())?;
             cx.run_until_parked();
+            if let Some(heap) = &shared_heap {
+                emit_heap(heap, "failed", &label, &item.mode, tabs.len());
+            }
             continue;
         }
         let loaded = started.elapsed();
@@ -296,11 +331,53 @@ fn run() -> Result<()> {
             std::fs::write(path, tree).with_context(|| format!("writing {}", path.display()))?;
             emit(json!({ "type": "spec", "src": label, "mode": item.mode, "path": path }));
         }
-        cx.update_window(window, |_, window, _| window.remove_window())?;
-        cx.run_until_parked();
+        if job.shared_vm {
+            tabs.push((label.clone(), item.mode.clone(), window, root));
+            if let Some(heap) = &shared_heap {
+                emit_heap(heap, "load", &label, &item.mode, tabs.len());
+            }
+        } else {
+            if job.heap {
+                emit_heap(&heap::Heap::find(&runtime)?, "load", &label, &item.mode, 1);
+            }
+            cx.update_window(window, |_, window, _| window.remove_window())?;
+            cx.run_until_parked();
+        }
         emit(json!({ "type": "done", "src": label, "mode": item.mode, "ms": ms(started.elapsed()) }));
     }
+
+    // Closed in the order they were opened, each as Herdr closes a mod copy's
+    // tab (herdr-app src/window.rs `remove_copy`): its final call with 250 ms
+    // to settle, then the root goes.
+    if let (Some(runtime), Some(heap)) = (&shared, &shared_heap) {
+        while !tabs.is_empty() {
+            let (label, mode, window, root) = tabs.remove(0);
+            CURRENT.with_borrow_mut(|current| {
+                current.src = label.clone();
+                current.mode = mode.clone();
+            });
+            let deadline = Instant::now() + Duration::from_millis(250);
+            cx.update_window(window, |_, window, cx| runtime.close(&root, deadline, window, cx).detach())?;
+            advance(&mut cx, window, 300)?;
+            cx.update_window(window, |_, window, _| window.remove_window())?;
+            drop(root);
+            for _ in 0..20 {
+                cx.run_until_parked();
+                cx.advance_clock(Duration::from_millis(16));
+            }
+            cx.run_until_parked();
+            emit_heap(heap, "close", &label, &mode, tabs.len());
+        }
+    }
     Ok(())
+}
+
+fn emit_heap(heap: &heap::Heap, after: &str, label: &str, mode: &str, tabs: usize) {
+    let mut line = json!({ "type": "heap", "after": after, "src": label, "mode": mode, "tabs": tabs });
+    if let (Value::Object(line), Value::Object(usage)) = (&mut line, heap.measure()) {
+        line.extend(usage);
+    }
+    emit(line);
 }
 
 /// Refuses to run unless Herdr's runtime is the one this harness is built on:

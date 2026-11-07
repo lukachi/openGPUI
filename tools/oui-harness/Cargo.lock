@@ -5657,6 +5657,7 @@ dependencies = [
  "gpui-pre-platform",
  "gpui-shell",
  "image",
+ "quickjs-jit-sys",
  "serde",
  "serde_json",
  "tracing",
