@@ -68,7 +68,8 @@ Choose how you receive events when you `show`:
 Reading an event: `message` is what the button said; `params.context` is
 `@ToAssistant`'s second argument; `formState` is `{ "<form>": { "<field>": value } }`
 for a button in a form (fields nobody touched may be missing), else every form and
-every `$variable` (`"$name": value`).
+every `$variable` (`"$name": value`). A date is the ISO instant of that day's local
+midnight (`"2026-11-11T22:00:00.000Z"` = Nov 12 at UTC+2); read it in the person's time zone.
 
 ## 4. React
 

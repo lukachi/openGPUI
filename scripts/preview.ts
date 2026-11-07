@@ -218,7 +218,9 @@ function nudge(): void {
       console.log(`note   no poke (${info.stderr.toString().trim().split("\n").pop()}); shots of a covered window may be stale`);
       return;
     }
-    const { width, height } = JSON.parse(info.stdout.toString()) as { width: number; height: number };
+    // The first `info` builds OuiPoke and prints "built …" before its JSON line.
+    const line = info.stdout.toString().trim().split("\n").pop() ?? "";
+    const { width, height } = JSON.parse(line) as { width: number; height: number };
     nudgeAt = [Math.round(width * 0.6), height - 8];
   }
   poke(["click", String(nudgeAt[0]), String(nudgeAt[1])]);

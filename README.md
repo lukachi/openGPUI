@@ -100,7 +100,9 @@ so same-named files in two folders never share a log (`herdr/src/contract.ts`):
   a Form it is every form and every `$variable` (`"$days": "7"`). Fields the person never
   touched may be missing (a renderer stores a default only for some inputs). Values are what
   the inputs hold (strings, arrays, `{key: boolean}` for checkbox/switch groups, `[n]` for
-  sliders). The state survives rewrites of the file while names stay.
+  sliders). A DatePicker gives ISO instants of the picked day's local midnight
+  (`"2026-11-11T22:00:00.000Z"` is Nov 12 at UTC+2), a range `{from, to}` of them: read the
+  day in the person's time zone. The state survives rewrites of the file while names stay.
 
 The reply (`hc send <terminal>`, a paste plus Enter) is a headline, then the event line:
 
