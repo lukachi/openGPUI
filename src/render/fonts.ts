@@ -13,6 +13,9 @@
 /** OpenUI's `letter-spacing` for non-code text (TRACKING), in em. */
 export const INTER_TRACKING_EM = -0.01;
 
+/** Inter's content area (hhea ascent + descent, 1984 + 494 of 2048 units), in em: what CSS paints an inline box's background over. */
+export const INTER_CONTENT_EM = (1984 + 494) / 2048;
+
 /** Inter's optical-size axis; a browser clamps the font size into it. */
 export const INTER_OPSZ_MIN = 14;
 export const INTER_OPSZ_MAX = 32;

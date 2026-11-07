@@ -68,7 +68,7 @@ function snippetCard(ctx: RenderContext, item: ElementNode, index: number, click
     .child(left)
     .child(right);
   if (!clickable) return box.bg(t.sunkLight).border_color(t.borderDefault);
-  return pressable(ctx, clickableShadow(box.bg(t.foreground).border_color(t.borderInteractive), t.shadowS), index, onClick);
+  return pressable(ctx, clickableShadow(box.bg(t.foreground).border_color(t.borderInteractive), t.shadowS, t.foreground), index, onClick);
 }
 
 export const SnippetCardBlock: Component = {

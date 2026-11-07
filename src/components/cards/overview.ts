@@ -75,7 +75,7 @@ function overviewCard(ctx: RenderContext, item: ElementNode, index: number, clic
     // __vertical: fills the card, the top at the top and the metric at the bottom, gap l.
     .child(div().flex().flex_col().flex_grow(1).justify_between().gap(t.spaceL).min_w_0().min_h_0().child(topRow).children(metric ? [metric] : []));
   if (!clickable) return box.bg(t.sunkLight).border_color(t.borderDefault);
-  return pressable(ctx, clickableShadow(box.bg(t.foreground).border_color(t.borderInteractive), t.shadowM), index, onClick);
+  return pressable(ctx, clickableShadow(box.bg(t.foreground).border_color(t.borderInteractive), t.shadowM, t.foreground), index, onClick);
 }
 
 export const OverviewCardBlock: Component = {

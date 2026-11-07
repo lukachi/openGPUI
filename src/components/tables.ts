@@ -17,7 +17,9 @@
 // `scrollTo`. The first frame of new rows is drawn before they are measured,
 // with columns of equal width. In a long markdown block's lazy list rows, which
 // allow no handlers, a table takes the widths an earlier handled draw measured and
-// scrolls sideways natively (tableView `static`).
+// scrolls sideways natively (tableView `static`). A cell holding block-level
+// components (a Tag is a `display: flex` div) stretches them to the column's width,
+// as a td does; its measured width stays the content's own (see `fill`).
 import { isElementNode } from "@openuidev/lang-core";
 import { div, type Color, type Context, type Element, type Entity, type ScrollWheelEvent } from "gpui-kit";
 import type { Component, RenderContext } from "../render/surface.ts";
@@ -39,7 +41,12 @@ export interface TableCell {
   content: (Element | Entity | string)[];
   /** TableHead/TableCell `align` (.openui-table-align-*). */
   align?: "left" | "center" | "right";
+  /** Block-level content (divs, not text or a `<button>`): it fills the cell's width. */
+  fill?: boolean;
 }
+
+/** genui components that draw a `<button>`: shrink-to-fit in a td, unlike the divs the others draw. */
+const BUTTONS: Record<string, true> = { Button: true, IconButton: true };
 
 /** What cells inherit: .openui-table is body small; heads are secondary, cells primary. */
 export function tableText(t: Tokens, head: boolean): { style: TextStyle; color: Color } {
@@ -126,15 +133,22 @@ export function tableView(
   const offset = Math.min(Math.max(0, local.offset), maxOffset);
   const lefts = layout ? layout.widths.map((_, i) => layout.widths.slice(0, i).reduce((a, b) => a + b, 0)) : [];
 
-  /** Content that reports its natural width under `key` (static: the same box, unreported). */
-  const measure = (key: string, content: (Element | Entity | string)[]) => {
-    const box = div().flex().flex_row().flex_none().items_center().whitespace_nowrap();
+  /**
+   * Content that reports its natural width under `key` (static: the same box, unreported).
+   * `fill`: the width block-level content stretches to. A stretched box reports that width,
+   * not its content's, so the natural width measured before stays.
+   */
+  const measure = (key: string, content: (Element | Entity | string)[], fill: number) => {
+    const box = fill
+      ? div().flex().flex_col().items_stretch().flex_none().min_w(fill).whitespace_nowrap()
+      : div().flex().flex_row().flex_none().items_center().whitespace_nowrap();
     if (fixed) return box.children(content);
     return box
       .id(ctx.id(`${part}-m-${key}`))
       .on_size_change((size, cx) => {
-        if (local.sizes[key] !== size.width) {
-          local.sizes[key] = size.width;
+        const natural = fill && size.width <= fill + 0.5 ? Math.min(local.sizes[key] ?? size.width, size.width) : size.width;
+        if (local.sizes[key] !== natural) {
+          local.sizes[key] = natural;
           cx.notify();
         }
       })
@@ -149,7 +163,9 @@ export function tableView(
     else el = layout ? el.flex_none().w(layout.widths[ci]!) : el.flex_1().min_w_0();
     if (c?.align === "right") el = el.justify_end();
     else if (c?.align === "center") el = el.justify_center();
-    return el.child(measure(key, c?.content ?? []));
+    // A cell is stretched only once its natural width is known: a stretched box reports the fill width.
+    const fill = c?.fill && layout && !fixed && local.sizes[key] !== undefined ? layout.widths[ci]! - pad : 0;
+    return el.child(measure(key, c?.content ?? [], fill));
   };
 
   const header = div()
@@ -285,7 +301,10 @@ export const Table: Component = {
       rows.push(
         cols.map((c, ci) => {
           const v = c.data[r];
-          return { content: typeof v === "object" && v !== null ? ctx.children(v, `c${r}_${ci}`) : [String(v ?? "")] };
+          if (typeof v !== "object" || v === null) return { content: [String(v ?? "")] };
+          const nodes = asArray(v);
+          const fill = nodes.length > 0 && nodes.every((n) => isElementNode(n) && !BUTTONS[n.typeName]);
+          return { content: ctx.children(v, `c${r}_${ci}`), fill };
         }),
       );
     }

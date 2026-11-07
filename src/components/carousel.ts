@@ -154,6 +154,7 @@ export const Carousel: Component = {
                 icon: side === "left" ? "ChevronLeft" : "ChevronRight",
                 size: "small",
                 variant: "secondary",
+                surface: t.foreground, // .openui-carousel-button
                 onClick: (cx) => step(side, cx),
               }),
             ),

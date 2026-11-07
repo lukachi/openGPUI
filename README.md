@@ -60,7 +60,10 @@ clipboard's text, and a new text for the file (framed without its end line, it s
 when an agent writes it); `{ "shot": "name" }` saves `<file>-<mode>-<name>.png` (the list
 is in `scripts/shot.ts`). Each step runs until settled, or `"settle": ms` long to catch a
 short state. Gpui-base's own animations draw their end state (reduced motion). The actions
-the session sends and every error and runtime warning are printed. `--spec` writes the element
+the session sends and every error and runtime warning are printed; a file whose surface
+still reports itself busy when it settles (the idle Herdr's status file reports) is marked
+NOT IDLE, as is a step after which it does (`harness/checks/idle-loop.oui` with its
+`.json` steps must report neither). `--spec` writes the element
 description and the ids a step can name. The drawing comes from `tools/oui-harness`, a
 Rust host on GPUI's headless app context (simulated clock, Metal offscreen renderer)
 pinned to the herdr-app tag of the installed Herdr; it refuses to run when Herdr's
@@ -71,7 +74,8 @@ pinned to the herdr-app tag of the installed Herdr; it refuses to run when Herdr
 replies, `--look herdr`, the pane chrome): it installs this checkout as its own mod
 (`opengpui-<folder>`) in a background Herdr window of the checkout's own, shows each file
 in a new tab, saves a screenshot to `tmp/preview/` once the tab reports itself idle
-(`opengpui/status/<name>.json`: nothing left to parse, highlight, load or draw) and stays
+(`opengpui/status/<name>.json`: nothing left to parse, highlight, load or draw on screen;
+a view gpui never draws, such as a closed Accordion item's content, doesn't hold it) and stays
 so for 300 ms (a build that reports nothing: once the window has stopped changing),
 and closes the tab. Checkouts never wait for each other.
 
@@ -203,8 +207,14 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 - **Fonts:** optical sizes come in steps (14, 16, 18, 24, 28, 32) instead of
   following every size, and a size/weight pair without a cut takes the nearest
   cut. Heading large/xl track −0.1px upstream; here they get the −1% of all other text.
-- **Shadows:** OpenUI's custom shadows map to gpui's presets (`shadow-m` → `shadow_sm`, …):
-  gpui-shell exposes only presets, not gpui's `BoxShadow`.
+- **Shadows:** OpenUI's custom shadows map to gpui's presets (`shadow-s` and `shadow-m` →
+  `shadow_xs`, measured against the reference; `shadow-l` → `shadow_md`, …): gpui-shell
+  exposes only presets, not gpui's `BoxShadow`. gpui paints a shadow under its whole box,
+  where CSS paints it only outside, so a box whose fill isn't opaque (a secondary Button, the
+  DatePicker field, a sunk Card, a clear Tab on hover) gets no shadow instead of a grey fill
+  (`shadow()` in `src/render/tokens.ts`). A secondary IconButton on an opaque chip (the
+  Carousel and Tabs arrows) is filled with its see-through fill composited over the chip,
+  so it keeps its shadow.
 - **Transitions:** gpui animates only opacity, size and position, so upstream's color
   transitions (hover fills, borders) switch at once. `cursor: not-allowed` isn't drawn.
 - **Choice controls:** gpui-base's unstyled `Checkbox`, `Radio` and `Switch` carry

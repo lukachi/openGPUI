@@ -16,7 +16,7 @@
 //   upstream's hidden one. The 48px edge fade (`mask-image`) is not drawn: gpui has no mask.
 // - The clickable cards' `transform: scale(0.995)` on hover is not drawn (gpui cannot scale);
 //   the hover keeps the shadow reset. The 2px focus ring is not drawn either.
-import { div, type Element, type FocusHandle, type ScrollWheelEvent } from "gpui-kit";
+import { div, type Color, type Element, type FocusHandle, type ScrollWheelEvent } from "gpui-kit";
 import { isElementNode, type ElementNode } from "@openuidev/lang-core";
 import { getRowConfiguration } from "openui-card-layout-utils";
 import { type RenderContext } from "../../render/surface.ts";
@@ -199,9 +199,9 @@ export function pressable(ctx: RenderContext, el: Element, index: number, onActi
     });
 }
 
-/** A clickable card's resting shadow, reset on hover (`&:hover { box-shadow: none }`). */
-export function clickableShadow(el: Element, preset: ShadowPreset): Element {
-  return shadow(el, preset).hover((s) => shadow(s, "none"));
+/** A clickable card's resting shadow under its `fill`, reset on hover (`&:hover { box-shadow: none }`). */
+export function clickableShadow(el: Element, preset: ShadowPreset, fill: Color | "covered"): Element {
+  return shadow(el, preset, fill).hover((s) => s.shadow_none());
 }
 
 /** The chevron a clickable card shows: `size` px in the surrounding text color. */

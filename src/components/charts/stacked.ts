@@ -112,8 +112,10 @@ export const SingleStackedBarChart: Component = {
               .transition("opacity", { duration: 200, easing: "ease-in-out" });
             if (i === segments.length - 1) el = el.rounded_r(t.radiusXs);
             else if (i === 0) el = el.rounded_l(t.radiusXs);
-            // The centered 1px accent line inside each segment: 5px in from both sides.
-            return shadow(el, t.shadowS).child(
+            // The centered 1px accent line inside each segment: 5px in from both sides. A dimmed
+            // segment is see-through, so gpui would show its shadow through it (tokens.ts shadow()).
+            const dimmed = active !== null && active !== i;
+            return shadow(el, dimmed ? "none" : t.shadowS, segment.color).child(
               div()
                 .absolute()
                 .left(5)
@@ -151,7 +153,7 @@ export const SingleStackedBarChart: Component = {
     const measurer = new Measurer(ctx, typography(t, "label", "extra-small")).want(legendStrings(legendItems));
     const probes = measurer.probes();
     return trackWidth(v_flex().id(ctx.id()).relative().w_full().items_center().justify_center().gap(t.spaceM), size)
-      .child(div().relative().w_full().flex_none().child(shadow(track, t.shadowS)).children(tooltip))
+      .child(div().relative().w_full().flex_none().child(shadow(track, t.shadowS, t.background)).children(tooltip))
       .child(div().w_full().h(1).flex_none().bg(t.borderDefault))
       .child(legendView(ctx, { items: legendItems, containerWidth: size.width, measurer, flush: true }))
       .children(probes ? [probes] : []);

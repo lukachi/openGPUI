@@ -119,10 +119,12 @@ function toTextStyle(font: string): TextStyle {
   return { weight: Number(m[1]), size: Number(m[2]), lineHeight: Number(m[3]), families };
 }
 
+// Measured against the reference below a primary Button (light): shadow-m darkens the page
+// by about 4% at the box's edge, fading over 5px, as `xs` does; `sm` darkens it by 10%.
 const SHADOWS: Record<keyof EffectTheme, ShadowPreset> = {
   shadow0: "none",
   shadowS: "xs",
-  shadowM: "sm",
+  shadowM: "xs",
   shadowL: "md",
   shadowXl: "lg",
   shadow2xl: "xl",
@@ -154,6 +156,14 @@ export function resolveTokens(mode: Mode = "light", overrides: Partial<Tokens> =
 export function alpha(hex: Color, a: number): Color {
   const rgb = hex.slice(0, 7);
   return `${rgb}${Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, "0")}` as Color;
+}
+
+/** `top` painted over the opaque `bottom`, as a browser composites a translucent fill (sRGB): an opaque color. */
+export function over(top: Color, bottom: Color): Color {
+  const channel = (c: Color, i: number) => parseInt(c.slice(1 + 2 * i, 3 + 2 * i), 16);
+  const a = top.length === 9 ? channel(top, 3) / 255 : 1;
+  const rgb = [0, 1, 2].map((i) => Math.round(channel(top, i) * a + channel(bottom, i) * (1 - a)));
+  return `#${rgb.map((v) => v.toString(16).padStart(2, "0")).join("")}ff` as Color;
 }
 
 // ── Styles ──
@@ -254,8 +264,20 @@ export function restyle(t: Tokens, style: TextStyle, patch: { size?: number; wei
   return face ? { ...style, size, weight: face.weight, face: face.family } : { ...style, size, weight, face: undefined };
 }
 
-/** Apply one of gpui's shadow presets. */
-export function shadow<E extends Element>(el: E, preset: ShadowPreset): E {
+/** Whether `color` covers what is under it: a #rrggbbaa with alpha below ff does not. */
+export function isOpaque(color: Color): boolean {
+  return !(color.length === 9 && color.startsWith("#") && color.slice(7).toLowerCase() !== "ff");
+}
+
+/**
+ * Apply one of gpui's shadow presets to a box filled with `fill`. CSS paints a box-shadow
+ * only outside the border box; gpui paints it under the whole box, so a fill that isn't
+ * opaque (transparent, sunk, highlight, elevated) shows it through as a grey fill. Such a
+ * box gets no shadow: the faint edge CSS draws outside it is the smaller loss (README
+ * "Shadows"). `"covered"`: opaque content (a photo) covers the whole fill.
+ */
+export function shadow<E extends Element>(el: E, preset: ShadowPreset, fill: Color | "covered"): E {
+  if (fill !== "covered" && !isOpaque(fill)) return el.shadow_none();
   switch (preset) {
     case "xs":
       return el.shadow_xs();

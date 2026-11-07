@@ -1,0 +1,9 @@
+root = Stack([outside, acc])
+outside = RadioGroup("planOut", [o1, o2], null, null, $plan)
+o1 = RadioItem("Monthly", "outside", "monthly")
+o2 = RadioItem("Yearly", "outside", "yearly")
+acc = Accordion([AccordionItem("a", "Inside", [inside])])
+inside = RadioGroup("planIn", [i1, i2], null, null, $plan)
+i1 = RadioItem("Monthly", "inside", "monthly")
+i2 = RadioItem("Yearly", "inside", "yearly")
+$plan = "yearly"

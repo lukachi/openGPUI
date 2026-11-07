@@ -146,7 +146,7 @@ export const Modal: Component = {
         })
         .child(header)
         .child(body);
-      content = shadow(content, "2xl");
+      content = shadow(content, "2xl", t.foreground);
       if (width !== undefined) content = content.w(width).max_w("90%");
       if (focus) content = content.track_focus(focus);
 

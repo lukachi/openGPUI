@@ -1,0 +1,8 @@
+[
+  { "click": "n.root.c_1:trigger-0" },
+  { "wait": 1000 },
+  { "shot": "closed" },
+  { "click": [30, 33] },
+  { "wait": 3000 },
+  { "shot": "after" }
+]

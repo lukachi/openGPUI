@@ -62,7 +62,8 @@ function visualCard(ctx: RenderContext, item: ElementNode, index: number, clicka
   const inner = { width: Math.max(0, local.width - 2), height: Math.max(0, local.height - 2) };
 
   const layers: Element[] = [];
-  if (state?.status === "ready" && inner.width > 0 && inner.height > 0) {
+  const photo = state?.status === "ready" && inner.width > 0 && inner.height > 0;
+  if (photo) {
     // ::before: the photo, `cover`, zooming on a clickable card's hover.
     layers.push(
       div()
@@ -137,7 +138,8 @@ function visualCard(ctx: RenderContext, item: ElementNode, index: number, clicka
       }
     });
   if (clickable) {
-    box = clickableShadow(box, t.shadowS).on_hover((hovered, cx) => {
+    // The photo, once drawn, covers the see-through fill; before that gpui would show the shadow through it.
+    box = clickableShadow(box, t.shadowS, photo ? "covered" : t.highlightSubtle).on_hover((hovered, cx) => {
       if (local.hover !== hovered) {
         local.hover = hovered;
         cx.notify();

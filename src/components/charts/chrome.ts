@@ -219,7 +219,7 @@ function tooltipPanel(ctx: RenderContext, payload: TooltipPayload): Element {
         ? [separator(), text(t.textNeutralPrimary).child(`Click to view all ${items.length - 5}`)]
         : [],
     );
-  return shadow(panel, t.shadowS);
+  return shadow(panel, t.shadowS, t.foreground);
 }
 
 /** Floating UI placements the charts use (ChartTooltip `placement`). */
