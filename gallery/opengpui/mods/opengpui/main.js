@@ -28,12 +28,12 @@ __export(exports_formatters, {
 });
 
 // opengpui-shared-loader:opengpui-shared-loader
-var ready = Symbol.for("opengpui shared 8350ece622c9d1de");
-var loading = Symbol.for("opengpui shared 8350ece622c9d1de" + " loading");
+var ready = Symbol.for("opengpui shared 160c5dd588f20b26");
+var loading = Symbol.for("opengpui shared 160c5dd588f20b26" + " loading");
 if (!globalThis[ready]) {
   const file = "./shared.js";
   globalThis[loading] ??= import(file).then((shared) => {
-    if (shared.key !== "opengpui shared 8350ece622c9d1de")
+    if (shared.key !== "opengpui shared 160c5dd588f20b26")
       throw new Error("shared.js is not the one this main.js was built with: " + shared.key);
     return shared;
   }).catch((error) => {
@@ -51,7 +51,7 @@ import { appHome as appHome4, exec as exec3, hc, home as home2, props, readTextF
 import { dirname, join as join5 } from "path";
 
 // opengpui-shared:@openuidev/lang-core
-var m = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["@openuidev/lang-core"];
+var m = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["@openuidev/lang-core"];
 var e0 = m["ACTION_STEPS"];
 var e1 = m["BuiltinActionType"];
 var e2 = m["McpToolError"];
@@ -111,15 +111,15 @@ import {
 import { div as div2 } from "gpui-kit";
 
 // opengpui-shared:react-syntax-highlighter/dist/esm/styles/prism/one-light.js
-var m2 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["react-syntax-highlighter/dist/esm/styles/prism/one-light.js"];
+var m2 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["react-syntax-highlighter/dist/esm/styles/prism/one-light.js"];
 var one_light_default = m2.default;
 
 // opengpui-shared:react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js
-var m3 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js"];
+var m3 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js"];
 var vsc_dark_plus_default = m3.default;
 
 // opengpui-shared:openui-theme
-var m4 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-theme"];
+var m4 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-theme"];
 var e02 = m4["defaultDarkTheme"];
 var e110 = m4["defaultLightTheme"];
 
@@ -509,7 +509,7 @@ function rowChars(row) {
 }
 
 // opengpui-shared:./src/markdown/grammars.ts
-var m5 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["./src/markdown/grammars.ts"];
+var m5 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["./src/markdown/grammars.ts"];
 var e03 = m5["grammars"];
 
 // src/markdown/lazy.ts
@@ -534,7 +534,8 @@ function lazyRows(ctx, part, o) {
     if (!atEdge)
       cx.stop_propagation();
   }).child(rows);
-  return [wheel, Scrollbar.vertical(listId).absolute().inset_0()];
+  const bar = Scrollbar.vertical(listId).absolute().inset_0();
+  return [wheel, o.contentHeight === undefined ? bar : bar.scroll_size(0, o.contentHeight)];
 }
 function edge(el, k, count) {
   let out = el;
@@ -890,42 +891,42 @@ function codeBlock(ctx, part, code, language, inheritedSize, options = {}) {
 }
 
 // opengpui-shared:html-url-attributes
-var m6 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["html-url-attributes"];
+var m6 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["html-url-attributes"];
 var e04 = m6["urlAttributes"];
 
 // opengpui-shared:openui-remark-citations
-var m7 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-remark-citations"];
+var m7 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-remark-citations"];
 var e05 = m7["remarkCitations"];
 
 // opengpui-shared:remark-breaks
-var m8 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["remark-breaks"];
+var m8 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-breaks"];
 var remark_breaks_default = m8.default;
 
 // opengpui-shared:remark-gfm
-var m9 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["remark-gfm"];
+var m9 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-gfm"];
 var remark_gfm_default = m9.default;
 
 // opengpui-shared:remark-math
-var m10 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["remark-math"];
+var m10 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-math"];
 var remark_math_default = m10.default;
 
 // opengpui-shared:remark-parse
-var m11 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["remark-parse"];
+var m11 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-parse"];
 var remark_parse_default = m11.default;
 
 // opengpui-shared:remark-rehype
-var m12 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["remark-rehype"];
+var m12 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-rehype"];
 var e06 = m12["defaultFootnoteBackContent"];
 var e111 = m12["defaultFootnoteBackLabel"];
 var e210 = m12["defaultHandlers"];
 var remark_rehype_default = m12.default;
 
 // opengpui-shared:unified
-var m13 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["unified"];
+var m13 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["unified"];
 var e07 = m13["unified"];
 
 // opengpui-shared:unist-util-visit
-var m14 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["unist-util-visit"];
+var m14 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["unist-util-visit"];
 var e08 = m14["CONTINUE"];
 var e112 = m14["EXIT"];
 var e211 = m14["SKIP"];
@@ -1013,7 +1014,8 @@ var markerKind = (line) => {
 var DELIMITER_ROW = /^ {0,3}\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*\r?$/;
 var cellCount = (line) => line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "").split(/(?<!\\)\|/).length;
 var DEFINITION = /^ {0,3}\[(?!\^)((?:[^\]\\\n]|\\.)+)\]:[ \t]*(?:<[^>\n]*>|\S+)(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?[ \t]*\r?$/;
-function markdownSplit(text, profile) {
+var SPLIT_LINES = 250;
+function* splitSteps(text, profile) {
   const whole = { cuts: [], definitions: "" };
   if (/\r(?!\n)/.test(text))
     return whole;
@@ -1031,6 +1033,8 @@ function markdownSplit(text, profile) {
 `);
   let at = 0;
   for (let i = 0;i < lines.length; i++) {
+    if (i > 0 && i % SPLIT_LINES === 0)
+      yield;
     const line = lines[i];
     const start = at;
     at += line.length + 1;
@@ -1137,20 +1141,30 @@ var PIECE_CACHE_SIZE = 400;
 class MarkdownParse {
   text;
   profile;
+  pieceChars;
   key;
-  starts;
-  definitions;
+  splitting;
+  starts = [];
+  definitions = "";
   trees = [];
   result = null;
   constructor(text, profile, pieceChars = PIECE_CHARS) {
     this.text = text;
     this.profile = profile;
+    this.pieceChars = pieceChars;
     this.key = `${profile}\x00${text}`;
-    const split = markdownSplit(text, profile);
+    this.splitting = splitSteps(text, profile);
+  }
+  scan() {
+    const next = this.splitting.next();
+    if (!next.done)
+      return;
+    this.splitting = null;
+    const split = next.value;
     const starts = [{ at: 0, join: "block" }];
     let previous = null;
-    for (const cut of [...split.cuts, { at: text.length, join: "block" }]) {
-      if (cut.at - starts.at(-1).at > pieceChars && previous && previous.at > starts.at(-1).at)
+    for (const cut of [...split.cuts, { at: this.text.length, join: "block" }]) {
+      if (cut.at - starts.at(-1).at > this.pieceChars && previous && previous.at > starts.at(-1).at)
         starts.push(previous);
       previous = cut;
     }
@@ -1159,6 +1173,9 @@ class MarkdownParse {
   }
   get tree() {
     return this.result ?? cache.get(this.key) ?? null;
+  }
+  get scanning() {
+    return this.splitting !== null && !this.tree;
   }
   piece(i) {
     const cut = this.starts[i];
@@ -1169,13 +1186,13 @@ ${this.definitions}
 ` : ""}`;
   }
   get nextSize() {
-    if (this.tree)
+    if (this.tree || this.scanning)
       return 0;
     const i = this.trees.length;
     return (this.starts[i + 1]?.at ?? this.text.length) - this.starts[i].at;
   }
   get nextCost() {
-    if (this.tree)
+    if (this.tree || this.scanning)
       return 0;
     const i = this.trees.length;
     let cost = 0;
@@ -1199,6 +1216,10 @@ ${this.definitions}
     const done = this.tree;
     if (done)
       return done;
+    if (this.splitting) {
+      this.scan();
+      return null;
+    }
     const i = this.trees.length;
     const single = this.starts.length === 1;
     const piece = single ? this.text : this.piece(i);
@@ -1212,6 +1233,30 @@ ${this.definitions}
           pieces.delete(pieces.keys().next().value);
       }
     }
+    return this.add(tree);
+  }
+  skipPiece() {
+    const done = this.tree;
+    if (done || this.scanning)
+      return done;
+    const cut = this.starts[this.trees.length];
+    const prefix = cut.prefix ?? "";
+    const body = this.text.slice(cut.at, this.starts[this.trees.length + 1]?.at ?? this.text.length);
+    const value = body.trim();
+    const lead = body.slice(0, body.length - body.trimStart().length);
+    const lines = (s) => s.split(`
+`).length - 1;
+    const offset = prefix.length + lead.length;
+    const start = { line: 1 + lines(prefix + lead), column: lead.length - lead.lastIndexOf(`
+`), offset };
+    const end = { line: start.line + lines(value), column: value.includes(`
+`) ? value.length - value.lastIndexOf(`
+`) : start.column + value.length, offset: offset + value.length };
+    const position = { start, end };
+    const children = value ? [{ type: "element", tagName: "p", properties: {}, children: [{ type: "text", value, position }], position }] : [];
+    return this.add({ type: "root", children, position });
+  }
+  add(tree) {
     this.trees.push(tree);
     if (this.trees.length < this.starts.length)
       return null;
@@ -1285,7 +1330,6 @@ var REDRAW_MS2 = 250;
 var queues = new WeakMap;
 var running = new WeakMap;
 var failed = new Set;
-var oversize = new Set;
 var note = (set, key) => {
   set.add(key);
   if (set.size > 50)
@@ -1302,8 +1346,6 @@ function markdownTree(ctx, part, text, profile) {
   const mine = sites.get(site);
   if (mine?.key === key)
     return mine.tree;
-  if (oversize.has(key))
-    return null;
   const tree = readyMarkdown(text, profile) ?? (failed.has(key) || text.length <= SYNC_CHARS && ctx.renderTime < SYNC_MS ? parseMarkdown(text, profile) : null);
   if (tree) {
     queue?.delete(site);
@@ -1343,16 +1385,18 @@ async function drain(task, session, queue, sites) {
       running.set(session, Date.now());
       for (const [site, { parse, wake }] of queue) {
         let threw = false;
-        if (!parse.tree && parse.nextCost > MAX_STEP_COST) {
-          console.log(`[opengpui] markdown too long to parse in one step (${Math.round(parse.nextCost)}): drawn as text`);
-          note(oversize, parse.key);
-          queue.delete(site);
-          continue;
-        }
-        while (!parse.tree && (spent === 0 || spent + RUN_COST + parse.nextSize <= STEP_CHARS) && parse.nextCost <= MAX_STEP_COST) {
-          spent += RUN_COST + parse.nextSize;
+        while (!parse.tree) {
+          const oversize = !parse.scanning && parse.nextCost > MAX_STEP_COST;
+          const cost = parse.scanning ? STEP_CHARS : oversize ? RUN_COST : RUN_COST + parse.nextSize;
+          if (spent > 0 && spent + cost > STEP_CHARS)
+            break;
+          spent += cost;
           try {
-            parse.step();
+            if (oversize) {
+              console.log(`[opengpui] markdown block too long to parse in one step (${parse.nextSize} characters): drawn as text`);
+              parse.skipPiece();
+            } else
+              parse.step();
           } catch (e) {
             console.log(`[opengpui] markdown parse failed: ${e}`);
             note(failed, parse.key);
@@ -1366,9 +1410,6 @@ async function drain(task, session, queue, sites) {
         if (tree || threw) {
           queue.delete(site);
           ready.add(wake);
-        } else if (parse.nextCost > MAX_STEP_COST) {
-          note(oversize, parse.key);
-          queue.delete(site);
         }
         if (spent + RUN_COST > STEP_CHARS)
           break;
@@ -1386,19 +1427,19 @@ async function drain(task, session, queue, sites) {
 }
 
 // opengpui-shared:./src/upstream/timers.ts
-var m15 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["./src/upstream/timers.ts"];
+var m15 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["./src/upstream/timers.ts"];
 var e09 = m15["ogpuiClearInterval"];
 var e113 = m15["ogpuiSetInterval"];
 var e212 = m15["withScheduler"];
 
 // opengpui-shared:openui-icon-fallbacks
-var m16 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-icon-fallbacks"];
+var m16 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-icon-fallbacks"];
 var e010 = m16["categoryFallbacks"];
 var e114 = m16["defaultFallbackIconName"];
 var e213 = m16["getFallbackIconName"];
 
 // opengpui-shared:openui-icons
-var m17 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-icons"];
+var m17 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-icons"];
 var e011 = m17["dynamicIconImports"];
 var e115 = m17["getIconImport"];
 var e214 = m17["unwrapModuleDefault"];
@@ -1486,7 +1527,7 @@ function isElementNode(v) {
 }
 
 // opengpui-shared:openui-lucide-svgs
-var m18 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-lucide-svgs"];
+var m18 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-lucide-svgs"];
 var openui_lucide_svgs_default = m18.default;
 
 // src/render/lucide.ts
@@ -2726,14 +2767,14 @@ var Carousel = {
 import { div as div10 } from "gpui-kit";
 
 // opengpui-shared:openui-card-action-utils
-var m19 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-card-action-utils"];
+var m19 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-card-action-utils"];
 var e012 = m19["withItemContext"];
 
 // src/components/cards/layout.ts
 import { div as div9 } from "gpui-kit";
 
 // opengpui-shared:openui-card-layout-utils
-var m20 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-card-layout-utils"];
+var m20 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-card-layout-utils"];
 var e013 = m20["getRowConfiguration"];
 var e116 = m20["useCarouselMask"];
 
@@ -3351,6 +3392,8 @@ var MEASURE_TRIES = 4;
 var BLEED = 16;
 var ROW_CHARS = 12000;
 var MEASURE_ROWS = 25;
+var PROBE_CHARS = 6000;
+var TABLE_ROW_CHARS = 80;
 var WIDE_TEXT = "wide ".repeat(800);
 var treeRows = new WeakMap;
 var tableEstimates = new WeakMap;
@@ -3371,7 +3414,7 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
   if (!rows)
     treeRows.set(tree, rows = virtualRows(tree, profile));
   const pieces = rows;
-  const local = ctx.local({ measure: new Map, tree: null }, `${part}-virtual`);
+  const local = ctx.local({ measure: new Map, tree: null, width: 0, heights: new Map }, `${part}-virtual`);
   if (local.tree !== tree) {
     if (local.tree) {
       const keys = new Set(pieces.flatMap((r) => r.kind === "table" ? [r.key, r.part] : [r.key]));
@@ -3382,6 +3425,9 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
       for (const key of local.measure.keys())
         if (!keys.has(key))
           local.measure.delete(key);
+      for (const key of local.heights.keys())
+        if (!keys.has(key))
+          local.heights.delete(key);
     }
     local.tree = tree;
   }
@@ -3392,9 +3438,14 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
     if (tries < MEASURE_TRIES)
       ctx.wake();
   };
-  const draw = (k, fixed) => {
+  const draw = (k, fixed, provisional) => {
     const r = pieces[k];
-    const ask = fixed ? { unmeasured: () => askMeasure(r.key) } : null;
+    const ask = fixed ? {
+      unmeasured: () => {
+        provisional?.();
+        askMeasure(r.key);
+      }
+    } : null;
     if (rowChars(r) > ROW_CHARS) {
       const node = r.kind === "li" ? listItems(r.node)[r.index] : r.kind === "item" && r.item.kind === "block" ? r.item.node : null;
       const text = node ? textOf(node) : r.kind === "item" && r.item.kind === "inline" ? r.item.nodes.map(textOf).join("") : "";
@@ -3412,14 +3463,61 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
     return r.kind === "li" ? md.listRow(r.node, r.index, css) : md.item(r.item, css, TOP2).el;
   };
   const n = pieces.length;
+  const row = (k, provisional) => {
+    const gap = k > 0 ? Math.max(pieces[k - 1].margins.mb, pieces[k].margins.mt) : 0;
+    return textStyle(div7().w_full().flex().flex_col().pl(BLEED).text_color(color), body).when(gap > 0, (el) => el.pt(gap)).child(edge(draw(k, true, provisional), k, n));
+  };
+  const sizeOf = (k) => {
+    const r = pieces[k];
+    return r.kind === "table" ? (r.to - r.from) * TABLE_ROW_CHARS : rowChars(r);
+  };
+  const known = (key) => {
+    const m = local.heights.get(key);
+    return m !== undefined && Math.abs(m.w - local.width) < 0.5 ? m.h : null;
+  };
+  const wake = ctx.waker();
+  const probes = [];
+  let probed = 0;
+  if (local.width > 0) {
+    for (let k = 0;k < n && (probes.length === 0 || probed < PROBE_CHARS); k++) {
+      const key = pieces[k].key;
+      if (known(key) !== null)
+        continue;
+      probed += Math.max(sizeOf(k), 1);
+      let provisional = false;
+      const el = row(k, () => provisional = true);
+      if (provisional)
+        continue;
+      probes.push(div7().id(ctx.id(`${part}-probe-${key}`)).w_full().on_size_change((size) => {
+        local.heights.set(key, { w: size.width, h: size.height });
+        wake();
+      }).child(el));
+    }
+  }
+  let total = 2;
+  let measuredHeight = 0;
+  let measuredSize = 0;
+  const unknown = [];
+  for (let k = 0;k < n; k++) {
+    const h = known(pieces[k].key);
+    if (h === null)
+      unknown.push(k);
+    else {
+      total += h;
+      measuredHeight += h;
+      measuredSize += sizeOf(k);
+    }
+  }
+  const line = body.size * body.lineHeight;
+  const perChar = measuredSize > 0 ? measuredHeight / measuredSize : line / Math.max(local.width / (body.size * 0.5), 1);
+  for (const k of unknown)
+    total += Math.max(sizeOf(k) * perChar, line);
   const lazy = lazyRows(ctx, part, {
     count: n,
     key: (k) => pieces[k].key,
     left: BLEED,
-    row: (k) => {
-      const gap = k > 0 ? Math.max(pieces[k - 1].margins.mb, pieces[k].margins.mt) : 0;
-      return textStyle(div7().w_full().flex().flex_col().pl(BLEED).text_color(color), body).when(gap > 0, (row) => row.pt(gap)).child(edge(draw(k, true), k, n));
-    }
+    row: (k) => row(k),
+    contentHeight: local.width > 0 ? total : undefined
   });
   const measuring = [];
   if (local.measure.size) {
@@ -3432,7 +3530,12 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
       measuring.push(draw(k, false));
     }
   }
-  const region = div7().relative().flex_1().min_h(0).w_full().child(lazy[0]).when(measuring.length > 0, (el) => el.child(div7().absolute().top(0).left(0).w_full().h(0).overflow_hidden().child(div7().w_full().flex().flex_col().children(measuring)))).children(lazy.slice(1));
+  const region = div7().relative().flex_1().min_h(0).w_full().child(lazy[0]).when(measuring.length > 0, (el) => el.child(div7().absolute().top(0).left(0).w_full().h(0).overflow_hidden().child(div7().w_full().flex().flex_col().children(measuring)))).child(div7().absolute().top(0).left(-BLEED).right(0).h(0).overflow_hidden().child(div7().id(ctx.id(`${part}-probe-width`)).w_full().h(0).on_size_change((size) => {
+    if (Math.abs(size.width - local.width) < 0.5)
+      return;
+    local.width = size.width;
+    wake();
+  })).children(probes)).children(lazy.slice(1));
   return textStyle(div7().id(ctx.id(`${part}-virtual`)).w_full().self_stretch().h(ctx.viewportHeight ?? DEFAULT_VIEWPORT2).flex().flex_col().text_color(color), body).child(div7().w_full().h(0).overflow_hidden().child(WIDE_TEXT)).child(region);
 }
 function plainText(nodes) {
@@ -3891,7 +3994,7 @@ var CompositeCardItem = { render: () => null };
 import { div as div12 } from "gpui-kit";
 
 // opengpui-shared:openui-safe-url
-var m21 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-safe-url"];
+var m21 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-safe-url"];
 var e014 = m21["safeOpenUrl"];
 var e117 = m21["safeUrl"];
 var e215 = m21["toCssUrl"];
@@ -4347,7 +4450,7 @@ var VisualCardBlock = {
 };
 var VisualCardItem = { render: () => null };
 // opengpui-shared:d3-scale
-var m22 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["d3-scale"];
+var m22 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["d3-scale"];
 var e015 = m22["scaleBand"];
 var e118 = m22["scaleDiverging"];
 var e216 = m22["scaleDivergingLog"];
@@ -4378,7 +4481,7 @@ var e262 = m22["scaleUtc"];
 var e272 = m22["tickFormat"];
 
 // opengpui-shared:d3-shape
-var m23 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["d3-shape"];
+var m23 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["d3-shape"];
 var e016 = m23["arc"];
 var e120 = m23["area"];
 var e218 = m23["areaRadial"];
@@ -4448,12 +4551,12 @@ import { v_flex as v_flex2 } from "gpui-base";
 import { div as div21, PathBuilder as PathBuilder3 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/shared/cartesian/roundedBarPath
-var m24 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/shared/cartesian/roundedBarPath"];
+var m24 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/shared/cartesian/roundedBarPath"];
 var e017 = m24["MIN_BAR_WIDTH"];
 var e121 = m24["roundedBarPath"];
 
 // opengpui-shared:openui-charts/shared/cartesian/seriesGeometry
-var m25 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/shared/cartesian/seriesGeometry"];
+var m25 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/shared/cartesian/seriesGeometry"];
 var e018 = m25["AREA_STRIDE"];
 var e124 = m25["LINE_STRIDE"];
 var e220 = m25["buildAreaD"];
@@ -4462,22 +4565,22 @@ var e410 = m25["buildLineD"];
 var e510 = m25["seriesCurve"];
 
 // opengpui-shared:openui-charts/BarChart/parts/verticalBarRadii
-var m26 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/BarChart/parts/verticalBarRadii"];
+var m26 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/BarChart/parts/verticalBarRadii"];
 var e019 = m26["verticalBarRadii"];
 
 // opengpui-shared:openui-charts/hooks/cartesian/useStackedData
-var m27 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/hooks/cartesian/useStackedData"];
+var m27 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/hooks/cartesian/useStackedData"];
 var e020 = m27["stackOffsetDivergingZeroPreserving"];
 var e125 = m27["useStackedData"];
 
 // opengpui-shared:openui-charts/hooks/cartesian/useXBandScale
-var m28 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/hooks/cartesian/useXBandScale"];
+var m28 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/hooks/cartesian/useXBandScale"];
 var e021 = m28["BAND_PADDING_INNER"];
 var e126 = m28["BAND_PADDING_OUTER"];
 var e221 = m28["useXBandScale"];
 
 // opengpui-shared:openui-charts/utils/constants
-var m29 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/constants"];
+var m29 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/constants"];
 var e022 = m29["CHART_CLASS_PREFIX"];
 var e127 = m29["CHART_MARGIN_TOP"];
 var e224 = m29["DEFAULT_CHART_HEIGHT"];
@@ -4486,28 +4589,28 @@ var e411 = m29["SINGLE_LINE_BREAKPOINT"];
 var e511 = m29["resolveTickCount"];
 
 // opengpui-shared:openui-charts/utils/labelWrap
-var m30 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/labelWrap"];
+var m30 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/labelWrap"];
 var e023 = m30["MAX_LABEL_LINES"];
 var e128 = m30["parseLineHeight"];
 var e225 = m30["truncateToWidth"];
 var e316 = m30["wrapLabelLines"];
 
 // opengpui-shared:openui-charts/utils/mouseUtils
-var m31 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/mouseUtils"];
+var m31 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/mouseUtils"];
 var e024 = m31["findBandIndex"];
 var e129 = m31["findNearestDataIndex"];
 
 // opengpui-shared:openui-charts/utils/resolveShouldFitLegend
-var m32 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/resolveShouldFitLegend"];
+var m32 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/resolveShouldFitLegend"];
 var e025 = m32["resolveShouldFitLegend"];
 
 // opengpui-shared:openui-charts/utils/styleUtils
-var m33 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/styleUtils"];
+var m33 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/styleUtils"];
 var e026 = m33["measureYAxisWidth"];
 var e130 = m33["numberTickFormatter"];
 
 // opengpui-shared:openui-charts/utils/xAxisLabelLayout
-var m34 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/xAxisLabelLayout"];
+var m34 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/xAxisLabelLayout"];
 var e027 = m34["ANGLED_LABEL_ROTATION"];
 var e131 = m34["MAX_X_AXIS_HEIGHT_SHARE"];
 var e226 = m34["X_AXIS_TOP_GAP"];
@@ -4515,7 +4618,7 @@ var e317 = m34["fullLabelWidth"];
 var e413 = m34["layoutXAxisLabels"];
 
 // opengpui-shared:openui-charts/utils/yDomain
-var m35 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/yDomain"];
+var m35 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/yDomain"];
 var e028 = m35["computeYDomain"];
 
 // src/components/charts/axes.ts
@@ -4622,7 +4725,7 @@ import { h_flex as h_flex2, Popup, v_flex } from "gpui-base";
 import { div as div19 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/shared/core/PortalTooltip/utils
-var m36 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/shared/core/PortalTooltip/utils"];
+var m36 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/shared/core/PortalTooltip/utils"];
 var e029 = m36["tooltipNumberFormatter"];
 
 // src/components/charts/hover.ts
@@ -4812,20 +4915,20 @@ function chartTooltip(ctx, payload, hover, placement = "right-start") {
 var clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
 // opengpui-shared:openui-genui-helpers
-var m37 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-genui-helpers"];
+var m37 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-genui-helpers"];
 var e030 = m37["asArray"];
 var e134 = m37["buildChartData"];
 var e227 = m37["buildSliceData"];
 var e318 = m37["hasAllProps"];
 
 // opengpui-shared:openui-charts/utils/dataUtils
-var m38 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/dataUtils"];
+var m38 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/dataUtils"];
 var e031 = m38["get2dChartConfig"];
 var e135 = m38["getDataKeys"];
 var e228 = m38["getLegendItems"];
 
 // opengpui-shared:openui-charts/utils/paletteUtils
-var m39 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/paletteUtils"];
+var m39 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/paletteUtils"];
 var e032 = m39["DIVERGING_DEFAULT_DARK"];
 var e136 = m39["DIVERGING_DEFAULT_LIGHT"];
 var e229 = m39["OCEAN_DEFAULT"];
@@ -5388,7 +5491,7 @@ import { h_flex as h_flex3, v_flex as v_flex3 } from "gpui-base";
 import { div as div22, PathBuilder as PathBuilder4 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/BarChart/parts/horizontalBarGeometry
-var m40 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/BarChart/parts/horizontalBarGeometry"];
+var m40 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/BarChart/parts/horizontalBarGeometry"];
 var e033 = m40["BAR_GAP"];
 var e137 = m40["BAR_HEIGHT"];
 var e230 = m40["BAR_RADIUS"];
@@ -5568,7 +5671,7 @@ import { h_flex as h_flex5, v_flex as v_flex5 } from "gpui-base";
 import { div as div24 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/utils/polarUtils
-var m41 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/polarUtils"];
+var m41 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/polarUtils"];
 var e034 = m41["POLAR_HOVER_TRANSITION"];
 var e139 = m41["formatPercentage"];
 var e231 = m41["getSliceStyle"];
@@ -5581,7 +5684,7 @@ import { h_flex as h_flex4, v_flex as v_flex4 } from "gpui-base";
 import { div as div23 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/shared/core/StackedLegend/stackedLegendLayout
-var m42 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/shared/core/StackedLegend/stackedLegendLayout"];
+var m42 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/shared/core/StackedLegend/stackedLegendLayout"];
 var e035 = m42["LEGEND_ITEM_LIMIT"];
 var e140 = m42["SHOW_MORE_BREAKPOINT"];
 var e234 = m42["formatStackedValue"];
@@ -5889,7 +5992,7 @@ import { h_flex as h_flex7, v_flex as v_flex7 } from "gpui-base";
 import { div as div26, PathBuilder as PathBuilder6 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/utils/radarLabelLayout
-var m43 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/utils/radarLabelLayout"];
+var m43 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/radarLabelLayout"];
 var e036 = m43["MIN_RADAR_LABEL_BUDGET"];
 var e141 = m43["radarLabelLayout"];
 var e235 = m43["radarLabelPadding"];
@@ -6274,7 +6377,7 @@ import { v_flex as v_flex9 } from "gpui-base";
 import { div as div28 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/SegmentedBar/parts/segmentedBarGeometry
-var m44 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-charts/SegmentedBar/parts/segmentedBarGeometry"];
+var m44 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/SegmentedBar/parts/segmentedBarGeometry"];
 var e037 = m44["segmentShare"];
 var e145 = m44["segmentValue"];
 
@@ -6398,7 +6501,7 @@ import { Button as GButton, Checkbox, Radio, RadioGroup as GRadioGroup, Switch }
 import { div as div29, PathBuilder as PathBuilder9 } from "gpui-kit";
 
 // opengpui-shared:openui-selection-utils
-var m45 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-selection-utils"];
+var m45 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-selection-utils"];
 var e038 = m45["getStoredDefaultValue"];
 var e146 = m45["normalizeSelection"];
 var e236 = m45["toggleSelection"];
@@ -6639,7 +6742,7 @@ import { div as div31 } from "gpui-kit";
 import { div as div30 } from "gpui-kit";
 
 // opengpui-shared:date-fns
-var m46 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["date-fns"];
+var m46 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["date-fns"];
 var e039 = m46["add"];
 var e147 = m46["addBusinessDays"];
 var e237 = m46["addDays"];
@@ -6892,14 +6995,14 @@ var e248 = m46["yearsToMonths"];
 var e249 = m46["yearsToQuarters"];
 
 // opengpui-shared:openui-datepicker-helpers
-var m47 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-datepicker-helpers"];
+var m47 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-datepicker-helpers"];
 var e040 = m47["formatDateRange"];
 var e1100 = m47["formatSingleDate"];
 var e250 = m47["getMonthName"];
 var e326 = m47["getMonthNumber"];
 
 // opengpui-shared:openui-rdp/classes/index.js
-var m48 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/classes/index.js"];
+var m48 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/classes/index.js"];
 var e041 = m48["CalendarDay"];
 var e1101 = m48["CalendarMonth"];
 var e251 = m48["CalendarWeek"];
@@ -6909,51 +7012,51 @@ var e517 = m48["defaultDateLib"];
 var e610 = m48["defaultLocale"];
 
 // opengpui-shared:openui-rdp/helpers/createGetModifiers.js
-var m49 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/createGetModifiers.js"];
+var m49 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/createGetModifiers.js"];
 var e042 = m49["createGetModifiers"];
 
 // opengpui-shared:openui-rdp/helpers/calculateFocusTarget.js
-var m50 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/calculateFocusTarget.js"];
+var m50 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/calculateFocusTarget.js"];
 var e043 = m50["calculateFocusTarget"];
 
 // opengpui-shared:openui-rdp/helpers/getDates.js
-var m51 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getDates.js"];
+var m51 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getDates.js"];
 var e044 = m51["getDates"];
 
 // opengpui-shared:openui-rdp/helpers/getDisplayMonths.js
-var m52 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getDisplayMonths.js"];
+var m52 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getDisplayMonths.js"];
 var e045 = m52["getDisplayMonths"];
 
 // opengpui-shared:openui-rdp/helpers/getInitialMonth.js
-var m53 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getInitialMonth.js"];
+var m53 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getInitialMonth.js"];
 var e046 = m53["getInitialMonth"];
 
 // opengpui-shared:openui-rdp/helpers/getMonthOptions.js
-var m54 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getMonthOptions.js"];
+var m54 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getMonthOptions.js"];
 var e047 = m54["getMonthOptions"];
 
 // opengpui-shared:openui-rdp/helpers/getMonths.js
-var m55 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getMonths.js"];
+var m55 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getMonths.js"];
 var e048 = m55["getMonths"];
 
 // opengpui-shared:openui-rdp/helpers/getNavMonth.js
-var m56 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getNavMonth.js"];
+var m56 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getNavMonth.js"];
 var e049 = m56["getNavMonths"];
 
 // opengpui-shared:openui-rdp/helpers/getNextFocus.js
-var m57 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getNextFocus.js"];
+var m57 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getNextFocus.js"];
 var e050 = m57["getNextFocus"];
 
 // opengpui-shared:openui-rdp/helpers/getWeekdays.js
-var m58 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getWeekdays.js"];
+var m58 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getWeekdays.js"];
 var e051 = m58["getWeekdays"];
 
 // opengpui-shared:openui-rdp/helpers/getYearOptions.js
-var m59 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/helpers/getYearOptions.js"];
+var m59 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getYearOptions.js"];
 var e052 = m59["getYearOptions"];
 
 // opengpui-shared:openui-rdp/formatters/index.js
-var m60 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/formatters/index.js"];
+var m60 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/formatters/index.js"];
 var e053 = m60["formatCaption"];
 var e1103 = m60["formatDay"];
 var e255 = m60["formatMonthCaption"];
@@ -6965,11 +7068,11 @@ var e710 = m60["formatYearCaption"];
 var e810 = m60["formatYearDropdown"];
 
 // opengpui-shared:openui-rdp/utils/addToRange.js
-var m61 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/utils/addToRange.js"];
+var m61 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/utils/addToRange.js"];
 var e054 = m61["addToRange"];
 
 // opengpui-shared:openui-rdp/utils/rangeIncludesDate.js
-var m62 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-rdp/utils/rangeIncludesDate.js"];
+var m62 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/utils/rangeIncludesDate.js"];
 var e055 = m62["isDateInRange"];
 var e1104 = m62["rangeIncludesDate"];
 
@@ -8373,7 +8476,7 @@ var DiagramPart = {
 import { div as div35, PathBuilder as PathBuilder11 } from "gpui-kit";
 
 // opengpui-shared:zod
-var m63 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["zod"];
+var m63 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["zod"];
 var e056 = m63["$brand"];
 var e1105 = m63["$input"];
 var e256 = m63["$output"];
@@ -12194,7 +12297,7 @@ var components = {
   Task: TimelinePart
 };
 // opengpui-shared:openui-genui
-var m64 = globalThis[Symbol.for("opengpui shared 8350ece622c9d1de")]["openui-genui"];
+var m64 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-genui"];
 var e057 = m64["openuiAdditionalRules"];
 var e1107 = m64["openuiChatAdditionalRules"];
 var e259 = m64["openuiChatComponentGroups"];

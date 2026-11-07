@@ -134181,7 +134181,8 @@ function lazyRows(ctx, part, o) {
     if (!atEdge)
       cx.stop_propagation();
   }).child(rows);
-  return [wheel, import_gpui_base.Scrollbar.vertical(listId).absolute().inset_0()];
+  const bar = import_gpui_base.Scrollbar.vertical(listId).absolute().inset_0();
+  return [wheel, o.contentHeight === undefined ? bar : bar.scroll_size(0, o.contentHeight)];
 }
 function edge(el, k, count) {
   let out = el;
@@ -144895,7 +144896,8 @@ var markerKind = (line) => {
 var DELIMITER_ROW = /^ {0,3}\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*\r?$/;
 var cellCount = (line) => line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "").split(/(?<!\\)\|/).length;
 var DEFINITION = /^ {0,3}\[(?!\^)((?:[^\]\\\n]|\\.)+)\]:[ \t]*(?:<[^>\n]*>|\S+)(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^)\n]*\)))?[ \t]*\r?$/;
-function markdownSplit(text, profile) {
+var SPLIT_LINES = 250;
+function* splitSteps(text, profile) {
   const whole = { cuts: [], definitions: "" };
   if (/\r(?!\n)/.test(text))
     return whole;
@@ -144913,6 +144915,8 @@ function markdownSplit(text, profile) {
 `);
   let at = 0;
   for (let i = 0;i < lines.length; i++) {
+    if (i > 0 && i % SPLIT_LINES === 0)
+      yield;
     const line = lines[i];
     const start = at;
     at += line.length + 1;
@@ -145019,20 +145023,30 @@ var PIECE_CACHE_SIZE = 400;
 class MarkdownParse {
   text;
   profile;
+  pieceChars;
   key;
-  starts;
-  definitions;
+  splitting;
+  starts = [];
+  definitions = "";
   trees = [];
   result = null;
   constructor(text, profile, pieceChars = PIECE_CHARS) {
     this.text = text;
     this.profile = profile;
+    this.pieceChars = pieceChars;
     this.key = `${profile}\x00${text}`;
-    const split = markdownSplit(text, profile);
+    this.splitting = splitSteps(text, profile);
+  }
+  scan() {
+    const next = this.splitting.next();
+    if (!next.done)
+      return;
+    this.splitting = null;
+    const split = next.value;
     const starts = [{ at: 0, join: "block" }];
     let previous = null;
-    for (const cut of [...split.cuts, { at: text.length, join: "block" }]) {
-      if (cut.at - starts.at(-1).at > pieceChars && previous && previous.at > starts.at(-1).at)
+    for (const cut of [...split.cuts, { at: this.text.length, join: "block" }]) {
+      if (cut.at - starts.at(-1).at > this.pieceChars && previous && previous.at > starts.at(-1).at)
         starts.push(previous);
       previous = cut;
     }
@@ -145041,6 +145055,9 @@ class MarkdownParse {
   }
   get tree() {
     return this.result ?? cache.get(this.key) ?? null;
+  }
+  get scanning() {
+    return this.splitting !== null && !this.tree;
   }
   piece(i) {
     const cut = this.starts[i];
@@ -145051,13 +145068,13 @@ ${this.definitions}
 ` : ""}`;
   }
   get nextSize() {
-    if (this.tree)
+    if (this.tree || this.scanning)
       return 0;
     const i = this.trees.length;
     return (this.starts[i + 1]?.at ?? this.text.length) - this.starts[i].at;
   }
   get nextCost() {
-    if (this.tree)
+    if (this.tree || this.scanning)
       return 0;
     const i = this.trees.length;
     let cost = 0;
@@ -145081,6 +145098,10 @@ ${this.definitions}
     const done = this.tree;
     if (done)
       return done;
+    if (this.splitting) {
+      this.scan();
+      return null;
+    }
     const i = this.trees.length;
     const single = this.starts.length === 1;
     const piece = single ? this.text : this.piece(i);
@@ -145094,6 +145115,30 @@ ${this.definitions}
           pieces.delete(pieces.keys().next().value);
       }
     }
+    return this.add(tree);
+  }
+  skipPiece() {
+    const done = this.tree;
+    if (done || this.scanning)
+      return done;
+    const cut = this.starts[this.trees.length];
+    const prefix = cut.prefix ?? "";
+    const body = this.text.slice(cut.at, this.starts[this.trees.length + 1]?.at ?? this.text.length);
+    const value = body.trim();
+    const lead = body.slice(0, body.length - body.trimStart().length);
+    const lines = (s) => s.split(`
+`).length - 1;
+    const offset = prefix.length + lead.length;
+    const start = { line: 1 + lines(prefix + lead), column: lead.length - lead.lastIndexOf(`
+`), offset };
+    const end = { line: start.line + lines(value), column: value.includes(`
+`) ? value.length - value.lastIndexOf(`
+`) : start.column + value.length, offset: offset + value.length };
+    const position = { start, end };
+    const children = value ? [{ type: "element", tagName: "p", properties: {}, children: [{ type: "text", value, position }], position }] : [];
+    return this.add({ type: "root", children, position });
+  }
+  add(tree) {
     this.trees.push(tree);
     if (this.trees.length < this.starts.length)
       return null;
@@ -145167,7 +145212,6 @@ var REDRAW_MS2 = 250;
 var queues = new WeakMap;
 var running = new WeakMap;
 var failed = new Set;
-var oversize = new Set;
 var note = (set, key) => {
   set.add(key);
   if (set.size > 50)
@@ -145184,8 +145228,6 @@ function markdownTree(ctx, part, text, profile) {
   const mine = sites.get(site);
   if (mine?.key === key)
     return mine.tree;
-  if (oversize.has(key))
-    return null;
   const tree = readyMarkdown(text, profile) ?? (failed.has(key) || text.length <= SYNC_CHARS && ctx.renderTime < SYNC_MS ? parseMarkdown(text, profile) : null);
   if (tree) {
     queue?.delete(site);
@@ -145222,16 +145264,18 @@ async function drain(task, session, queue, sites) {
       running.set(session, Date.now());
       for (const [site, { parse, wake }] of queue) {
         let threw = false;
-        if (!parse.tree && parse.nextCost > MAX_STEP_COST) {
-          console.log(`[opengpui] markdown too long to parse in one step (${Math.round(parse.nextCost)}): drawn as text`);
-          note(oversize, parse.key);
-          queue.delete(site);
-          continue;
-        }
-        while (!parse.tree && (spent === 0 || spent + RUN_COST + parse.nextSize <= STEP_CHARS) && parse.nextCost <= MAX_STEP_COST) {
-          spent += RUN_COST + parse.nextSize;
+        while (!parse.tree) {
+          const oversize = !parse.scanning && parse.nextCost > MAX_STEP_COST;
+          const cost = parse.scanning ? STEP_CHARS : oversize ? RUN_COST : RUN_COST + parse.nextSize;
+          if (spent > 0 && spent + cost > STEP_CHARS)
+            break;
+          spent += cost;
           try {
-            parse.step();
+            if (oversize) {
+              console.log(`[opengpui] markdown block too long to parse in one step (${parse.nextSize} characters): drawn as text`);
+              parse.skipPiece();
+            } else
+              parse.step();
           } catch (e) {
             console.log(`[opengpui] markdown parse failed: ${e}`);
             note(failed, parse.key);
@@ -145245,9 +145289,6 @@ async function drain(task, session, queue, sites) {
         if (tree || threw) {
           queue.delete(site);
           ready.add(wake);
-        } else if (parse.nextCost > MAX_STEP_COST) {
-          note(oversize, parse.key);
-          queue.delete(site);
         }
         if (spent + RUN_COST > STEP_CHARS)
           break;
@@ -148144,6 +148185,8 @@ var MEASURE_TRIES = 4;
 var BLEED = 16;
 var ROW_CHARS = 12000;
 var MEASURE_ROWS = 25;
+var PROBE_CHARS = 6000;
+var TABLE_ROW_CHARS = 80;
 var WIDE_TEXT = "wide ".repeat(800);
 var treeRows = new WeakMap;
 var tableEstimates = new WeakMap;
@@ -148164,7 +148207,7 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
   if (!rows)
     treeRows.set(tree, rows = virtualRows(tree, profile));
   const pieces = rows;
-  const local = ctx.local({ measure: new Map, tree: null }, `${part}-virtual`);
+  const local = ctx.local({ measure: new Map, tree: null, width: 0, heights: new Map }, `${part}-virtual`);
   if (local.tree !== tree) {
     if (local.tree) {
       const keys = new Set(pieces.flatMap((r) => r.kind === "table" ? [r.key, r.part] : [r.key]));
@@ -148175,6 +148218,9 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
       for (const key of local.measure.keys())
         if (!keys.has(key))
           local.measure.delete(key);
+      for (const key of local.heights.keys())
+        if (!keys.has(key))
+          local.heights.delete(key);
     }
     local.tree = tree;
   }
@@ -148185,9 +148231,14 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
     if (tries < MEASURE_TRIES)
       ctx.wake();
   };
-  const draw = (k, fixed) => {
+  const draw = (k, fixed, provisional) => {
     const r = pieces[k];
-    const ask = fixed ? { unmeasured: () => askMeasure(r.key) } : null;
+    const ask = fixed ? {
+      unmeasured: () => {
+        provisional?.();
+        askMeasure(r.key);
+      }
+    } : null;
     if (rowChars(r) > ROW_CHARS) {
       const node = r.kind === "li" ? listItems(r.node)[r.index] : r.kind === "item" && r.item.kind === "block" ? r.item.node : null;
       const text = node ? textOf(node) : r.kind === "item" && r.item.kind === "inline" ? r.item.nodes.map(textOf).join("") : "";
@@ -148205,14 +148256,61 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
     return r.kind === "li" ? md.listRow(r.node, r.index, css) : md.item(r.item, css, TOP2).el;
   };
   const n = pieces.length;
+  const row = (k, provisional) => {
+    const gap = k > 0 ? Math.max(pieces[k - 1].margins.mb, pieces[k].margins.mt) : 0;
+    return textStyle(import_gpui_kit7.div().w_full().flex().flex_col().pl(BLEED).text_color(color), body).when(gap > 0, (el) => el.pt(gap)).child(edge(draw(k, true, provisional), k, n));
+  };
+  const sizeOf = (k) => {
+    const r = pieces[k];
+    return r.kind === "table" ? (r.to - r.from) * TABLE_ROW_CHARS : rowChars(r);
+  };
+  const known = (key) => {
+    const m = local.heights.get(key);
+    return m !== undefined && Math.abs(m.w - local.width) < 0.5 ? m.h : null;
+  };
+  const wake = ctx.waker();
+  const probes = [];
+  let probed = 0;
+  if (local.width > 0) {
+    for (let k = 0;k < n && (probes.length === 0 || probed < PROBE_CHARS); k++) {
+      const key = pieces[k].key;
+      if (known(key) !== null)
+        continue;
+      probed += Math.max(sizeOf(k), 1);
+      let provisional = false;
+      const el = row(k, () => provisional = true);
+      if (provisional)
+        continue;
+      probes.push(import_gpui_kit7.div().id(ctx.id(`${part}-probe-${key}`)).w_full().on_size_change((size) => {
+        local.heights.set(key, { w: size.width, h: size.height });
+        wake();
+      }).child(el));
+    }
+  }
+  let total = 2;
+  let measuredHeight = 0;
+  let measuredSize = 0;
+  const unknown = [];
+  for (let k = 0;k < n; k++) {
+    const h = known(pieces[k].key);
+    if (h === null)
+      unknown.push(k);
+    else {
+      total += h;
+      measuredHeight += h;
+      measuredSize += sizeOf(k);
+    }
+  }
+  const line = body.size * body.lineHeight;
+  const perChar = measuredSize > 0 ? measuredHeight / measuredSize : line / Math.max(local.width / (body.size * 0.5), 1);
+  for (const k of unknown)
+    total += Math.max(sizeOf(k) * perChar, line);
   const lazy = lazyRows(ctx, part, {
     count: n,
     key: (k) => pieces[k].key,
     left: BLEED,
-    row: (k) => {
-      const gap = k > 0 ? Math.max(pieces[k - 1].margins.mb, pieces[k].margins.mt) : 0;
-      return textStyle(import_gpui_kit7.div().w_full().flex().flex_col().pl(BLEED).text_color(color), body).when(gap > 0, (row) => row.pt(gap)).child(edge(draw(k, true), k, n));
-    }
+    row: (k) => row(k),
+    contentHeight: local.width > 0 ? total : undefined
   });
   const measuring = [];
   if (local.measure.size) {
@@ -148225,7 +148323,12 @@ function virtualBlock(ctx, part, tree, profile, body, color) {
       measuring.push(draw(k, false));
     }
   }
-  const region = import_gpui_kit7.div().relative().flex_1().min_h(0).w_full().child(lazy[0]).when(measuring.length > 0, (el) => el.child(import_gpui_kit7.div().absolute().top(0).left(0).w_full().h(0).overflow_hidden().child(import_gpui_kit7.div().w_full().flex().flex_col().children(measuring)))).children(lazy.slice(1));
+  const region = import_gpui_kit7.div().relative().flex_1().min_h(0).w_full().child(lazy[0]).when(measuring.length > 0, (el) => el.child(import_gpui_kit7.div().absolute().top(0).left(0).w_full().h(0).overflow_hidden().child(import_gpui_kit7.div().w_full().flex().flex_col().children(measuring)))).child(import_gpui_kit7.div().absolute().top(0).left(-BLEED).right(0).h(0).overflow_hidden().child(import_gpui_kit7.div().id(ctx.id(`${part}-probe-width`)).w_full().h(0).on_size_change((size) => {
+    if (Math.abs(size.width - local.width) < 0.5)
+      return;
+    local.width = size.width;
+    wake();
+  })).children(probes)).children(lazy.slice(1));
   return textStyle(import_gpui_kit7.div().id(ctx.id(`${part}-virtual`)).w_full().self_stretch().h(ctx.viewportHeight ?? DEFAULT_VIEWPORT2).flex().flex_col().text_color(color), body).child(import_gpui_kit7.div().w_full().h(0).overflow_hidden().child(WIDE_TEXT)).child(region);
 }
 function plainText(nodes) {
@@ -167224,6 +167327,10 @@ Options, given the same way to \`prompt\`, \`check\` and \`show\`:
    colors instead of Herdr's). Show once: afterwards just rewrite the file. Showing a
    file again closes its earlier pane and starts a new event log.
 
+Markdown with tables, strikethrough or task lists goes in \`TextContent\` (GitHub-flavored, as
+upstream's): \`MarkDownRenderer\` is plain CommonMark, so a pipe table there shows as a paragraph
+of \`|\` characters.
+
 ## 3. Get the answer
 
 A button sends an event: \`@ToAssistant("message", {context})\`, or a button
@@ -167507,7 +167614,7 @@ async function updateNotice(home, current, modFolder) {
 `);
 }
 // package.json
-var version3 = "0.2.1";
+var version3 = "0.2.2";
 
 // bin/opengpui.ts
 var USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's actions back
