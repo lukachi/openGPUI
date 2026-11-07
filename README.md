@@ -237,7 +237,9 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   grammars, which gpui-shell can't register at load: the first code block starts
   registering them in 40 ms slices of a task, and code shows unhighlighted until they
   are in (about 0.35 s in the headless harness). refractor's `reason` grammar can't be
-  registered under gpui-shell's frozen `Object.prototype` and is skipped.
+  registered under gpui-shell's frozen `Object.prototype` and is skipped. A link opens
+  only when it is an absolute http(s) address (`cx.open_url` throws for any other):
+  `mailto:`, relative and `ftp:` links draw as links but do nothing when clicked.
 - **Long markdown and long code:** a long block is a scroll region as tall as the
   pane's content area, with its own scrollbar; a long CodeBlock's box is as tall as
   its code or the pane, whichever is less. The wheel scrolls the region and, at its
@@ -249,7 +251,11 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   underlines; code blocks there have no copy button; a table draws equal columns
   until a hidden draw has measured it, and a long table measures its first 25 rows
   and estimates the rest from their text. A long fence or table is cut into groups
-  of rows, each of which scrolls sideways on its own.
+  of rows, each of which scrolls sideways on its own. gpui-kit's `list` splices all its
+  items when their count changes, which puts its scroll back at the top: a block that
+  grows while it streams starts over at its top with each chunk. The region's scrollbar
+  follows the rows measured so far, so its thumb is long and moves in small steps until
+  they are all in.
 - **Tables:** column widths come from measuring each cell, so a new page is drawn
   once with equal columns before they settle. The sideways scroll is the
   table's own offset (gpui-kit cannot scroll a div from code): wheel, trackpad
@@ -261,6 +267,9 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   scrolls sideways by its own offset. Number cells edit plain text (no
   `type="number"`), parsed on save as upstream. In an open select menu Enter picks the
   highlighted option (upstream loses the pick: React bubbles the Enter to the cell).
+  Tab and Shift-Tab reach a table only as actions it binds itself (the shell root binds
+  them to focus traversal, and a key binding runs before any key handler). A url cell
+  opens only absolute http(s) addresses (`cx.open_url` throws for any other).
 - **Tabs, Accordion, Carousel:** tab lists and carousels scroll by an offset they
   own (wheel, trackpad, chevrons/arrows), with no scrollbar, as upstream hides it.
   Tab triggers are gpui-base's native `Tab`, which hears no keys: no arrow-key roving.
@@ -272,9 +281,12 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   and doesn't flip above the field near the window's bottom; its scale/fade isn't
   animated. The month and year lists scroll by an offset they own. The grid takes
   one keyboard focus with a roving focused day (DayPicker's own key map) instead of
-  focusable day buttons. Two deliberate deviations: range ends given as strings are
-  read (upstream crashes on them), and re-picking the selected day clears what the
-  field shows as well as its value (upstream keeps showing the first pick).
+  focusable day buttons. Popover binds Enter and Space to its own toggle, and a key
+  binding runs before any key handler, so the grid binds the two keys itself in its own
+  key context to pick the focused day (EditableTable's date cell: Enter moves down
+  instead, as upstream's cell handler does). Two deliberate deviations: range ends given
+  as strings are read (upstream crashes on them), and re-picking the selected day clears
+  what the field shows as well as its value (upstream keeps showing the first pick).
 - **Select:** the menu opens below the trigger and never flips above it; its
   fade/scale and the chevron's turn aren't animated. The pointer row and the
   keyboard row are separate highlights (Radix moves focus to the row under the
