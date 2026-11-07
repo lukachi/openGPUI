@@ -25,15 +25,18 @@
 // IDLE_SETTLE_MS, which covers layout's own redraws (measuring). A build that reports
 // nothing is shot once the window has stopped changing for --settle ms instead.
 //
-// Herdr keeps every mod build it loads in its JS heap, so after a few builds a window
-// fails mod loads with "out of memory"; the window is therefore restarted every
-// RESTART_EVERY tabs, and when the appearance changes (it applies only at start).
+// Herdr keeps every mod load in its JS heap (256 MiB) until the window quits: a tab of
+// this build costs about 2 MiB, a build whose packages changed about 24 MiB more for its
+// shared.js (scripts/build.ts, bundleSplit). The window is therefore restarted every
+// RESTART_EVERY tabs (by that arithmetic, 8 × 26 MiB stays under the limit beside
+// Herdr's own mods; not measured in a window), and when the appearance changes (it
+// applies only at start).
 import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
-const RESTART_EVERY = 2;
+const RESTART_EVERY = 8;
 const SHOT_EVERY_MS = 250;
 const pokeApp = join(homedir(), "Applications", "OuiPoke.app");
 let nudgeAt: [number, number] | null | undefined;
@@ -134,7 +137,7 @@ try {
   }
   // Install this build as its own mod, asset paths rewritten as Herdr's mod.clone does.
   mkdirSync(to, { recursive: true });
-  cpSync(join(from, "mod.json"), join(to, "mod.json"));
+  for (const file of ["mod.json", "shared.js"]) cpSync(join(from, file), join(to, file));
   writeFileSync(join(to, "main.js"), readFileSync(join(from, "main.js"), "utf8").replaceAll("mods/opengpui/", `mods/${modName}/`));
   rmSync(join(to, "icons"), { recursive: true, force: true });
   cpSync(join(from, "icons"), join(to, "icons"), { recursive: true });

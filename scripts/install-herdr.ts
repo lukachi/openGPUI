@@ -15,7 +15,8 @@ const to = join(herdrHome, "mods", "opengpui");
 
 if (!existsSync(join(from, "main.js"))) throw new Error("herdr/mods/opengpui/main.js is missing: bun run build first");
 mkdirSync(to, { recursive: true });
-for (const file of ["mod.json", "main.js"]) cpSync(join(from, file), join(to, file));
+// shared.js before main.js: Herdr reloads on the first file event, and main.js checks its key.
+for (const file of ["mod.json", "shared.js", "main.js"]) cpSync(join(from, file), join(to, file));
 const hadFonts = existsSync(join(to, "fonts")) && readdirSync(join(to, "fonts")).some((f) => f.endsWith(".ttf"));
 const fontsChanged = !sameFiles(join(from, "fonts"), join(to, "fonts"));
 for (const dir of ["fonts", "icons"]) {

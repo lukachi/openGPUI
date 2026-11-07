@@ -33,6 +33,17 @@
 //                           settled (default 2500: the core's watchdogs restart
 //                           a stalled task about two seconds in)
 //     --json                print the harness's JSON lines as they are
+//     --heap                print the script heap after each file's load (QuickJS's own
+//                           count, after a full collection; tools/oui-harness/src/heap.rs)
+//     --shared-vm           load every file in one runtime, as Herdr runs every mod tab in one
+//                           VM: each file's window stays open like a tab, then all are closed
+//                           in order as Herdr closes a tab; prints the heap after each load
+//                           and each close. One process; implies --heap. Each measurement
+//                           collects garbage, which Herdr's engine keeps until its own GC
+//                           threshold (and counts against the limit): a run is optimistic
+//                           about running out; "before GC" is the honest number
+//     --repeat <n>          with --shared-vm, open the files n times over (shots of round 2
+//                           on get a -2, -3, … suffix)
 //
 // Prints per-file timings, then every action the session emitted and every
 // error, as the harness reported them (one JSON line each with --json).
@@ -86,16 +97,21 @@ const jobs = Number(option("--jobs") ?? 4);
 const quiet = option("--quiet");
 const spec = flag("--spec");
 const asJson = flag("--json");
+const sharedVm = flag("--shared-vm");
+const heap = flag("--heap") || sharedVm;
+const repeat = Number(option("--repeat") ?? 1);
 const files = args.map((f) => resolve(f));
 if (
   !files.length ||
   args.some((a) => a.startsWith("--")) ||
   modes.some((m) => !["light", "dark"].includes(m)) ||
   !["openui", "chat"].includes(library) ||
-  !(width > 0 && height > 0 && jobs > 0 && (quiet == null || Number(quiet) >= 0))
+  !(width > 0 && height > 0 && jobs > 0 && (quiet == null || Number(quiet) >= 0)) ||
+  !(Number.isInteger(repeat) && repeat >= 1 && (repeat === 1 || sharedVm))
 ) {
   console.error("usage: bun scripts/shot.ts <file.oui>... [--mode light,dark] [--library openui|chat] [--width 1280] [--height 820]");
   console.error("                          [--steps steps.json] [--out dir] [--spec] [--jobs 4] [--quiet 2500] [--json]");
+  console.error("                          [--heap] [--shared-vm [--repeat n]]");
   process.exit(2);
 }
 const steps: Step[] = stepsPath
@@ -123,18 +139,20 @@ const built = Date.now() - began;
 mkdirSync(outDir, { recursive: true });
 const scratch = mkdtempSync(join(tmpdir(), "oui-harness-"));
 
-const items = modes.flatMap((mode) =>
-  files.map((src, i) => {
-    const stem = `${stems[i]}-${mode}`;
-    return {
-      src,
-      mode,
-      library,
-      ...(spec ? { spec: join(outDir, `${stem}.spec.txt`) } : {}),
-      steps: [{ shot: join(outDir, `${stem}.png`) }, ...steps.map((s) => ("shot" in s ? { shot: join(outDir, `${stem}-${s.shot}.png`) } : s))],
-    };
-  }),
-);
+const items = Array.from({ length: repeat }, (_, round) =>
+  modes.flatMap((mode) =>
+    files.map((src, i) => {
+      const stem = `${stems[i]}-${mode}${round ? `-${round + 1}` : ""}`;
+      return {
+        src,
+        mode,
+        library,
+        ...(spec ? { spec: join(outDir, `${stem}.spec.txt`) } : {}),
+        steps: [{ shot: join(outDir, `${stem}.png`) }, ...steps.map((s) => ("shot" in s ? { shot: join(outDir, `${stem}-${s.shot}.png`) } : s))],
+      };
+    }),
+  ),
+).flat();
 
 interface Line {
   type: string;
@@ -143,8 +161,29 @@ interface Line {
   [key: string]: unknown;
 }
 
+/** A "heap" line (tools/oui-harness/src/heap.rs), in MiB. */
+interface HeapLine extends Line {
+  type: "heap";
+  after: string;
+  tabs: number;
+  liveMiB: number;
+  mallocMiB: number;
+  limitMiB: number;
+  functions: { MiB: number; codeMiB: number };
+  strings: { MiB: number };
+  objects: { MiB: number };
+  properties: { MiB: number };
+  shapes: { MiB: number };
+  atoms: { MiB: number };
+}
+
+// The harness writes every heap line whole; its type is the one field to check.
+function isHeap(line: Line): line is HeapLine {
+  return line.type === "heap";
+}
+
 const lines: Line[] = [];
-const processes = Math.min(jobs, items.length);
+const processes = sharedVm ? 1 : Math.min(jobs, items.length);
 const outcomes = await Promise.all(
   Array.from({ length: processes }, async (_, p) => {
     const job = {
@@ -154,6 +193,8 @@ const outcomes = await Promise.all(
       height,
       scratch,
       ...(quiet != null ? { quietMs: Number(quiet) } : {}),
+      sharedVm,
+      heap,
       items: items.filter((_, i) => i % processes === p),
     };
     const jobPath = join(scratch, `job-${p}.json`);
@@ -188,6 +229,14 @@ if (asJson) {
   for (const l of lines.filter((l) => l.type === "shot")) console.log(`shot   ${rel(l.path)} (${l.ms} ms)`);
   for (const l of lines.filter((l) => l.type === "spec")) console.log(`spec   ${rel(l.path)}`);
   for (const l of lines.filter((l) => l.type === "step")) console.log(`step   ${rel(l.src)} ${l.mode}: ${l.step} (${l.ms} ms${l.timedOut ? ", NOT SETTLED" : ""})`);
+  // The heap in the order it was measured: after each load (and failed load), then each close.
+  for (const l of lines.filter(isHeap)) {
+    console.log(
+      `heap   ${l.after.padEnd(6)} ${String(l.tabs).padStart(3)} tabs  live ${l.liveMiB} MiB (before GC ${l.mallocMiB}, limit ${l.limitMiB})` +
+        `  functions ${l.functions.MiB} (code ${l.functions.codeMiB})  strings ${l.strings.MiB}  objects ${l.objects.MiB}` +
+        `  properties ${l.properties.MiB}  shapes ${l.shapes.MiB}  atoms ${l.atoms.MiB}  ${rel(l.src)}`,
+    );
+  }
   // A warning repeats once per render that triggers it: each distinct line once per file and mode.
   const seen = new Set<string>();
   for (const l of lines.filter((l) => ["action", "clipboard", "errors", "error", "log", "fatal", "message", "stderr"].includes(l.type))) {

@@ -22,6 +22,8 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
+# Only to read the script heap (src/heap.rs): the QuickJS gpui-shell links.
+rquickjs-sys = { package = "quickjs-jit-sys", version = "=0.12.11", git = "https://github.com/longbridge/quickjs-jit", rev = "96593cd7a54440ac060a391b8baea7e9a3cf1393" }
 
 [patch.crates-io]
 gpui-pre = { git = "https://github.com/herdrdev/herdr-app", tag = "v0.1.13" }

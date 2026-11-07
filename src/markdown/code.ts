@@ -28,17 +28,17 @@
 // handlers, a block has no hover state and no copy button.
 import type { ElementContent, RootContent } from "hast";
 import { div, type Color, type Context, type Element } from "gpui-kit";
-import { syntaxes } from "opengpui-prism-all";
 import oneLight from "react-syntax-highlighter/dist/esm/styles/prism/one-light.js";
 import vscDarkPlus from "react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js";
-import { refractor } from "refractor/core";
 import { iconButton } from "../components/buttons.ts";
 import type { RenderContext } from "../render/surface.ts";
 import { cssColor } from "../render/tokens.ts";
 import { CODE_GROUP_CHARS, CODE_GROUP_LINES, lineGroups } from "./blocks.ts";
+import { grammars } from "./grammars.ts";
 import { edge, lazyRows } from "./lazy.ts";
 
-let registered = 0;
+const { refractor, syntaxes } = grammars;
+
 /** How long one resume of the warming task registers grammars before it yields (a resume is interrupted at a few hundred ms). */
 const WARM_SLICE_MS = 40;
 
@@ -48,8 +48,6 @@ type Spawned = Parameters<Parameters<Context["spawn"]>[0]>[0];
 const warming = new WeakMap<RenderContext["session"], number>();
 /** The views waiting for the grammars, per session: each redraws once they are all in. */
 const warmWaiting = new WeakMap<RenderContext["session"], Map<object, () => void>>();
-/** The grammar the last registration started on: if a task starts there again, that one was killed. */
-let attempted = -1;
 
 /** Redraw the views of `session` waiting for the grammars. */
 function wakeWarmWaiting(session: RenderContext["session"]): void {
@@ -61,27 +59,28 @@ function wakeWarmWaiting(session: RenderContext["session"]): void {
 
 /**
  * Register refractor/all's next grammars, in its order, WARM_SLICE_MS per resume, until all are in;
- * then redraw the views waiting. Every session's task takes part through the shared count, so
- * a session that closes doesn't strand the others. gpui-shell interrupts a resume that runs too
- * long and the task dies with it: a grammar whose registration was interrupted (`tsx`, which
- * clones two large grammars, was in the engine) is skipped by the next task.
+ * then redraw the views waiting. Every session's task takes part through the shared count (one per
+ * engine: markdown/grammars.ts), so a session that closes doesn't strand the others. gpui-shell
+ * interrupts a resume that runs too long and the task dies with it: a grammar whose registration
+ * was interrupted (`tsx`, which clones two large grammars, was in the engine) is skipped by the
+ * next task, and with the count shared, for the rest of the engine's life (its code draws plain).
  */
 async function warm(task: Spawned, session: RenderContext["session"]): Promise<void> {
   let slice = Date.now();
-  while (registered < syntaxes.length) {
+  while (grammars.registered < syntaxes.length) {
     warming.set(session, Date.now());
-    if (attempted === registered) {
+    if (grammars.attempted === grammars.registered) {
       console.log(`[opengpui] registering a grammar was interrupted; skipping it`);
-      registered++;
+      grammars.registered++;
       continue;
     }
-    attempted = registered;
+    grammars.attempted = grammars.registered;
     try {
-      refractor.register(syntaxes[registered]!);
+      refractor.register(syntaxes[grammars.registered]!);
     } catch (e) {
-      console.log(`[opengpui] grammar ${registered} can't be registered here, skipping it: ${e}`);
+      console.log(`[opengpui] grammar ${grammars.registered} can't be registered here, skipping it: ${e}`);
     }
-    registered++;
+    grammars.registered++;
     if (Date.now() - slice >= WARM_SLICE_MS) {
       await task.sleep(16);
       slice = Date.now();
@@ -119,7 +118,7 @@ function ensureWarm(ctx: RenderContext): void {
   });
 }
 
-const highlightingReady = () => registered === syntaxes.length;
+const highlightingReady = () => grammars.registered === syntaxes.length;
 
 /** True while code of `session` waits for grammars or for its highlighting task: it draws plain until then. */
 export function highlightPending(session: RenderContext["session"]): boolean {
