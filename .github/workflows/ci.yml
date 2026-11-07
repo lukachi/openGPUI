@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    env:
+      # The Herdr the mod is built and checked against (tools/harness/host/Cargo.toml pins the same).
+      HERDR_VERSION: "0.1.13"
+      HERDR_SHA256: 77b0be72a46ca14bb367365a04164641f914b3a69712bac391d39c56a959bef4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      # fontTools for the Inter cuts (scripts/sync.ts).
+      - uses: astral-sh/setup-uv@v6
+
+      # The oldest Node the CLI supports: the contract tests run it.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # herdr-app: `types` writes the gpui-kit/herdr declarations, `check` loads the mod.
+      - name: Herdr
+        run: |
+          curl -fsSL "https://releases.herdr.dev/app/$HERDR_VERSION/herdr-app-linux-x86_64.tar.gz" -o "$RUNNER_TEMP/herdr.tgz"
+          echo "$HERDR_SHA256  $RUNNER_TEMP/herdr.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/herdr.tgz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/herdr-app" >> "$GITHUB_PATH"
+
+      - uses: actions/cache@v4
+        with:
+          path: .upstream
+          key: upstream-${{ hashFiles('upstream.json', 'src/render/fonts.ts', 'scripts/sync.ts') }}
+
+      - run: bun install --frozen-lockfile
+      - run: bun run sync
+      - run: bun run check
+      - run: bun test
