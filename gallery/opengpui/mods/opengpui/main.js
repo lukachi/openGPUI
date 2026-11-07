@@ -28,12 +28,12 @@ __export(exports_formatters, {
 });
 
 // opengpui-shared-loader:opengpui-shared-loader
-var ready = Symbol.for("opengpui shared ef234433d9c1b860");
-var loading = Symbol.for("opengpui shared ef234433d9c1b860" + " loading");
+var ready = Symbol.for("opengpui shared 160c5dd588f20b26");
+var loading = Symbol.for("opengpui shared 160c5dd588f20b26" + " loading");
 if (!globalThis[ready]) {
   const file = "./shared.js";
   globalThis[loading] ??= import(file).then((shared) => {
-    if (shared.key !== "opengpui shared ef234433d9c1b860")
+    if (shared.key !== "opengpui shared 160c5dd588f20b26")
       throw new Error("shared.js is not the one this main.js was built with: " + shared.key);
     return shared;
   }).catch((error) => {
@@ -45,13 +45,13 @@ if (!globalThis[ready]) {
 
 // herdr/src/main.ts
 import { h_flex as h_flex8, v_flex as v_flex10 } from "gpui-base";
-import { div as div42, View as View2 } from "gpui-kit";
-import { mkdir as mkdir3, writeFile as writeFile3 } from "fs/promises";
-import { appHome as appHome3, exec as exec2, hc, home as home2, props, readTextFile, watchFolder, window as herdrWindow } from "herdr";
-import { dirname, join as join4 } from "path";
+import { div as div46, View as View2 } from "gpui-kit";
+import { mkdir as mkdir4, writeFile as writeFile4 } from "fs/promises";
+import { appHome as appHome4, exec as exec3, hc, home as home2, props, readTextFile, watchFolder, window as herdrWindow } from "herdr";
+import { dirname, join as join5 } from "path";
 
 // opengpui-shared:@openuidev/lang-core
-var m = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["@openuidev/lang-core"];
+var m = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["@openuidev/lang-core"];
 var e0 = m["ACTION_STEPS"];
 var e1 = m["BuiltinActionType"];
 var e2 = m["McpToolError"];
@@ -111,15 +111,15 @@ import {
 import { div as div2 } from "gpui-kit";
 
 // opengpui-shared:react-syntax-highlighter/dist/esm/styles/prism/one-light.js
-var m2 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["react-syntax-highlighter/dist/esm/styles/prism/one-light.js"];
+var m2 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["react-syntax-highlighter/dist/esm/styles/prism/one-light.js"];
 var one_light_default = m2.default;
 
 // opengpui-shared:react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js
-var m3 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js"];
+var m3 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js"];
 var vsc_dark_plus_default = m3.default;
 
 // opengpui-shared:openui-theme
-var m4 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-theme"];
+var m4 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-theme"];
 var e02 = m4["defaultDarkTheme"];
 var e110 = m4["defaultLightTheme"];
 
@@ -509,7 +509,7 @@ function rowChars(row) {
 }
 
 // opengpui-shared:./src/markdown/grammars.ts
-var m5 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["./src/markdown/grammars.ts"];
+var m5 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["./src/markdown/grammars.ts"];
 var e03 = m5["grammars"];
 
 // src/markdown/lazy.ts
@@ -890,42 +890,42 @@ function codeBlock(ctx, part, code, language, inheritedSize, options = {}) {
 }
 
 // opengpui-shared:html-url-attributes
-var m6 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["html-url-attributes"];
+var m6 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["html-url-attributes"];
 var e04 = m6["urlAttributes"];
 
 // opengpui-shared:openui-remark-citations
-var m7 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-remark-citations"];
+var m7 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-remark-citations"];
 var e05 = m7["remarkCitations"];
 
 // opengpui-shared:remark-breaks
-var m8 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["remark-breaks"];
+var m8 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-breaks"];
 var remark_breaks_default = m8.default;
 
 // opengpui-shared:remark-gfm
-var m9 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["remark-gfm"];
+var m9 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-gfm"];
 var remark_gfm_default = m9.default;
 
 // opengpui-shared:remark-math
-var m10 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["remark-math"];
+var m10 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-math"];
 var remark_math_default = m10.default;
 
 // opengpui-shared:remark-parse
-var m11 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["remark-parse"];
+var m11 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-parse"];
 var remark_parse_default = m11.default;
 
 // opengpui-shared:remark-rehype
-var m12 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["remark-rehype"];
+var m12 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["remark-rehype"];
 var e06 = m12["defaultFootnoteBackContent"];
 var e111 = m12["defaultFootnoteBackLabel"];
 var e210 = m12["defaultHandlers"];
 var remark_rehype_default = m12.default;
 
 // opengpui-shared:unified
-var m13 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["unified"];
+var m13 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["unified"];
 var e07 = m13["unified"];
 
 // opengpui-shared:unist-util-visit
-var m14 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["unist-util-visit"];
+var m14 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["unist-util-visit"];
 var e08 = m14["CONTINUE"];
 var e112 = m14["EXIT"];
 var e211 = m14["SKIP"];
@@ -1386,19 +1386,19 @@ async function drain(task, session, queue, sites) {
 }
 
 // opengpui-shared:./src/upstream/timers.ts
-var m15 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["./src/upstream/timers.ts"];
+var m15 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["./src/upstream/timers.ts"];
 var e09 = m15["ogpuiClearInterval"];
 var e113 = m15["ogpuiSetInterval"];
 var e212 = m15["withScheduler"];
 
 // opengpui-shared:openui-icon-fallbacks
-var m16 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-icon-fallbacks"];
+var m16 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-icon-fallbacks"];
 var e010 = m16["categoryFallbacks"];
 var e114 = m16["defaultFallbackIconName"];
 var e213 = m16["getFallbackIconName"];
 
 // opengpui-shared:openui-icons
-var m17 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-icons"];
+var m17 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-icons"];
 var e011 = m17["dynamicIconImports"];
 var e115 = m17["getIconImport"];
 var e214 = m17["unwrapModuleDefault"];
@@ -1486,7 +1486,7 @@ function isElementNode(v) {
 }
 
 // opengpui-shared:openui-lucide-svgs
-var m18 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-lucide-svgs"];
+var m18 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-lucide-svgs"];
 var openui_lucide_svgs_default = m18.default;
 
 // src/render/lucide.ts
@@ -1511,6 +1511,8 @@ function optional(el) {
 }
 var STABLE_MS = 150;
 var WAITING = { status: "loading" };
+var LAYOUT_WAITING = { status: "loading" };
+var LAYOUT_VERSION = 1;
 var DEFERRED_MS = 150;
 var TICK_MS = 16;
 
@@ -1555,6 +1557,28 @@ class ViewRecord {
     this.scope = scope;
   }
 }
+function canonicalJson(value) {
+  if (Array.isArray(value))
+    return `[${value.map((v) => v === undefined ? "null" : canonicalJson(v)).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value).filter(([, v]) => v !== undefined).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+function layoutKey(graph) {
+  const text = `${LAYOUT_VERSION}:${canonicalJson(graph)}`;
+  let hi = 3421674724;
+  let lo = 2216829733;
+  for (let i = 0;i < text.length; i++) {
+    lo ^= text.charCodeAt(i);
+    const low = (lo >>> 0) * 435;
+    const carry = Math.floor(low / 4294967296);
+    hi = (hi >>> 0) * 435 + carry + (lo << 8 >>> 0) >>> 0;
+    lo = low >>> 0;
+  }
+  return (hi >>> 0).toString(16).padStart(8, "0") + (lo >>> 0).toString(16).padStart(8, "0");
+}
 var records = new Map;
 
 class RecordView extends View {
@@ -1579,6 +1603,9 @@ class Surface {
   imageLoader;
   images = new Map;
   imagesWaiting = new Map;
+  layouter;
+  layouts = new Map;
+  layoutsWaiting = new Map;
   retainedEntries = new Map;
   deferred = [];
   local = new Map;
@@ -1603,6 +1630,7 @@ class Surface {
     this.tokens = options.tokens ?? resolveTokens("light");
     this.iconWriter = options.icons ?? null;
     this.imageLoader = options.images ?? null;
+    this.layouter = options.layout ?? null;
   }
   setTokens(tokens) {
     if (tokens === this.tokens || sameValue(tokens, this.tokens))
@@ -1756,6 +1784,12 @@ class Surface {
     for (const src of this.imagesWaiting.keys())
       if (!seen.has(src))
         this.imagesWaiting.delete(src);
+    for (const key of this.layouts.keys())
+      if (!seen.has(`layout:${key}`))
+        this.layouts.delete(key);
+    for (const key of this.layoutsWaiting.keys())
+      if (!seen.has(`layout:${key}`))
+        this.layoutsWaiting.delete(key);
     let top = null;
     for (const rec of this.overlays())
       if (rec.shown && rec.focus)
@@ -1819,6 +1853,12 @@ class Surface {
       if (state.status === "loading")
         return true;
     for (const waiting of this.imagesWaiting.values())
+      if (!waiting.settled)
+        return true;
+    for (const state of this.layouts.values())
+      if (state.status === "loading")
+        return true;
+    for (const waiting of this.layoutsWaiting.values())
       if (!waiting.settled)
         return true;
     return markdownPending(this.session) || highlightPending(this.session) || this.session.isQueryLoading;
@@ -2255,6 +2295,55 @@ class RenderContext {
     });
     return loading;
   }
+  layout(graph) {
+    const surface = this.surface;
+    const key = layoutKey(graph);
+    const asked = `layout:${key}`;
+    this.view.images.add(asked);
+    const known = surface.layouts.get(key);
+    if (known)
+      return known;
+    const layouter = surface.layouter;
+    if (!layouter) {
+      const failed = { status: "failed", error: "the host lays out no diagrams" };
+      surface.layouts.set(key, failed);
+      return failed;
+    }
+    const session = this.session;
+    if (session.isStreaming) {
+      const revision = this.track(() => session.revision, session.revision);
+      const waiting = surface.layoutsWaiting.get(key);
+      if (!waiting) {
+        const entry = { revision, settled: false };
+        surface.layoutsWaiting.set(key, entry);
+        this.after((cx) => cx.timer.after(STABLE_MS, () => {
+          entry.settled = true;
+          surface.imageChanged(asked);
+        }));
+        return LAYOUT_WAITING;
+      }
+      if (waiting.revision === revision && !waiting.settled)
+        return LAYOUT_WAITING;
+    }
+    surface.layoutsWaiting.delete(key);
+    const loading = { status: "loading" };
+    surface.layouts.set(key, loading);
+    this.after((cx) => {
+      cx.spawn(async () => {
+        let next;
+        try {
+          next = { status: "ready", layout: await layouter(graph) };
+        } catch (e) {
+          next = { status: "failed", error: e instanceof Error ? e.message : String(e) };
+        }
+        if (surface.layouts.get(key) !== loading)
+          return;
+        surface.layouts.set(key, next);
+        surface.imageChanged(asked);
+      });
+    });
+    return loading;
+  }
   overlay(part, draw) {
     const { rec } = this.surface.mount(this, "overlay", `${this.key}#overlay:${part}`, this.scope);
     rec.overlayDraw = draw;
@@ -2637,14 +2726,14 @@ var Carousel = {
 import { div as div10 } from "gpui-kit";
 
 // opengpui-shared:openui-card-action-utils
-var m19 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-card-action-utils"];
+var m19 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-card-action-utils"];
 var e012 = m19["withItemContext"];
 
 // src/components/cards/layout.ts
 import { div as div9 } from "gpui-kit";
 
 // opengpui-shared:openui-card-layout-utils
-var m20 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-card-layout-utils"];
+var m20 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-card-layout-utils"];
 var e013 = m20["getRowConfiguration"];
 var e116 = m20["useCarouselMask"];
 
@@ -3802,7 +3891,7 @@ var CompositeCardItem = { render: () => null };
 import { div as div12 } from "gpui-kit";
 
 // opengpui-shared:openui-safe-url
-var m21 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-safe-url"];
+var m21 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-safe-url"];
 var e014 = m21["safeOpenUrl"];
 var e117 = m21["safeUrl"];
 var e215 = m21["toCssUrl"];
@@ -4258,7 +4347,7 @@ var VisualCardBlock = {
 };
 var VisualCardItem = { render: () => null };
 // opengpui-shared:d3-scale
-var m22 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["d3-scale"];
+var m22 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["d3-scale"];
 var e015 = m22["scaleBand"];
 var e118 = m22["scaleDiverging"];
 var e216 = m22["scaleDivergingLog"];
@@ -4289,7 +4378,7 @@ var e262 = m22["scaleUtc"];
 var e272 = m22["tickFormat"];
 
 // opengpui-shared:d3-shape
-var m23 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["d3-shape"];
+var m23 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["d3-shape"];
 var e016 = m23["arc"];
 var e120 = m23["area"];
 var e218 = m23["areaRadial"];
@@ -4359,12 +4448,12 @@ import { v_flex as v_flex2 } from "gpui-base";
 import { div as div21, PathBuilder as PathBuilder3 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/shared/cartesian/roundedBarPath
-var m24 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/shared/cartesian/roundedBarPath"];
+var m24 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/shared/cartesian/roundedBarPath"];
 var e017 = m24["MIN_BAR_WIDTH"];
 var e121 = m24["roundedBarPath"];
 
 // opengpui-shared:openui-charts/shared/cartesian/seriesGeometry
-var m25 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/shared/cartesian/seriesGeometry"];
+var m25 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/shared/cartesian/seriesGeometry"];
 var e018 = m25["AREA_STRIDE"];
 var e124 = m25["LINE_STRIDE"];
 var e220 = m25["buildAreaD"];
@@ -4373,22 +4462,22 @@ var e410 = m25["buildLineD"];
 var e510 = m25["seriesCurve"];
 
 // opengpui-shared:openui-charts/BarChart/parts/verticalBarRadii
-var m26 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/BarChart/parts/verticalBarRadii"];
+var m26 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/BarChart/parts/verticalBarRadii"];
 var e019 = m26["verticalBarRadii"];
 
 // opengpui-shared:openui-charts/hooks/cartesian/useStackedData
-var m27 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/hooks/cartesian/useStackedData"];
+var m27 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/hooks/cartesian/useStackedData"];
 var e020 = m27["stackOffsetDivergingZeroPreserving"];
 var e125 = m27["useStackedData"];
 
 // opengpui-shared:openui-charts/hooks/cartesian/useXBandScale
-var m28 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/hooks/cartesian/useXBandScale"];
+var m28 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/hooks/cartesian/useXBandScale"];
 var e021 = m28["BAND_PADDING_INNER"];
 var e126 = m28["BAND_PADDING_OUTER"];
 var e221 = m28["useXBandScale"];
 
 // opengpui-shared:openui-charts/utils/constants
-var m29 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/constants"];
+var m29 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/constants"];
 var e022 = m29["CHART_CLASS_PREFIX"];
 var e127 = m29["CHART_MARGIN_TOP"];
 var e224 = m29["DEFAULT_CHART_HEIGHT"];
@@ -4397,28 +4486,28 @@ var e411 = m29["SINGLE_LINE_BREAKPOINT"];
 var e511 = m29["resolveTickCount"];
 
 // opengpui-shared:openui-charts/utils/labelWrap
-var m30 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/labelWrap"];
+var m30 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/labelWrap"];
 var e023 = m30["MAX_LABEL_LINES"];
 var e128 = m30["parseLineHeight"];
 var e225 = m30["truncateToWidth"];
 var e316 = m30["wrapLabelLines"];
 
 // opengpui-shared:openui-charts/utils/mouseUtils
-var m31 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/mouseUtils"];
+var m31 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/mouseUtils"];
 var e024 = m31["findBandIndex"];
 var e129 = m31["findNearestDataIndex"];
 
 // opengpui-shared:openui-charts/utils/resolveShouldFitLegend
-var m32 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/resolveShouldFitLegend"];
+var m32 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/resolveShouldFitLegend"];
 var e025 = m32["resolveShouldFitLegend"];
 
 // opengpui-shared:openui-charts/utils/styleUtils
-var m33 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/styleUtils"];
+var m33 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/styleUtils"];
 var e026 = m33["measureYAxisWidth"];
 var e130 = m33["numberTickFormatter"];
 
 // opengpui-shared:openui-charts/utils/xAxisLabelLayout
-var m34 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/xAxisLabelLayout"];
+var m34 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/xAxisLabelLayout"];
 var e027 = m34["ANGLED_LABEL_ROTATION"];
 var e131 = m34["MAX_X_AXIS_HEIGHT_SHARE"];
 var e226 = m34["X_AXIS_TOP_GAP"];
@@ -4426,7 +4515,7 @@ var e317 = m34["fullLabelWidth"];
 var e413 = m34["layoutXAxisLabels"];
 
 // opengpui-shared:openui-charts/utils/yDomain
-var m35 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/yDomain"];
+var m35 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/yDomain"];
 var e028 = m35["computeYDomain"];
 
 // src/components/charts/axes.ts
@@ -4533,7 +4622,7 @@ import { h_flex as h_flex2, Popup, v_flex } from "gpui-base";
 import { div as div19 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/shared/core/PortalTooltip/utils
-var m36 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/shared/core/PortalTooltip/utils"];
+var m36 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/shared/core/PortalTooltip/utils"];
 var e029 = m36["tooltipNumberFormatter"];
 
 // src/components/charts/hover.ts
@@ -4723,20 +4812,20 @@ function chartTooltip(ctx, payload, hover, placement = "right-start") {
 var clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
 // opengpui-shared:openui-genui-helpers
-var m37 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-genui-helpers"];
+var m37 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-genui-helpers"];
 var e030 = m37["asArray"];
 var e134 = m37["buildChartData"];
 var e227 = m37["buildSliceData"];
 var e318 = m37["hasAllProps"];
 
 // opengpui-shared:openui-charts/utils/dataUtils
-var m38 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/dataUtils"];
+var m38 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/dataUtils"];
 var e031 = m38["get2dChartConfig"];
 var e135 = m38["getDataKeys"];
 var e228 = m38["getLegendItems"];
 
 // opengpui-shared:openui-charts/utils/paletteUtils
-var m39 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/paletteUtils"];
+var m39 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/paletteUtils"];
 var e032 = m39["DIVERGING_DEFAULT_DARK"];
 var e136 = m39["DIVERGING_DEFAULT_LIGHT"];
 var e229 = m39["OCEAN_DEFAULT"];
@@ -4939,6 +5028,9 @@ class Measurer {
   }
   get charsReady() {
     return this.missingChars.size === 0;
+  }
+  get ready() {
+    return this.missingChars.size === 0 && this.missingStrings.size === 0;
   }
   width(text) {
     return textWidth(this.widths, text, this.style.size * 0.55);
@@ -5296,7 +5388,7 @@ import { h_flex as h_flex3, v_flex as v_flex3 } from "gpui-base";
 import { div as div22, PathBuilder as PathBuilder4 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/BarChart/parts/horizontalBarGeometry
-var m40 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/BarChart/parts/horizontalBarGeometry"];
+var m40 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/BarChart/parts/horizontalBarGeometry"];
 var e033 = m40["BAR_GAP"];
 var e137 = m40["BAR_HEIGHT"];
 var e230 = m40["BAR_RADIUS"];
@@ -5476,7 +5568,7 @@ import { h_flex as h_flex5, v_flex as v_flex5 } from "gpui-base";
 import { div as div24 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/utils/polarUtils
-var m41 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/polarUtils"];
+var m41 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/polarUtils"];
 var e034 = m41["POLAR_HOVER_TRANSITION"];
 var e139 = m41["formatPercentage"];
 var e231 = m41["getSliceStyle"];
@@ -5489,7 +5581,7 @@ import { h_flex as h_flex4, v_flex as v_flex4 } from "gpui-base";
 import { div as div23 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/shared/core/StackedLegend/stackedLegendLayout
-var m42 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/shared/core/StackedLegend/stackedLegendLayout"];
+var m42 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/shared/core/StackedLegend/stackedLegendLayout"];
 var e035 = m42["LEGEND_ITEM_LIMIT"];
 var e140 = m42["SHOW_MORE_BREAKPOINT"];
 var e234 = m42["formatStackedValue"];
@@ -5797,7 +5889,7 @@ import { h_flex as h_flex7, v_flex as v_flex7 } from "gpui-base";
 import { div as div26, PathBuilder as PathBuilder6 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/utils/radarLabelLayout
-var m43 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/utils/radarLabelLayout"];
+var m43 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/utils/radarLabelLayout"];
 var e036 = m43["MIN_RADAR_LABEL_BUDGET"];
 var e141 = m43["radarLabelLayout"];
 var e235 = m43["radarLabelPadding"];
@@ -6182,7 +6274,7 @@ import { v_flex as v_flex9 } from "gpui-base";
 import { div as div28 } from "gpui-kit";
 
 // opengpui-shared:openui-charts/SegmentedBar/parts/segmentedBarGeometry
-var m44 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-charts/SegmentedBar/parts/segmentedBarGeometry"];
+var m44 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-charts/SegmentedBar/parts/segmentedBarGeometry"];
 var e037 = m44["segmentShare"];
 var e145 = m44["segmentValue"];
 
@@ -6306,7 +6398,7 @@ import { Button as GButton, Checkbox, Radio, RadioGroup as GRadioGroup, Switch }
 import { div as div29, PathBuilder as PathBuilder9 } from "gpui-kit";
 
 // opengpui-shared:openui-selection-utils
-var m45 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-selection-utils"];
+var m45 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-selection-utils"];
 var e038 = m45["getStoredDefaultValue"];
 var e146 = m45["normalizeSelection"];
 var e236 = m45["toggleSelection"];
@@ -6547,7 +6639,7 @@ import { div as div31 } from "gpui-kit";
 import { div as div30 } from "gpui-kit";
 
 // opengpui-shared:date-fns
-var m46 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["date-fns"];
+var m46 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["date-fns"];
 var e039 = m46["add"];
 var e147 = m46["addBusinessDays"];
 var e237 = m46["addDays"];
@@ -6800,14 +6892,14 @@ var e248 = m46["yearsToMonths"];
 var e249 = m46["yearsToQuarters"];
 
 // opengpui-shared:openui-datepicker-helpers
-var m47 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-datepicker-helpers"];
+var m47 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-datepicker-helpers"];
 var e040 = m47["formatDateRange"];
 var e1100 = m47["formatSingleDate"];
 var e250 = m47["getMonthName"];
 var e326 = m47["getMonthNumber"];
 
 // opengpui-shared:openui-rdp/classes/index.js
-var m48 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/classes/index.js"];
+var m48 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/classes/index.js"];
 var e041 = m48["CalendarDay"];
 var e1101 = m48["CalendarMonth"];
 var e251 = m48["CalendarWeek"];
@@ -6817,51 +6909,51 @@ var e517 = m48["defaultDateLib"];
 var e610 = m48["defaultLocale"];
 
 // opengpui-shared:openui-rdp/helpers/createGetModifiers.js
-var m49 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/createGetModifiers.js"];
+var m49 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/createGetModifiers.js"];
 var e042 = m49["createGetModifiers"];
 
 // opengpui-shared:openui-rdp/helpers/calculateFocusTarget.js
-var m50 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/calculateFocusTarget.js"];
+var m50 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/calculateFocusTarget.js"];
 var e043 = m50["calculateFocusTarget"];
 
 // opengpui-shared:openui-rdp/helpers/getDates.js
-var m51 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getDates.js"];
+var m51 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getDates.js"];
 var e044 = m51["getDates"];
 
 // opengpui-shared:openui-rdp/helpers/getDisplayMonths.js
-var m52 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getDisplayMonths.js"];
+var m52 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getDisplayMonths.js"];
 var e045 = m52["getDisplayMonths"];
 
 // opengpui-shared:openui-rdp/helpers/getInitialMonth.js
-var m53 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getInitialMonth.js"];
+var m53 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getInitialMonth.js"];
 var e046 = m53["getInitialMonth"];
 
 // opengpui-shared:openui-rdp/helpers/getMonthOptions.js
-var m54 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getMonthOptions.js"];
+var m54 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getMonthOptions.js"];
 var e047 = m54["getMonthOptions"];
 
 // opengpui-shared:openui-rdp/helpers/getMonths.js
-var m55 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getMonths.js"];
+var m55 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getMonths.js"];
 var e048 = m55["getMonths"];
 
 // opengpui-shared:openui-rdp/helpers/getNavMonth.js
-var m56 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getNavMonth.js"];
+var m56 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getNavMonth.js"];
 var e049 = m56["getNavMonths"];
 
 // opengpui-shared:openui-rdp/helpers/getNextFocus.js
-var m57 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getNextFocus.js"];
+var m57 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getNextFocus.js"];
 var e050 = m57["getNextFocus"];
 
 // opengpui-shared:openui-rdp/helpers/getWeekdays.js
-var m58 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getWeekdays.js"];
+var m58 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getWeekdays.js"];
 var e051 = m58["getWeekdays"];
 
 // opengpui-shared:openui-rdp/helpers/getYearOptions.js
-var m59 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/helpers/getYearOptions.js"];
+var m59 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/helpers/getYearOptions.js"];
 var e052 = m59["getYearOptions"];
 
 // opengpui-shared:openui-rdp/formatters/index.js
-var m60 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/formatters/index.js"];
+var m60 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/formatters/index.js"];
 var e053 = m60["formatCaption"];
 var e1103 = m60["formatDay"];
 var e255 = m60["formatMonthCaption"];
@@ -6873,11 +6965,11 @@ var e710 = m60["formatYearCaption"];
 var e810 = m60["formatYearDropdown"];
 
 // opengpui-shared:openui-rdp/utils/addToRange.js
-var m61 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/utils/addToRange.js"];
+var m61 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/utils/addToRange.js"];
 var e054 = m61["addToRange"];
 
 // opengpui-shared:openui-rdp/utils/rangeIncludesDate.js
-var m62 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-rdp/utils/rangeIncludesDate.js"];
+var m62 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-rdp/utils/rangeIncludesDate.js"];
 var e055 = m62["isDateInRange"];
 var e1104 = m62["rangeIncludesDate"];
 
@@ -7564,9 +7656,2263 @@ var Steps = {
   }
 };
 
+// src/components/diagram.ts
+import { div as div34, PathBuilder as PathBuilder10 } from "gpui-kit";
+
+// src/diagram/types.ts
+var NODE_KINDS = ["actor", "process", "module", "file", "store", "external", "decision", "start", "end", "event", "task", "service", "queue", "ui"];
+var EDGE_STYLES = ["solid", "dashed"];
+var EDGE_HEADS = ["arrow", "none", "triangle", "diamond"];
+var FIELD_KEYS = ["pk", "fk"];
+
+// src/diagram/model.ts
+var text2 = (v) => typeof v === "string" ? v : undefined;
+var elements = (v, typeName) => Array.isArray(v) ? v.filter((x) => e24(x) && x.typeName === typeName) : [];
+var oneOf = (values, v, fallback) => values.includes(v) ? v : fallback;
+var isBox = (v) => e24(v) && (v.typeName === "Node" || v.typeName === "Entity");
+function fields(v) {
+  return elements(v, "Field").flatMap((el) => {
+    const name = text2(el.props.name);
+    if (name === undefined)
+      return [];
+    const type = text2(el.props.type);
+    const key = FIELD_KEYS.includes(el.props.key) ? el.props.key : undefined;
+    return [{ name, ...type ? { type } : {}, ...key ? { key } : {} }];
+  });
+}
+function diagramModel(props, streaming) {
+  const nodes = [];
+  const groups = [];
+  const addNode = (el, group) => {
+    const id = text2(el.props.id);
+    if (!id)
+      return;
+    const sub = text2(el.props.sub);
+    const action = el.props.action;
+    nodes.push({
+      id,
+      label: text2(el.props.label) ?? "",
+      kind: oneOf(NODE_KINDS, el.props.kind, "process"),
+      ...sub ? { sub } : {},
+      ...group !== undefined ? { group } : {},
+      ...action != null ? { action } : {},
+      ...el.typeName === "Entity" ? { fields: fields(el.props.fields) } : {}
+    });
+  };
+  for (const item of Array.isArray(props.nodes) ? props.nodes.filter(e24) : []) {
+    if (item.typeName === "Node" || item.typeName === "Entity")
+      addNode(item);
+    else if (item.typeName === "Group") {
+      const id = text2(item.props.id);
+      if (!id)
+        continue;
+      groups.push({ id, label: text2(item.props.label) ?? "" });
+      for (const node of Array.isArray(item.props.nodes) ? item.props.nodes.filter(isBox) : [])
+        addNode(node, id);
+    }
+  }
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  const edges = [];
+  for (const el of elements(props.edges, "Edge")) {
+    const from = text2(el.props.from);
+    const to = text2(el.props.to);
+    if (from === undefined || to === undefined)
+      continue;
+    if (streaming && !(nodeIds.has(from) && nodeIds.has(to)))
+      continue;
+    const label = text2(el.props.label);
+    const style = oneOf(EDGE_STYLES, el.props.style, "solid");
+    const head = oneOf(EDGE_HEADS, el.props.head, "arrow");
+    edges.push({ id: `${from}>${to}`, from, to, ...label ? { label } : {}, style, head });
+  }
+  return { nodes, groups, edges, steps: diagramSteps(props.steps, streaming), direction: props.direction === "right" ? "right" : "down" };
+}
+function diagramSteps(value, streaming) {
+  const stepEls = elements(value, "DiagramStep");
+  const cut = new Set;
+  if (streaming) {
+    const lastInline = stepEls.findLast((s) => s.partial && !s.statementId);
+    const lastStatement = stepEls.findLast((s) => s.partial && !!s.statementId);
+    if (lastInline)
+      cut.add(lastInline);
+    if (lastStatement)
+      cut.add(lastStatement);
+  }
+  return stepEls.map((el) => {
+    const action = el.props.action;
+    return {
+      title: text2(el.props.title) ?? "",
+      details: text2(el.props.details) ?? "",
+      highlight: Array.isArray(el.props.highlight) ? el.props.highlight.filter((h) => typeof h === "string") : [],
+      ...action != null ? { action } : {},
+      complete: !cut.has(el)
+    };
+  });
+}
+
+// src/components/diagram/canvas.ts
+import { div as div33 } from "gpui-kit";
+var DIMMED = 0.35;
+var PAD = 16;
+var ZOOM_MIN = 0.25;
+var ZOOM_MAX = 2;
+var ZOOM_STEP = 1.25;
+var DRAG_SLOP = 4;
+var MAX_VIEW_SHARE = 0.7;
+var FALLBACK_PANE_H = 800;
+var MIN_FIT_SHARE = 0.75;
+var KEY_PAN = 40;
+var scaled = (s, z) => ({ ...s, size: s.size * z });
+var camera = () => ({ zoom: null, panX: 0, panY: 0, width: 0, height: 0 });
+function canvasState(ctx, stepCount) {
+  const state = ctx.local({ inline: camera(), full: camera(), step: null, hover: null, drag: null, moved: false, expanded: false }, "canvas");
+  if (state.step !== null && state.step >= stepCount)
+    state.step = null;
+  return state;
+}
+function pointable(el, state, id, onClick) {
+  return el.cursor_pointer().on_hover((hovered, cx) => {
+    const next = hovered ? id : state.hover === id ? null : state.hover;
+    if (next === state.hover)
+      return;
+    state.hover = next;
+    cx.notify();
+  }).on_click((_e, cx) => {
+    state.drag = null;
+    if (state.moved)
+      return;
+    cx.stop_propagation();
+    onClick();
+  });
+}
+function stepQuestion(ctx, statementId, steps, i) {
+  const step = steps[i];
+  if (!step)
+    return;
+  const message = `Tell me more about step ${i + 1}: ${step.title}`;
+  ctx.trigger(message, step.action ?? { steps: [{ type: e0.ToAssistant, message, context: { diagram: statementId, step: i + 1, highlight: step.highlight } }] });
+}
+function fitScale(cam, size, expanded) {
+  const byWidth = Math.min(1, Math.max(0.01, cam.width - PAD * 2) / Math.max(1, size.width));
+  const byHeight = Math.max(0.01, cam.height - PAD * 2) / Math.max(1, size.height);
+  if (expanded)
+    return Math.min(byWidth, byHeight);
+  return byHeight >= byWidth ? byWidth : Math.max(byHeight, byWidth * MIN_FIT_SHARE);
+}
+function clampPan(pan, view, content) {
+  const lo = Math.min(PAD, view - content - PAD);
+  const hi = Math.max(PAD, view - content - PAD);
+  return Math.min(hi, Math.max(lo, pan));
+}
+function viewOf(cam, size, expanded) {
+  if (cam.zoom === null) {
+    const z = fitScale(cam, size, expanded);
+    const w = size.width * z;
+    const h = size.height * z;
+    return { z, panX: (cam.width - w) / 2, panY: expanded ? (cam.height - h) / 2 : PAD };
+  }
+  const z = cam.zoom;
+  return {
+    z,
+    panX: clampPan(cam.panX, cam.width, size.width * z),
+    panY: clampPan(cam.panY, cam.height, size.height * z)
+  };
+}
+function freeze(cam, size, expanded) {
+  const v = viewOf(cam, size, expanded);
+  cam.zoom = v.z;
+  cam.panX = v.panX;
+  cam.panY = v.panY;
+  return v;
+}
+function zoomAt(cam, size, expanded, factor, px, py) {
+  const v = freeze(cam, size, expanded);
+  const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v.z * factor));
+  cam.panX = px - (px - v.panX) * z / v.z;
+  cam.panY = py - (py - v.panY) * z / v.z;
+  cam.zoom = z;
+}
+function reveal(cam, size, box, expanded) {
+  if (!box || cam.width <= 0)
+    return;
+  const v = viewOf(cam, size, expanded);
+  const { x0, y0, x1, y1 } = box;
+  const inView = v.panX + x0 * v.z >= 0 && v.panX + x1 * v.z <= cam.width && v.panY + y0 * v.z >= 0 && v.panY + y1 * v.z <= cam.height;
+  if (inView)
+    return;
+  freeze(cam, size, expanded);
+  cam.panX = cam.width / 2 - (x0 + x1) / 2 * v.z;
+  cam.panY = cam.height / 2 - (y0 + y1) / 2 * v.z;
+}
+function controls(o, c, cam, expanded, wake) {
+  const { content } = c;
+  const act = (fn) => (cx) => {
+    fn();
+    cx.notify();
+    wake();
+  };
+  const zoomBy = (f) => act(() => zoomAt(cam, content, expanded, f, cam.width / 2, cam.height / 2));
+  const small = (id, icon, onClick) => iconButton(o, { id: o.id(id), icon, variant: "tertiary", size: "2-extra-small", onClick });
+  return div33().absolute().top(8).right(8).flex().flex_row().gap(2).p(2).rounded(o.t.radiusM).bg(o.t.foreground).border_1().border_color(o.t.borderDefault).child(small(expanded ? "full-out" : "in-out", "Minus", zoomBy(1 / ZOOM_STEP))).child(small(expanded ? "full-in" : "in-in", "Plus", zoomBy(ZOOM_STEP))).child(small(expanded ? "full-fit" : "in-fit", "Scan", act(() => cam.zoom = null))).child(small(expanded ? "full-close" : "in-expand", expanded ? "Minimize2" : "Maximize2", act(() => {
+    c.state.expanded = !expanded;
+    c.state.full = camera();
+  })));
+}
+function viewport(o, c, expanded, focus, wake) {
+  const t = o.t;
+  const { state, content } = c;
+  const cam = expanded ? state.full : state.inline;
+  const v = cam.width > 0 && (!expanded || cam.height > 0) ? viewOf(cam, content, expanded) : null;
+  const redraw = (cx) => {
+    cx.notify();
+    wake();
+  };
+  const onWheel = (e, cx) => {
+    const zoom = e.modifiers.platform || e.modifiers.control;
+    if (!zoom && !expanded)
+      return;
+    cx.stop_propagation();
+    if (zoom) {
+      const p = e.local_position ?? { x: cam.width / 2, y: cam.height / 2 };
+      zoomAt(cam, content, expanded, Math.exp(-e.delta.y * 0.01), p.x, p.y);
+    } else {
+      freeze(cam, content, expanded);
+      cam.panX += e.delta.x;
+      cam.panY += e.delta.y;
+    }
+    redraw(cx);
+  };
+  const onKey = (e, cx) => {
+    const k = e.key;
+    const center = () => zoomAt(cam, content, expanded, 1, cam.width / 2, cam.height / 2);
+    if (k === "+" || k === "=")
+      zoomAt(cam, content, expanded, ZOOM_STEP, cam.width / 2, cam.height / 2);
+    else if (k === "-")
+      zoomAt(cam, content, expanded, 1 / ZOOM_STEP, cam.width / 2, cam.height / 2);
+    else if (k === "0")
+      cam.zoom = null;
+    else if (k === "left" || k === "right" || k === "up" || k === "down") {
+      center();
+      cam.panX += k === "left" ? KEY_PAN : k === "right" ? -KEY_PAN : 0;
+      cam.panY += k === "up" ? KEY_PAN : k === "down" ? -KEY_PAN : 0;
+    } else if (k === "[" || k === "]")
+      selectStep(c, state.step === null ? k === "]" ? 0 : c.spec.steps.length - 1 : state.step + (k === "]" ? 1 : -1), expanded);
+    else if (k === "escape" && expanded)
+      state.expanded = false;
+    else
+      return;
+    cx.stop_propagation();
+    redraw(cx);
+  };
+  const size = (sz, cx) => {
+    if (cam.width === sz.width && (!expanded || cam.height === sz.height))
+      return;
+    cam.width = sz.width;
+    if (expanded)
+      cam.height = sz.height;
+    cx.notify();
+  };
+  const paneH = o.viewportHeight ?? FALLBACK_PANE_H;
+  if (!expanded && cam.width > 0) {
+    cam.height = Math.max(120, paneH * MAX_VIEW_SHARE);
+    const fit = fitScale(cam, content, false);
+    cam.height = Math.min(content.height * fit + PAD * 2, paneH * MAX_VIEW_SHARE);
+  }
+  let el = div33().id(o.id(expanded ? "full" : "viewport")).relative().overflow_hidden().w_full().rounded(expanded ? 0 : t.radiusL).border_1().border_color(t.borderDefault).bg(t.foreground).when(state.drag !== null && state.moved, (e) => e.cursor_grabbing()).on_size_change(size).on_scroll_wheel(onWheel).on_mouse_down("left", (e, cx) => {
+    focus?.focus();
+    state.drag = { x: e.position.x, y: e.position.y, panX: 0, panY: 0 };
+    state.moved = false;
+  }).on_mouse_move((e, cx) => {
+    const drag = state.drag;
+    if (!drag)
+      return;
+    const dx = e.position.x - drag.x;
+    const dy = e.position.y - drag.y;
+    if (!state.moved) {
+      if (Math.hypot(dx, dy) < DRAG_SLOP)
+        return;
+      const v0 = freeze(cam, content, expanded);
+      drag.panX = v0.panX;
+      drag.panY = v0.panY;
+      state.moved = true;
+    }
+    cam.panX = drag.panX + dx;
+    cam.panY = drag.panY + dy;
+    redraw(cx);
+  }).on_mouse_up("left", (_e, cx) => {
+    if (!state.drag)
+      return;
+    state.drag = null;
+    redraw(cx);
+  }).on_hover((hovered, cx) => {
+    if (hovered || !state.drag)
+      return;
+    state.drag = null;
+    redraw(cx);
+  }).on_key_down(onKey);
+  if (focus)
+    el = el.track_focus(focus);
+  el = expanded ? el.size_full() : el.h(cam.width > 0 ? cam.height : 160);
+  if (v) {
+    el = el.child(div33().absolute().left(v.panX).top(v.panY).child(content.draw(o, v.z, expanded ? "full" : "in")));
+  }
+  return el.child(controls(o, c, cam, expanded, wake));
+}
+function selectStep(c, i, expanded) {
+  const { state, spec, content } = c;
+  if (i < 0 || i >= spec.steps.length)
+    return;
+  state.step = state.step === i ? null : i;
+  if (state.step === null)
+    return;
+  const step = spec.steps[state.step];
+  if (!step.complete)
+    return;
+  reveal(expanded ? state.full : state.inline, content, content.reveal(step.highlight), expanded);
+}
+function steps(ctx, c) {
+  const t = ctx.t;
+  const { state, spec } = c;
+  if (!spec.steps.length)
+    return null;
+  const n = spec.steps.length;
+  const nav = div33().flex().flex_row().items_center().gap(t.spaceS).child(button(ctx, {
+    id: ctx.id("prev"),
+    label: "Previous",
+    variant: "secondary",
+    size: "extra-small",
+    disabled: state.step === null || state.step === 0,
+    onClick: (cx) => {
+      if (state.step !== null)
+        selectStep(c, state.step - 1, false);
+      cx.notify();
+    }
+  })).child(button(ctx, {
+    id: ctx.id("next"),
+    label: state.step === null ? "Start" : "Next",
+    variant: "secondary",
+    size: "extra-small",
+    disabled: state.step === n - 1,
+    onClick: (cx) => {
+      selectStep(c, state.step === null ? 0 : state.step + 1, false);
+      cx.notify();
+    }
+  })).child(textStyle(div33(), typography(t, "label", "small")).text_color(t.textNeutralTertiary).child(state.step === null ? `${n} steps` : `Step ${state.step + 1} of ${n}`));
+  const list = spec.steps.map((step, i) => {
+    const selected = state.step === i;
+    const last = i === n - 1;
+    const connector = div33().flex().flex_col().items_center().child(div33().flex().items_center().justify_center().py(t.space2xs).child(textStyle(div33().flex().items_center().justify_center().w(24).h(24).rounded(12).bg(selected ? t.interactiveAccentDefault : t.elevated).text_color(selected ? t.textWhite : t.textNeutralSecondary).border_1().border_color(selected ? t.interactiveAccentDefault : t.borderDefault), typography(t, "label", "small")).child(String(i + 1)))).when(!last, (el) => el.child(div33().w(1).flex_1().bg(t.sunk)));
+    const head = div33().flex().flex_row().items_center().gap(t.spaceXs).child(div33().flex_1().min_w_0().text_color(selected ? t.textNeutralPrimary : t.textNeutralSecondary).child(step.title)).child(iconButton(ctx, {
+      id: ctx.id(`ask-${i}`),
+      icon: "MessageCircleQuestion",
+      variant: "tertiary",
+      size: "2-extra-small",
+      onClick: () => spec.askStep(i)
+    }));
+    const details = step.details ? [ctx.piece(`step${i}`, step.details, (o, text) => markdownBlock(o, `step${i}`, text, { profile: "plain" }).w_auto())] : [];
+    const content = div33().flex().flex_col().flex_1().min_w_0().gap(t.space3xs).pt(t.space2xs).mb(last ? 0 : t.spaceL).child(head).child(textStyle(div33().flex().flex_col().gap(t.spaceM + 2), typography(t, "body", "default")).children(details));
+    return div33().id(ctx.id(`step-${i}`)).flex().flex_row().gap(t.spaceM).rounded(t.radiusM).cursor_pointer().on_click((_e, cx) => {
+      selectStep(c, i, false);
+      cx.notify();
+    }).child(connector).child(content);
+  });
+  return div33().flex().flex_col().gap(t.spaceM).child(nav).child(div33().flex().flex_col().children(list));
+}
+function placeholder(ctx, text, error) {
+  const t = ctx.t;
+  return textStyle(div33(), typography(t, "body", "small")).flex().items_center().justify_center().w_full().h(120).rounded(t.radiusL).border_1().border_color(t.borderDefault).bg(t.sunkLight).text_color(error ? t.textDangerPrimary : t.textNeutralTertiary).child(text);
+}
+function canvas(ctx, state, spec) {
+  const t = ctx.t;
+  const wake = ctx.waker();
+  const c = spec.content ? { ctx, state, content: spec.content, spec } : null;
+  const focus = ctx.retained(ctx.id("focus"), { kind: "diagram-focus", meta: null, create: (_entry, cx) => cx.focus_handle() });
+  if (c && state.expanded) {
+    ctx.overlay("expanded", (o) => {
+      const ofocus = o.retained(o.id("full-focus"), { kind: "diagram-focus", meta: null, create: (_entry, cx) => cx.focus_handle() });
+      if (!state.expanded)
+        return null;
+      return { el: div33().size_full().bg(o.t.foreground).child(viewport(o, c, true, ofocus, wake)), focus: ofocus };
+    });
+  }
+  return div33().id(ctx.id()).relative().w_full().flex().flex_col().gap(t.spaceM).child(c && !spec.error ? viewport(ctx, c, false, focus, wake) : placeholder(ctx, spec.placeholder, !!spec.error)).children(optional(c ? steps(ctx, c) : null)).children(spec.extra ?? []);
+}
+
+// src/components/diagram/kinds.ts
+var KIND_ICON = {
+  actor: "User",
+  process: "Cpu",
+  module: "Package",
+  file: "FileText",
+  store: "Database",
+  external: "Cloud",
+  decision: "Diamond",
+  start: "Play",
+  end: "Flag",
+  event: "Zap",
+  task: "SquareCheck",
+  service: "Server",
+  queue: "Layers",
+  ui: "AppWindow"
+};
+
+// src/components/diagram.ts
+var NODE_PAD_X = 12;
+var PILL_PAD_X = 16;
+var NODE_PAD_Y = 8;
+var NODE_ICON = 16;
+var NODE_ICON_GAP = 8;
+var NODE_MIN_W = 88;
+var SUB_GAP = 2;
+var EDGE_LABEL_PAD_X = 6;
+var EDGE_LABEL_PAD_Y = 2;
+var GROUP_TITLE_PAD_X = 8;
+var GROUP_TITLE_PAD_Y = 4;
+var HEAD_LEN = { arrow: 8, none: 0, triangle: 11, diamond: 16 };
+var HEAD_HALF = { arrow: 4.5, none: 0, triangle: 6.5, diamond: 6 };
+var DASH = [5, 4];
+var ROW_PAD_Y = 3;
+var ROWS_PAD_Y = 4;
+var KEY_ICON = 12;
+var KEY_GAP = 6;
+var TYPE_GAP = 16;
+var styles = (t) => ({
+  label: typography(t, "label", "heavy"),
+  sub: typography(t, "body", "small"),
+  edge: typography(t, "label", "small"),
+  title: typography(t, "label", "small-heavy"),
+  field: typography(t, "code", "small")
+});
+function measurers(ctx, s, model) {
+  const m = {
+    label: new Measurer(ctx, s.label, "m-label"),
+    sub: new Measurer(ctx, s.sub, "m-sub"),
+    edge: new Measurer(ctx, s.edge, "m-edge"),
+    title: new Measurer(ctx, s.title, "m-title"),
+    field: new Measurer(ctx, s.field, "m-field")
+  };
+  m.label.want(model.nodes.map((n) => n.label));
+  m.sub.want(model.nodes.flatMap((n) => n.sub ? [n.sub] : []));
+  m.edge.want(model.edges.flatMap((e) => e.label ? [e.label] : []));
+  m.title.want(model.groups.map((g) => g.label));
+  m.field.want(model.nodes.flatMap((n) => (n.fields ?? []).flatMap((f) => f.type ? [f.name, f.type] : [f.name])));
+  return m;
+}
+var ready2 = (m) => m.label.ready && m.sub.ready && m.edge.ready && m.title.ready && m.field.ready;
+var isPill = (n) => !n.fields && (n.kind === "start" || n.kind === "end");
+var padX = (n) => isPill(n) ? PILL_PAD_X : NODE_PAD_X;
+function cardRows(n, m) {
+  return {
+    head: NODE_PAD_Y * 2 + m.label.lineHeight + (n.sub ? SUB_GAP + m.sub.lineHeight : 0),
+    row: m.field.lineHeight + ROW_PAD_Y * 2,
+    keys: (n.fields ?? []).some((f) => f.key)
+  };
+}
+function nodeSize(n, m) {
+  const text = Math.max(m.label.width(n.label), n.sub ? m.sub.width(n.sub) : 0);
+  if (!n.fields) {
+    return {
+      w: Math.max(NODE_MIN_W, Math.ceil(padX(n) * 2 + NODE_ICON + NODE_ICON_GAP + text)),
+      h: NODE_PAD_Y * 2 + m.label.lineHeight + (n.sub ? SUB_GAP + m.sub.lineHeight : 0)
+    };
+  }
+  const card = cardRows(n, m);
+  const keyCol = card.keys ? KEY_ICON + KEY_GAP : 0;
+  const rows = n.fields.map((f) => keyCol + m.field.width(f.name) + (f.type ? TYPE_GAP + m.field.width(f.type) : 0));
+  return {
+    w: Math.max(NODE_MIN_W, Math.ceil(NODE_PAD_X * 2 + Math.max(text, ...rows) + 2)),
+    h: card.head + (n.fields.length ? ROWS_PAD_Y * 2 + card.row * n.fields.length + 1 : 0) + 2
+  };
+}
+function sizedGraph(model, m) {
+  const ids = new Set(model.nodes.map((n) => n.id));
+  return {
+    direction: model.direction,
+    nodes: model.nodes.map((n) => {
+      const { w, h } = nodeSize(n, m);
+      return n.group ? { id: n.id, w, h, group: n.group } : { id: n.id, w, h };
+    }),
+    groups: model.groups.map((g) => ({
+      id: g.id,
+      titleW: Math.ceil(m.title.width(g.label) + GROUP_TITLE_PAD_X * 2),
+      titleH: m.title.lineHeight + GROUP_TITLE_PAD_Y * 2
+    })),
+    edges: model.edges.filter((e) => ids.has(e.from) && ids.has(e.to)).map((e) => e.label ? {
+      id: e.id,
+      from: e.from,
+      to: e.to,
+      labelW: Math.ceil(m.edge.width(e.label) + EDGE_LABEL_PAD_X * 2),
+      labelH: m.edge.lineHeight + EDGE_LABEL_PAD_Y * 2
+    } : { id: e.id, from: e.from, to: e.to })
+  };
+}
+function marks(model, highlight, hover) {
+  const nodes = new Set;
+  const edges = new Set;
+  for (const id of highlight ?? []) {
+    const edge = model.edges.find((e) => e.id === id);
+    if (edge) {
+      edges.add(edge.id);
+      nodes.add(edge.from);
+      nodes.add(edge.to);
+    } else
+      nodes.add(id);
+  }
+  if (hover) {
+    nodes.add(hover);
+    for (const e of model.edges)
+      if (e.from === hover || e.to === hover)
+        edges.add(e.id);
+  }
+  return { active: highlight !== null, nodes, edges };
+}
+function revealBox(drawn, model, highlight) {
+  const lit = marks(model, highlight, null).nodes;
+  const boxes = drawn.graph.nodes.filter((n) => lit.has(n.id) && drawn.layout.nodes[n.id]);
+  if (!boxes.length)
+    return null;
+  const box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+  for (const n of boxes) {
+    const p = drawn.layout.nodes[n.id];
+    box.x0 = Math.min(box.x0, p.x);
+    box.y0 = Math.min(box.y0, p.y);
+    box.x1 = Math.max(box.x1, p.x + n.w);
+    box.y1 = Math.max(box.y1, p.y + n.h);
+  }
+  return box;
+}
+function edgePaths(drawn, z, edgeOf, classOf, color) {
+  const builders = new Map;
+  const k = Math.max(z, 0.6);
+  const get = (c) => {
+    let b = builders.get(c);
+    if (!b) {
+      const width = c === "lit" ? 2 : 1.25;
+      b = { solid: PathBuilder10.stroke(width), dashed: PathBuilder10.stroke(width).dash_array(DASH.map((v) => v * k)), fill: PathBuilder10.fill(), used: new Set };
+      builders.set(c, b);
+    }
+    return b;
+  };
+  for (const e of drawn.graph.edges) {
+    const route = drawn.layout.edges[e.id];
+    if (!route || route.points.length < 2)
+      continue;
+    const edge = edgeOf(e.id);
+    const head = edge?.head ?? "arrow";
+    const style = edge?.style ?? "solid";
+    const pts = route.points.map(([x, y]) => [x * z, y * z]);
+    const [tx, ty] = pts[pts.length - 1];
+    const [sx, sy] = pts[pts.length - 2];
+    const len = Math.hypot(tx - sx, ty - sy) || 1;
+    const dx = (tx - sx) / len;
+    const dy = (ty - sy) / len;
+    const headLen = Math.min(HEAD_LEN[head] * k, len);
+    const half = HEAD_HALF[head] * k;
+    const bx = tx - dx * headLen;
+    const by = ty - dy * headLen;
+    const b = get(classOf(e.id));
+    const line = style === "dashed" ? b.dashed : b.solid;
+    b.used.add(style);
+    line.move_to(pts[0][0], pts[0][1]);
+    for (let i = 1;i < pts.length - 1; i++)
+      line.line_to(pts[i][0], pts[i][1]);
+    line.line_to(bx, by);
+    if (head === "arrow") {
+      b.used.add("fill");
+      b.fill.add_polygon([[tx, ty], [bx - dy * half, by + dx * half], [bx + dy * half, by - dx * half]], true);
+    } else if (head === "triangle") {
+      b.used.add("solid");
+      b.solid.add_polygon([[tx, ty], [bx - dy * half, by + dx * half], [bx + dy * half, by - dx * half]], true);
+    } else if (head === "diamond") {
+      const mx = tx - dx * headLen / 2;
+      const my = ty - dy * headLen / 2;
+      b.used.add("fill");
+      b.fill.add_polygon([[tx, ty], [mx - dy * half, my + dx * half], [bx, by], [mx + dy * half, my - dx * half]], true);
+    }
+  }
+  const out = [];
+  for (const c of ["dim", "normal", "lit"]) {
+    const b = builders.get(c);
+    if (!b)
+      continue;
+    for (const part of ["dashed", "solid", "fill"])
+      if (b.used.has(part))
+        out.push({ path: b[part].build(), paint: color[c] });
+  }
+  return out;
+}
+function askNode(d, id) {
+  const node = d.model.nodes.find((n) => n.id === id);
+  if (!node)
+    return;
+  const message = `Tell me more about ${node.label}`;
+  d.ctx.trigger(message, node.action ?? { steps: [{ type: e0.ToAssistant, message, context: { diagram: d.statementId, node: id } }] });
+}
+function drawing(o, d, z, part) {
+  const t = o.t;
+  const { drawn, model, local, state, s } = d;
+  const step = state.step === null ? undefined : model.steps[state.step];
+  const m = marks(model, step?.complete ? step.highlight : null, state.hover);
+  const nodeClass = (id) => m.nodes.has(id) ? "lit" : m.active ? "dim" : "normal";
+  const edgeClass = (id) => m.edges.has(id) ? "lit" : m.active ? "dim" : "normal";
+  const pathKey = `${z}|${m.active}|${[...m.edges].join(",")}|${model.edges.map((e) => `${e.style}${e.head}`).join(",")}`;
+  let built = local.paths[part];
+  if (built?.key !== pathKey) {
+    const muted = t.textNeutralSecondary;
+    const byId = new Map(model.edges.map((e) => [e.id, e]));
+    built = { key: pathKey, painted: edgePaths(drawn, z, (id) => byId.get(id), edgeClass, { normal: muted, dim: alpha(muted, DIMMED), lit: t.interactiveAccentDefault }) };
+    local.paths[part] = built;
+  }
+  const groups = model.groups.flatMap((g) => {
+    const box = drawn.layout.groups[g.id];
+    if (!box)
+      return [];
+    const frame = div34().absolute().left(box.x * z).top(box.y * z).w(box.w * z).h(box.h * z).rounded(t.radiusM * z).bg(t.sunkLight).border_1().border_color(t.borderDefault).when(m.active, (el) => el.opacity(0.6));
+    const title = textStyle(div34().absolute().whitespace_nowrap(), scaled(s.title, z)).left((box.titleX + GROUP_TITLE_PAD_X) * z).top((box.titleY + GROUP_TITLE_PAD_Y) * z).text_color(t.textNeutralSecondary).child(g.label);
+    return [frame, title];
+  });
+  const labels = drawn.graph.edges.flatMap((e) => {
+    const route = drawn.layout.edges[e.id];
+    const text = model.edges.find((x) => x.id === e.id)?.label;
+    if (!route || route.labelX === undefined || route.labelY === undefined || !text || !e.labelW || !e.labelH)
+      return [];
+    const c = edgeClass(e.id);
+    return [
+      textStyle(div34().absolute().flex().items_center().justify_center().whitespace_nowrap(), scaled(s.edge, z)).left(route.labelX * z).top(route.labelY * z).w(e.labelW * z).h(e.labelH * z).rounded(t.radiusS * z).bg(t.foreground).text_color(c === "lit" ? t.interactiveAccentDefault : t.textNeutralSecondary).when(c === "dim", (el) => el.opacity(DIMMED)).child(text)
+    ];
+  });
+  const nodes = drawn.graph.nodes.flatMap((g) => {
+    const p = drawn.layout.nodes[g.id];
+    const n = model.nodes.find((x) => x.id === g.id);
+    if (!p || !n)
+      return [];
+    const c = nodeClass(n.id);
+    const label = textStyle(div34().whitespace_nowrap(), scaled(s.label, z)).text_color(t.textNeutralPrimary).child(n.label);
+    const sub = n.sub ? [textStyle(div34().whitespace_nowrap(), scaled(s.sub, z)).text_color(t.textNeutralSecondary).child(n.sub)] : [];
+    let box = pointable(div34().id(o.id(`${part}-node-${n.id}`)).absolute().left(p.x * z).top(p.y * z).w(g.w * z).h(g.h * z).flex().rounded(isPill(n) ? g.h * z / 2 : t.radiusM * z).bg(c === "lit" ? t.highlightSubtle : t.elevated).border_1().border_color(c === "lit" ? t.interactiveAccentDefault : t.borderDefault).text_color(c === "lit" ? t.interactiveAccentDefault : t.textNeutralSecondary), state, n.id, () => askNode(d, n.id));
+    if (n.fields) {
+      const card = cardRows(n, d.m);
+      const rows = n.fields.map((f) => textStyle(div34().flex().flex_row().items_center().flex_none().h(card.row * z).px(NODE_PAD_X * z), scaled(s.field, z)).children(card.keys ? [
+        div34().flex_none().w(KEY_ICON * z).mr(KEY_GAP * z).children(f.key ? optional(o.icon(f.key === "pk" ? "KeyRound" : "Link", { size: KEY_ICON * z })) : [])
+      ] : []).child(div34().flex_1().min_w_0().whitespace_nowrap().text_color(t.textNeutralPrimary).child(f.name)).children(f.type ? [div34().flex_none().ml(TYPE_GAP * z).whitespace_nowrap().text_color(t.textNeutralSecondary).child(f.type)] : []));
+      box = box.flex_col().overflow_hidden().child(div34().flex_none().h(card.head * z).flex().flex_col().justify_center().px(NODE_PAD_X * z).gap(SUB_GAP * z).child(label).children(sub)).children(rows.length ? [
+        div34().flex_1().flex().flex_col().py(ROWS_PAD_Y * z).border_t_1().border_color(c === "lit" ? t.interactiveAccentDefault : t.borderDefault).children(rows)
+      ] : []);
+    } else {
+      box = box.flex_row().items_center().gap(NODE_ICON_GAP * z).px(padX(n) * z).children(optional(o.icon(KIND_ICON[n.kind], { size: NODE_ICON * z }))).child(div34().flex().flex_col().min_w_0().gap(SUB_GAP * z).child(label).children(sub));
+      if (n.kind === "external")
+        box = box.border_dashed();
+    }
+    if (c === "dim")
+      box = box.opacity(DIMMED);
+    return [box];
+  });
+  return div34().relative().w(drawn.layout.width * z).h(drawn.layout.height * z).children(groups).children(built.painted.map(layer)).children(labels).children(nodes);
+}
+var Diagram = {
+  render(props, ctx, node) {
+    const t = ctx.t;
+    const model = diagramModel(props, ctx.streaming);
+    const statementId = node.statementId ?? "";
+    const local = ctx.local({ drawn: null, paths: {}, reported: null });
+    const state = canvasState(ctx, model.steps.length);
+    const s = styles(t);
+    const m = measurers(ctx, s, model);
+    let error = null;
+    if (model.nodes.length && ready2(m)) {
+      const graph = sizedGraph(model, m);
+      const laid = ctx.layout(graph);
+      if (laid.status === "ready" && local.drawn?.layout !== laid.layout) {
+        local.drawn = { graph, layout: laid.layout };
+        local.paths = {};
+      } else if (laid.status === "failed") {
+        error = laid.error;
+        if (local.reported !== error) {
+          local.reported = error;
+          const failure = error;
+          ctx.after(() => ctx.session.reportRenderError({
+            source: "runtime",
+            code: "diagram-layout-failed",
+            message: `Diagram layout failed: ${failure}`,
+            component: "Diagram",
+            statementId
+          }));
+        }
+      }
+    }
+    const probes = [m.label.probes(), m.sub.probes(), m.edge.probes(), m.title.probes(), m.field.probes()].filter((p) => p !== null);
+    const drawn = local.drawn;
+    let content = null;
+    if (drawn) {
+      const d = { ctx, model, drawn, local, state, s, m, statementId };
+      content = {
+        width: drawn.layout.width,
+        height: drawn.layout.height,
+        draw: (o, z, part) => drawing(o, d, z, part),
+        reveal: (highlight) => revealBox(drawn, model, highlight)
+      };
+    }
+    const n = model.nodes.length;
+    return canvas(ctx, state, {
+      content,
+      placeholder: error ? `Diagram layout failed: ${error}` : n ? `Laying out ${n} boxes…` : "No boxes yet",
+      error: error !== null,
+      steps: model.steps,
+      askStep: (i) => stepQuestion(ctx, statementId, model.steps, i),
+      extra: probes
+    });
+  }
+};
+var DiagramPart = {
+  render() {
+    return null;
+  }
+};
+
+// src/components/sequence.ts
+import { div as div35, PathBuilder as PathBuilder11 } from "gpui-kit";
+
+// opengpui-shared:zod
+var m63 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["zod"];
+var e056 = m63["$brand"];
+var e1105 = m63["$input"];
+var e256 = m63["$output"];
+var e329 = m63["INVALID"];
+var e421 = m63["NEVER"];
+var e519 = m63["TimePrecision"];
+var e613 = m63["ZodAny"];
+var e711 = m63["ZodArray"];
+var e811 = m63["ZodBase64"];
+var e910 = m63["ZodBase64URL"];
+var e1010 = m63["ZodBigInt"];
+var e1114 = m63["ZodBigIntFormat"];
+var e1213 = m63["ZodBoolean"];
+var e1311 = m63["ZodCIDRv4"];
+var e1410 = m63["ZodCIDRv6"];
+var e1510 = m63["ZodCUID"];
+var e1610 = m63["ZodCUID2"];
+var e1710 = m63["ZodCatch"];
+var e1810 = m63["ZodCodec"];
+var e1910 = m63["ZodCompileAsyncError"];
+var e2010 = m63["ZodCompileUnsupportedError"];
+var e2111 = m63["ZodCreditCard"];
+var e2211 = m63["ZodCustom"];
+var e2310 = m63["ZodCustomStringFormat"];
+var e2410 = m63["ZodDate"];
+var e257 = m63["ZodDefault"];
+var e265 = m63["ZodDiscriminatedUnion"];
+var e275 = m63["ZodE164"];
+var e284 = m63["ZodEmail"];
+var e294 = m63["ZodEmoji"];
+var e304 = m63["ZodEnum"];
+var e3111 = m63["ZodError"];
+var e3210 = m63["ZodExactOptional"];
+var e334 = m63["ZodFile"];
+var e344 = m63["ZodFirstPartyTypeKind"];
+var e354 = m63["ZodFunction"];
+var e364 = m63["ZodGUID"];
+var e374 = m63["ZodIBAN"];
+var e384 = m63["ZodIPv4"];
+var e394 = m63["ZodIPv6"];
+var e404 = m63["ZodISODate"];
+var e4110 = m63["ZodISODateTime"];
+var e424 = m63["ZodISODuration"];
+var e434 = m63["ZodISOTime"];
+var e444 = m63["ZodInstanceOf"];
+var e453 = m63["ZodIntersection"];
+var e463 = m63["ZodIssueCode"];
+var e473 = m63["ZodJWT"];
+var e483 = m63["ZodKSUID"];
+var e493 = m63["ZodLazy"];
+var e503 = m63["ZodLiteral"];
+var e5110 = m63["ZodMAC"];
+var e524 = m63["ZodMap"];
+var e534 = m63["ZodNaN"];
+var e543 = m63["ZodNanoID"];
+var e553 = m63["ZodNever"];
+var e563 = m63["ZodNonOptional"];
+var e573 = m63["ZodNull"];
+var e583 = m63["ZodNullable"];
+var e593 = m63["ZodNumber"];
+var e603 = m63["ZodNumberFormat"];
+var e614 = m63["ZodObject"];
+var e624 = m63["ZodOptional"];
+var e633 = m63["ZodPipe"];
+var e643 = m63["ZodPrefault"];
+var e653 = m63["ZodPreprocess"];
+var e663 = m63["ZodPromise"];
+var e672 = m63["ZodReadonly"];
+var e682 = m63["ZodRealError"];
+var e692 = m63["ZodRecord"];
+var e702 = m63["ZodSet"];
+var e712 = m63["ZodString"];
+var e723 = m63["ZodStringFormat"];
+var e733 = m63["ZodSuccess"];
+var e743 = m63["ZodSymbol"];
+var e753 = m63["ZodTemplateLiteral"];
+var e762 = m63["ZodTransform"];
+var e772 = m63["ZodTuple"];
+var e782 = m63["ZodType"];
+var e792 = m63["ZodULID"];
+var e802 = m63["ZodURL"];
+var e812 = m63["ZodUUID"];
+var e823 = m63["ZodUndefined"];
+var e833 = m63["ZodUnion"];
+var e843 = m63["ZodUnknown"];
+var e853 = m63["ZodVoid"];
+var e862 = m63["ZodXID"];
+var e872 = m63["ZodXor"];
+var e882 = m63["_ZodString"];
+var e892 = m63["_default"];
+var e902 = m63["_function"];
+var e912 = m63["any"];
+var e923 = m63["array"];
+var e933 = m63["base64"];
+var e943 = m63["base64url"];
+var e953 = m63["bigint"];
+var e962 = m63["boolean"];
+var e972 = m63["catch"];
+var e982 = m63["check"];
+var e992 = m63["cidrv4"];
+var e1002 = m63["cidrv6"];
+var e1012 = m63["clone"];
+var e1023 = m63["codec"];
+var e1033 = m63["coerce"];
+var e1043 = m63["compile"];
+var e1053 = m63["config"];
+var e1062 = m63["core"];
+var e1072 = m63["creditCard"];
+var e1082 = m63["cuid"];
+var e1092 = m63["cuid2"];
+var e1106 = m63["currencyCode"];
+var e1115 = m63["custom"];
+var e1123 = m63["date"];
+var e1133 = m63["decode"];
+var e1143 = m63["decodeAsync"];
+var e1153 = m63["deepPartial"];
+var e1163 = m63["describe"];
+var e1173 = m63["discriminatedUnion"];
+var e1183 = m63["e164"];
+var e1193 = m63["email"];
+var e1203 = m63["emoji"];
+var e1214 = m63["encode"];
+var e1223 = m63["encodeAsync"];
+var e1233 = m63["endsWith"];
+var e1243 = m63["enum"];
+var e1253 = m63["exactOptional"];
+var e1263 = m63["file"];
+var e1273 = m63["flattenError"];
+var e1283 = m63["float32"];
+var e1293 = m63["float64"];
+var e1303 = m63["formatError"];
+var e1313 = m63["fromJSONSchema"];
+var e1323 = m63["function"];
+var e1333 = m63["getDiscriminatedOption"];
+var e1343 = m63["getErrorMap"];
+var e1353 = m63["globalRegistry"];
+var e1363 = m63["gt"];
+var e1373 = m63["gte"];
+var e1383 = m63["guid"];
+var e1393 = m63["hash"];
+var e1403 = m63["hex"];
+var e1413 = m63["hostname"];
+var e1423 = m63["httpUrl"];
+var e1433 = m63["iban"];
+var e1443 = m63["includes"];
+var e1453 = m63["input"];
+var e1463 = m63["instanceof"];
+var e1473 = m63["int"];
+var e1483 = m63["int32"];
+var e1492 = m63["int64"];
+var e1502 = m63["intersection"];
+var e1512 = m63["invertCodec"];
+var e1523 = m63["ipv4"];
+var e1533 = m63["ipv6"];
+var e1543 = m63["iso"];
+var e1553 = m63["json"];
+var e1562 = m63["jwt"];
+var e1572 = m63["keyof"];
+var e1582 = m63["ksuid"];
+var e1592 = m63["lazy"];
+var e1602 = m63["length"];
+var e1612 = m63["literal"];
+var e1623 = m63["locales"];
+var e1633 = m63["looseObject"];
+var e1643 = m63["looseRecord"];
+var e1653 = m63["lowercase"];
+var e1662 = m63["lt"];
+var e1672 = m63["lte"];
+var e1682 = m63["mac"];
+var e1692 = m63["map"];
+var e1702 = m63["maxLength"];
+var e1712 = m63["maxSize"];
+var e1723 = m63["memoizer"];
+var e1733 = m63["meta"];
+var e1743 = m63["mime"];
+var e1753 = m63["minLength"];
+var e1762 = m63["minSize"];
+var e1772 = m63["multipleOf"];
+var e1782 = m63["nan"];
+var e1792 = m63["nanoid"];
+var e1802 = m63["nativeEnum"];
+var e1812 = m63["negative"];
+var e1823 = m63["never"];
+var e1833 = m63["nonnegative"];
+var e1843 = m63["nonoptional"];
+var e1853 = m63["nonpositive"];
+var e1862 = m63["normalize"];
+var e1872 = m63["null"];
+var e1882 = m63["nullable"];
+var e1892 = m63["nullish"];
+var e1902 = m63["number"];
+var e1912 = m63["object"];
+var e1923 = m63["optional"];
+var e1933 = m63["output"];
+var e1943 = m63["overwrite"];
+var e1952 = m63["parse"];
+var e1962 = m63["parseAsync"];
+var e1972 = m63["partialRecord"];
+var e1982 = m63["pipe"];
+var e1992 = m63["positive"];
+var e2002 = m63["prefault"];
+var e2012 = m63["preprocess"];
+var e2023 = m63["prettifyError"];
+var e2033 = m63["promise"];
+var e2043 = m63["properties"];
+var e2052 = m63["property"];
+var e2062 = m63["readonly"];
+var e2072 = m63["record"];
+var e2082 = m63["refine"];
+var e2092 = m63["regex"];
+var e2103 = m63["regexes"];
+var e2113 = m63["registry"];
+var e2123 = m63["safeDecode"];
+var e2133 = m63["safeDecodeAsync"];
+var e2143 = m63["safeEncode"];
+var e2153 = m63["safeEncodeAsync"];
+var e2163 = m63["safeParse"];
+var e2173 = m63["safeParseAsync"];
+var e2183 = m63["set"];
+var e2193 = m63["setErrorMap"];
+var e2203 = m63["size"];
+var e2213 = m63["slugify"];
+var e2223 = m63["startsWith"];
+var e2233 = m63["strictObject"];
+var e2243 = m63["string"];
+var e2253 = m63["stringFormat"];
+var e2263 = m63["stringbool"];
+var e2273 = m63["success"];
+var e2283 = m63["superRefine"];
+var e2293 = m63["symbol"];
+var e2303 = m63["templateLiteral"];
+var e2313 = m63["toJSONSchema"];
+var e2323 = m63["toLowerCase"];
+var e2333 = m63["toUpperCase"];
+var e2343 = m63["toZod"];
+var e2353 = m63["transform"];
+var e2363 = m63["treeifyError"];
+var e2373 = m63["trim"];
+var e2383 = m63["tuple"];
+var e2392 = m63["uint32"];
+var e2402 = m63["uint64"];
+var e2412 = m63["ulid"];
+var e2423 = m63["undefined"];
+var e2433 = m63["union"];
+var e2443 = m63["unknown"];
+var e2452 = m63["uppercase"];
+var e2462 = m63["url"];
+var e2472 = m63["util"];
+var e2482 = m63["uuid"];
+var e2492 = m63["uuidv4"];
+var e2502 = m63["uuidv6"];
+var e2512 = m63["uuidv7"];
+var e2522 = m63["validate"];
+var e2532 = m63["validateAsync"];
+var e2542 = m63["void"];
+var e2552 = m63["withParser"];
+var e2562 = m63["xid"];
+var e2572 = m63["xor"];
+var e258 = m63["z"];
+var zod_default = m63.default;
+
+// src/diagram/step.ts
+var DiagramStep = e15({
+  name: "DiagramStep",
+  props: e258.object({
+    title: e258.string(),
+    details: e258.string(),
+    highlight: e258.array(e258.string()),
+    action: e4().optional()
+  }),
+  description: 'A numbered step under a Diagram, Sequence or Timeline. details is markdown. highlight lists the ids it lights: in a Diagram node ids and edge ids (from>to; an edge lights both its ends), in a Sequence participant ids and message numbers ("3"), in a Timeline task ids.',
+  component: null
+});
+
+// src/diagram/validate.ts
+var MAX_NODES = 30;
+function levenshtein(a, b) {
+  const row = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1;i <= a.length; i++) {
+    let diagonal = row[0];
+    row[0] = i;
+    for (let j = 1;j <= b.length; j++) {
+      const above = row[j];
+      row[j] = Math.min(above + 1, row[j - 1] + 1, diagonal + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diagonal = above;
+    }
+  }
+  return row[b.length];
+}
+function closest(id, ids) {
+  let best;
+  let bestDistance = Infinity;
+  for (const candidate of ids) {
+    const d = levenshtein(id, candidate);
+    if (d < bestDistance)
+      [best, bestDistance] = [candidate, d];
+  }
+  return bestDistance <= Math.max(2, id.length / 3) ? best : undefined;
+}
+function validateDiagram(model, statementId) {
+  const errors = [];
+  const report = (code, message, hint, warning = false) => errors.push({
+    source: "parser",
+    code,
+    message,
+    component: "Diagram",
+    ...statementId ? { statementId } : {},
+    ...hint ? { hint } : {},
+    ...warning ? { severity: "warning" } : {}
+  });
+  const didYouMean = (id, ids) => {
+    const match = closest(id, ids);
+    return match ? `Did you mean "${match}"?` : undefined;
+  };
+  if (!model.nodes.length) {
+    report("diagram-empty", "the Diagram has no nodes", "Give it Nodes or Entities (directly or in Groups), or remove it.");
+    return errors;
+  }
+  const nodeIds = new Set(model.nodes.map((n) => n.id));
+  const groupIds = new Set(model.groups.map((g) => g.id));
+  const seen = new Set;
+  for (const id of [...model.groups.map((g) => g.id), ...model.nodes.map((n) => n.id)]) {
+    if (seen.has(id))
+      report("diagram-duplicate-id", `id "${id}" is used twice`, "Nodes and groups share one id space per Diagram: rename one.");
+    seen.add(id);
+  }
+  for (const n of model.nodes) {
+    const names = new Set;
+    for (const f of n.fields ?? []) {
+      if (names.has(f.name))
+        report("diagram-duplicate-field", `entity "${n.id}": field "${f.name}" is listed twice`, "Keep one Field per name in an Entity.");
+      names.add(f.name);
+    }
+  }
+  if (model.nodes.length > MAX_NODES) {
+    report("diagram-too-big", `the Diagram has ${model.nodes.length} nodes`, `More than ${MAX_NODES} is hard to read: split it into several Diagrams.`, true);
+  }
+  const edgeIds = new Set;
+  for (const e of model.edges) {
+    for (const end of [e.from, e.to]) {
+      if (nodeIds.has(end))
+        continue;
+      const hint = groupIds.has(end) ? `"${end}" is a group; edges connect nodes, so point it at one of the group's nodes.` : didYouMean(end, nodeIds);
+      report("diagram-unknown-node", `edge "${e.id}": no node "${end}"`, hint);
+    }
+    if (edgeIds.has(e.id))
+      report("diagram-duplicate-edge", `edge "${e.id}" is written twice`, "Keep one Edge per pair and merge the labels.");
+    edgeIds.add(e.id);
+  }
+  model.steps.forEach((step, i) => {
+    if (!step.complete)
+      return;
+    for (const id of step.highlight) {
+      if (nodeIds.has(id) || edgeIds.has(id))
+        continue;
+      const [from, to, ...rest] = id.split(">");
+      let hint;
+      if (groupIds.has(id))
+        hint = `"${id}" is a group; highlight its nodes.`;
+      else if (to !== undefined && !rest.length && edgeIds.has(`${to}>${from}`))
+        hint = `The edge goes the other way: "${to}>${from}".`;
+      else
+        hint = didYouMean(id, to === undefined ? nodeIds : edgeIds);
+      report("diagram-unknown-highlight", `step ${i + 1} "${step.title}": no node or edge "${id}"`, hint);
+    }
+  });
+  return errors;
+}
+
+// src/diagram/sequence.ts
+var MESSAGE_STYLES = ["call", "reply", "async"];
+var Participant = e15({
+  name: "Participant",
+  props: e258.object({
+    id: e258.string(),
+    label: e258.string(),
+    kind: e258.enum(NODE_KINDS).optional(),
+    sub: e258.string().optional(),
+    action: e4().optional()
+  }),
+  description: "A column of a Sequence. id: short, unique in its Sequence. kind picks the icon (as a Node's). sub: a smaller second line. action replaces what a click sends.",
+  component: null
+});
+var Message = e15({
+  name: "Message",
+  props: e258.object({
+    from: e258.string(),
+    to: e258.string(),
+    label: e258.string(),
+    style: e258.enum(MESSAGE_STYLES).optional()
+  }),
+  description: "An arrow between two participant ids of its Sequence (from == to: a self message). Numbered 1..N in list order. style: call (default; solid), reply (dashed) or async (open arrowhead).",
+  component: null
+});
+var Block = e15({
+  name: "Block",
+  props: e258.object({ label: e258.string(), first: e258.number(), last: e258.number() }),
+  description: 'A labelled frame ("loop every 5 s", "alt: cache miss") around messages first..last (message numbers, inclusive).',
+  component: null
+});
+var Sequence = e15({
+  name: "Sequence",
+  props: e258.object({
+    participants: e258.array(Participant.ref),
+    messages: e258.array(Message.ref),
+    steps: e258.array(DiagramStep.ref).optional(),
+    blocks: e258.array(Block.ref).optional()
+  }),
+  description: "A sequence diagram: participants as columns, messages as numbered arrows top to bottom, with optional numbered steps and blocks.",
+  component: null
+});
+var SEQUENCE_NOTES = [
+  'A Sequence step highlights participant ids and message numbers as strings ("3"); a message number lights the message and both its participants.',
+  "Clicking a participant sends `Tell me more about <label>` with {diagram, node}; clicking a message sends `Tell me more about message <n>: <label>` with {diagram, message: <n>}."
+];
+var text3 = (v) => typeof v === "string" ? v : undefined;
+var is = (v, typeName) => e24(v) && v.typeName === typeName;
+var oneOf2 = (values, v, fallback) => values.includes(v) ? v : fallback;
+function sequenceModel(props, streaming) {
+  const participants = [];
+  for (const el of Array.isArray(props.participants) ? props.participants : []) {
+    if (!is(el, "Participant"))
+      continue;
+    const id = text3(el.props.id);
+    if (!id)
+      continue;
+    const sub = text3(el.props.sub);
+    const action = el.props.action;
+    participants.push({
+      id,
+      label: text3(el.props.label) ?? "",
+      kind: oneOf2(NODE_KINDS, el.props.kind, "process"),
+      ...sub ? { sub } : {},
+      ...action != null ? { action } : {}
+    });
+  }
+  const ids = new Set(participants.map((p) => p.id));
+  const list = Array.isArray(props.messages) ? props.messages : [];
+  const messages = [];
+  list.forEach((el, i) => {
+    if (!is(el, "Message"))
+      return;
+    const from = text3(el.props.from);
+    const to = text3(el.props.to);
+    if (from === undefined || to === undefined)
+      return;
+    if (streaming && !(ids.has(from) && ids.has(to)))
+      return;
+    messages.push({ n: i + 1, from, to, label: text3(el.props.label) ?? "", style: oneOf2(MESSAGE_STYLES, el.props.style, "call") });
+  });
+  const blocks = [];
+  for (const el of Array.isArray(props.blocks) ? props.blocks : []) {
+    if (!is(el, "Block"))
+      continue;
+    const { first, last } = el.props;
+    if (typeof first !== "number" || typeof last !== "number")
+      continue;
+    const block = { label: text3(el.props.label) ?? "", first, last };
+    if (!streaming || blockFits(block, list.length))
+      blocks.push(block);
+  }
+  return { participants, messages, count: list.length, blocks, steps: diagramSteps(props.steps, streaming) };
+}
+var blockFits = (b, count) => Number.isInteger(b.first) && Number.isInteger(b.last) && b.first >= 1 && b.first <= b.last && b.last <= count;
+var MAX_PARTICIPANTS = 12;
+var MAX_MESSAGES = 40;
+function validateSequence(model, statementId) {
+  const errors = [];
+  const report = (code, message, hint, warning = false) => errors.push({
+    source: "parser",
+    code,
+    message,
+    component: "Sequence",
+    ...statementId ? { statementId } : {},
+    ...hint ? { hint } : {},
+    ...warning ? { severity: "warning" } : {}
+  });
+  const didYouMean = (id, ids) => {
+    const match = closest(id, ids);
+    return match ? `Did you mean "${match}"?` : undefined;
+  };
+  if (!model.participants.length) {
+    report("sequence-empty", "the Sequence has no participants", "Give it Participants and Messages between them, or remove it.");
+    return errors;
+  }
+  if (!model.count)
+    report("sequence-empty", "the Sequence has no messages", "Add Messages between its participants, or use a Diagram.");
+  const ids = new Set;
+  for (const p of model.participants) {
+    if (ids.has(p.id))
+      report("sequence-duplicate-id", `participant id "${p.id}" is used twice`, "Participant ids are unique per Sequence: rename one.");
+    ids.add(p.id);
+  }
+  if (model.participants.length > MAX_PARTICIPANTS || model.count > MAX_MESSAGES) {
+    report("sequence-too-big", `the Sequence has ${model.participants.length} participants and ${model.count} messages`, `More than ${MAX_PARTICIPANTS} participants or ${MAX_MESSAGES} messages is hard to read: split it into several Sequences.`, true);
+  }
+  for (const m of model.messages) {
+    for (const end of m.from === m.to ? [m.from] : [m.from, m.to]) {
+      if (!ids.has(end))
+        report("sequence-unknown-participant", `message ${m.n} "${m.label}": no participant "${end}"`, didYouMean(end, ids));
+    }
+  }
+  const range = model.count ? `1..${model.count}` : "none (it has no messages)";
+  for (const b of model.blocks) {
+    if (blockFits(b, model.count))
+      continue;
+    const why = !Number.isInteger(b.first) || !Number.isInteger(b.last) ? "message numbers are whole" : b.first > b.last ? "first is after last" : `messages run ${range}`;
+    report("sequence-bad-block", `block "${b.label}" (${b.first}..${b.last}): ${why}`, `first and last are message numbers in ${range}, first ≤ last.`);
+  }
+  model.steps.forEach((step, i) => {
+    if (!step.complete)
+      return;
+    for (const id of step.highlight) {
+      if (ids.has(id) || isMessageNumber(id, model.count))
+        continue;
+      let hint;
+      const [from, to, ...rest] = id.split(">");
+      if (to !== undefined && !rest.length) {
+        const numbers = model.messages.filter((m) => m.from === from && m.to === to).map((m) => `"${m.n}"`);
+        hint = numbers.length ? `Highlight messages by number: ${numbers.join(", ")}.` : 'Highlight messages by their number ("3"), not from>to.';
+      } else if (/^\d+$/.test(id))
+        hint = `Messages are numbered ${range}.`;
+      else
+        hint = didYouMean(id, ids);
+      report("sequence-unknown-highlight", `step ${i + 1} "${step.title}": no participant or message "${id}"`, hint);
+    }
+  });
+  return errors;
+}
+var isMessageNumber = (id, count) => /^[1-9]\d*$/.test(id) && Number(id) <= count;
+
+// src/diagram/sequenceLayout.ts
+var HEAD_PAD_X = 12;
+var HEAD_PAD_Y = 8;
+var HEAD_ICON = 16;
+var HEAD_ICON_GAP = 8;
+var SUB_GAP2 = 2;
+var HEAD_MIN_W = 88;
+var COL_GAP = 32;
+var LABEL_PAD_X = 6;
+var LABEL_GAP = 3;
+var BADGE_PAD_X = 4;
+var SELF_W = 32;
+var SELF_H = 18;
+var FIRST_GAP = 18;
+var ROW_GAP = 12;
+var TAIL = 14;
+var BLOCK_PAD_X = 16;
+var BLOCK_INSET = 8;
+var BLOCK_TITLE_PAD_X = 8;
+var BLOCK_TITLE_PAD_Y = 3;
+var BLOCK_TITLE_GAP = 6;
+var BLOCK_END_PAD = 10;
+var MARGIN = 2;
+var ARROW_HALF = 4.5;
+function sequenceLayout(model, m) {
+  const col = new Map;
+  model.participants.forEach((p, i) => {
+    if (!col.has(p.id))
+      col.set(p.id, i);
+  });
+  const heads = model.participants.filter((p, i) => col.get(p.id) === i);
+  col.clear();
+  heads.forEach((p, i) => col.set(p.id, i));
+  const headH = Math.max(0, ...heads.map((p) => HEAD_PAD_Y * 2 + m.label.lineHeight + (p.sub ? SUB_GAP2 + m.sub.lineHeight : 0)));
+  const headW = heads.map((p) => {
+    const text = Math.max(m.label.width(p.label), p.sub ? m.sub.width(p.sub) : 0);
+    return Math.max(HEAD_MIN_W, Math.ceil(HEAD_PAD_X * 2 + HEAD_ICON + HEAD_ICON_GAP + text));
+  });
+  const rows = model.messages.filter((msg) => col.has(msg.from) && col.has(msg.to));
+  const badgeH = m.badge.lineHeight + 2;
+  const badgeW = (n) => Math.max(badgeH, Math.ceil(m.badge.width(String(n)) + BADGE_PAD_X * 2));
+  const plateW = (label) => Math.ceil(m.message.width(label) + LABEL_PAD_X * 2);
+  const gaps = headW.slice(1).map((w, i) => (headW[i] + w) / 2 + COL_GAP);
+  let right = (headW[headW.length - 1] ?? 0) / 2;
+  const spans = rows.map((msg) => {
+    const a = col.get(msg.from);
+    const b = col.get(msg.to);
+    const self = a === b;
+    const need = self ? badgeW(msg.n) / 2 + LABEL_GAP + Math.max(plateW(msg.label), SELF_W) + LABEL_GAP : badgeW(msg.n) / 2 + LABEL_GAP + plateW(msg.label) + LABEL_GAP * 2;
+    return { lo: Math.min(a, b), hi: self ? a + 1 : Math.max(a, b), need };
+  }).sort((p, q) => p.hi - p.lo - (q.hi - q.lo));
+  for (const s of spans) {
+    if (s.lo >= gaps.length) {
+      right = Math.max(right, s.need);
+      continue;
+    }
+    let have = 0;
+    for (let i = s.lo;i < s.hi; i++)
+      have += gaps[i];
+    const short = (s.need - have) / (s.hi - s.lo);
+    if (short > 0)
+      for (let i = s.lo;i < s.hi; i++)
+        gaps[i] += short;
+  }
+  const cx = [];
+  heads.forEach((_, i) => cx.push(i ? cx[i - 1] + gaps[i - 1] : headW[0] / 2));
+  const rowOf = new Map(rows.map((msg, i) => [msg.n, i]));
+  const blocks = model.blocks.flatMap((b, index) => {
+    if (!blockFits(b, model.count))
+      return [];
+    let first = -1;
+    let last = -1;
+    for (let n = b.first;n <= b.last; n++) {
+      const r = rowOf.get(n);
+      if (r === undefined)
+        continue;
+      if (first < 0)
+        first = r;
+      last = r;
+    }
+    return first < 0 ? [] : [{ block: b, index, first, last, inner: 0, top: 0, bottom: 0 }];
+  });
+  const inside = (k, j) => k !== j && k.first >= j.first && k.last <= j.last && (k.first !== j.first || k.last !== j.last || k.index > j.index);
+  const bySize = [...blocks].sort((p, q) => p.last - p.first - (q.last - q.first) || q.index - p.index);
+  for (const j of bySize)
+    for (const k of bySize)
+      if (inside(k, j))
+        j.inner = Math.max(j.inner, k.inner + 1);
+  const outerFirst = (p, q) => q.last - p.last || p.index - q.index;
+  const innerFirst = (p, q) => p.first - q.first || q.index - p.index;
+  const titleH = m.block.lineHeight + BLOCK_TITLE_PAD_Y * 2;
+  const messages = [];
+  let y = headH + FIRST_GAP;
+  rows.forEach((msg, r) => {
+    for (const b of blocks.filter((b) => b.first === r).sort(outerFirst)) {
+      b.top = y;
+      y += titleH + BLOCK_TITLE_GAP;
+    }
+    const a = cx[col.get(msg.from)];
+    const b = cx[col.get(msg.to)];
+    const lh = m.message.lineHeight;
+    const arrowY = y + lh + LABEL_GAP;
+    const bw = badgeW(msg.n);
+    const badge = { x: a - bw / 2, y: arrowY - badgeH / 2, w: bw, h: badgeH };
+    const pw = plateW(msg.label);
+    let row;
+    if (a === b) {
+      const x0 = a + bw / 2;
+      const loopRight = x0 + SELF_W;
+      const bottom = arrowY + SELF_H;
+      const label = { x: x0 + LABEL_GAP, y, w: pw, h: lh };
+      row = {
+        n: msg.n,
+        from: msg.from,
+        to: msg.to,
+        y: arrowY,
+        x0,
+        x1: a,
+        self: { right: loopRight, bottom },
+        badge,
+        label,
+        hit: { x: badge.x, y, w: Math.max(label.x + pw, loopRight) - badge.x, h: bottom + ARROW_HALF - y },
+        depth: 0
+      };
+      y = bottom;
+    } else {
+      const dir = Math.sign(b - a);
+      const x0 = a + dir * bw / 2;
+      const mid = (x0 + b) / 2;
+      const label = { x: mid - pw / 2, y, w: pw, h: lh };
+      const lo = Math.min(badge.x, b, label.x);
+      const hi = Math.max(badge.x + bw, b, label.x + pw);
+      row = { n: msg.n, from: msg.from, to: msg.to, y: arrowY, x0, x1: b, badge, label, hit: { x: lo, y, w: hi - lo, h: badge.y + badgeH - y }, depth: 0 };
+      y = arrowY;
+    }
+    row.depth = blocks.filter((blk) => blk.first <= r && r <= blk.last).length;
+    messages.push(row);
+    y += Math.max(badgeH / 2, ARROW_HALF);
+    for (const blk of blocks.filter((blk) => blk.last === r).sort(innerFirst)) {
+      y += BLOCK_END_PAD;
+      blk.bottom = y;
+    }
+    y += ROW_GAP;
+  });
+  const lifelineEnd = rows.length ? y - ROW_GAP + TAIL : headH + FIRST_GAP + TAIL;
+  const frames = blocks.map((blk) => {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let r = blk.first;r <= blk.last; r++) {
+      const row = messages[r];
+      lo = Math.min(lo, cx[col.get(row.from)], cx[col.get(row.to)]);
+      hi = Math.max(hi, cx[col.get(row.from)], cx[col.get(row.to)], row.self ? Math.max(row.self.right, row.label.x + row.label.w) : -Infinity);
+    }
+    const pad = BLOCK_PAD_X + blk.inner * BLOCK_INSET;
+    const titleW = Math.ceil(m.block.width(blk.block.label) + BLOCK_TITLE_PAD_X * 2);
+    const x = lo - pad;
+    const w = Math.max(hi + pad - x, titleW + BLOCK_INSET * 2);
+    return { label: blk.block.label, first: blk.block.first, last: blk.block.last, x, y: blk.top, w, h: blk.bottom - blk.top, titleW, titleH };
+  });
+  const minX = Math.min(0, ...frames.map((f) => f.x));
+  const dx = MARGIN - minX;
+  const dy = MARGIN;
+  const participants = heads.map((p, i) => ({ id: p.id, x: cx[i] - headW[i] / 2 + dx, y: dy, w: headW[i], h: headH, cx: cx[i] + dx }));
+  const move = (r) => ({ x: r.x + dx, y: r.y + dy, w: r.w, h: r.h });
+  const placed = messages.map((row) => ({
+    ...row,
+    y: row.y + dy,
+    x0: row.x0 + dx,
+    x1: row.x1 + dx,
+    ...row.self ? { self: { right: row.self.right + dx, bottom: row.self.bottom + dy } } : {},
+    badge: move(row.badge),
+    label: move(row.label),
+    hit: move(row.hit)
+  }));
+  const placedFrames = frames.map((f) => ({ ...f, x: f.x + dx, y: f.y + dy }));
+  const lastCx = cx.length ? cx[cx.length - 1] : 0;
+  const maxX = Math.max(lastCx + right, ...placed.map((row) => row.hit.x + row.hit.w - dx), ...frames.map((f) => f.x + f.w));
+  return {
+    width: Math.ceil(maxX + dx + MARGIN),
+    height: Math.ceil(lifelineEnd + dy + MARGIN),
+    participants,
+    lifeline: { y0: headH + dy, y1: lifelineEnd + dy },
+    messages: placed,
+    blocks: placedFrames
+  };
+}
+
+// src/components/sequence.ts
+var ARROW_LEN = 8;
+var ARROW_HALF2 = 4.5;
+var DASH2 = [5, 4];
+var LIFELINE_DASH = [4, 4];
+var styles2 = (t) => ({
+  label: typography(t, "label", "heavy"),
+  sub: typography(t, "body", "small"),
+  message: typography(t, "label", "small"),
+  block: typography(t, "label", "small-heavy"),
+  badge: typography(t, "number", "extra-small-heavy")
+});
+function measurers2(ctx, s, model) {
+  const m = {
+    label: new Measurer(ctx, s.label, "m-label"),
+    sub: new Measurer(ctx, s.sub, "m-sub"),
+    message: new Measurer(ctx, s.message, "m-message"),
+    block: new Measurer(ctx, s.block, "m-block"),
+    badge: new Measurer(ctx, s.badge, "m-badge")
+  };
+  m.label.want(model.participants.map((p) => p.label));
+  m.sub.want(model.participants.flatMap((p) => p.sub ? [p.sub] : []));
+  m.message.want(model.messages.map((msg) => msg.label));
+  m.block.want(model.blocks.map((b) => b.label));
+  m.badge.want(model.messages.map((msg) => String(msg.n)));
+  return m;
+}
+function marks2(model, highlight, hover) {
+  const participants = new Set;
+  const messages = new Set;
+  const ids = new Set(model.participants.map((p) => p.id));
+  const lightMessage = (n) => {
+    const msg = model.messages.find((x) => x.n === n);
+    if (!msg)
+      return;
+    messages.add(n);
+    participants.add(msg.from);
+    participants.add(msg.to);
+  };
+  for (const id of highlight ?? []) {
+    if (ids.has(id))
+      participants.add(id);
+    else if (isMessageNumber(id, model.count))
+      lightMessage(Number(id));
+  }
+  if (hover?.startsWith("p:")) {
+    const id = hover.slice(2);
+    participants.add(id);
+    for (const msg of model.messages)
+      if (msg.from === id || msg.to === id)
+        messages.add(msg.n);
+  } else if (hover?.startsWith("m:"))
+    lightMessage(Number(hover.slice(2)));
+  return { active: highlight !== null, participants, messages };
+}
+function revealBox2(drawn, highlight) {
+  const { layout, model } = drawn;
+  const box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+  const add = (x0, y0, x1, y1) => {
+    box.x0 = Math.min(box.x0, x0);
+    box.y0 = Math.min(box.y0, y0);
+    box.x1 = Math.max(box.x1, x1);
+    box.y1 = Math.max(box.y1, y1);
+  };
+  const ids = new Set(model.participants.map((p) => p.id));
+  for (const id of highlight) {
+    if (ids.has(id)) {
+      const p = layout.participants.find((x) => x.id === id);
+      if (p)
+        add(p.x, p.y, p.x + p.w, p.y + p.h);
+    } else if (isMessageNumber(id, model.count)) {
+      const row = layout.messages.find((r) => r.n === Number(id));
+      if (row)
+        add(row.hit.x, row.hit.y, row.hit.x + row.hit.w, row.hit.y + row.hit.h);
+    }
+  }
+  return box.x0 === Infinity ? null : box;
+}
+function paths(drawn, z, m, color) {
+  const k = Math.max(z, 0.6);
+  const builders = new Map;
+  const get = (c) => {
+    let b = builders.get(c);
+    if (!b) {
+      const width = c === "lit" ? 2 : 1.25;
+      b = {
+        lifeline: PathBuilder11.stroke(c === "lit" ? 1.5 : 1).dash_array(LIFELINE_DASH.map((v) => v * k)),
+        solid: PathBuilder11.stroke(width),
+        dashed: PathBuilder11.stroke(width).dash_array(DASH2.map((v) => v * k)),
+        open: PathBuilder11.stroke(width),
+        fill: PathBuilder11.fill(),
+        used: new Set
+      };
+      builders.set(c, b);
+    }
+    return b;
+  };
+  const classOf = (lit) => lit ? "lit" : m.active ? "dim" : "normal";
+  const { layout, model } = drawn;
+  for (const p of layout.participants) {
+    const b = get(classOf(m.participants.has(p.id)));
+    b.used.add("lifeline");
+    b.lifeline.move_to(p.cx * z, layout.lifeline.y0 * z).line_to(p.cx * z, layout.lifeline.y1 * z);
+  }
+  const styleOf = new Map(model.messages.map((msg) => [msg.n, msg.style]));
+  for (const row of layout.messages) {
+    const style = styleOf.get(row.n) ?? "call";
+    const b = get(classOf(m.messages.has(row.n)));
+    const line = style === "reply" ? b.dashed : b.solid;
+    b.used.add(style === "reply" ? "dashed" : "solid");
+    const y = row.y * z;
+    let sx;
+    if (row.self) {
+      line.move_to(row.x0 * z, y).line_to(row.self.right * z, y).line_to(row.self.right * z, row.self.bottom * z);
+      sx = row.self.right * z;
+    } else {
+      line.move_to(row.x0 * z, y);
+      sx = row.x0 * z;
+    }
+    const ty = row.self ? row.self.bottom * z : y;
+    const tx = row.x1 * z;
+    const dx = Math.sign(tx - sx) || 1;
+    const len = Math.min(ARROW_LEN * k, Math.abs(tx - sx));
+    const half = ARROW_HALF2 * k;
+    const bx = tx - dx * len;
+    if (style === "call") {
+      line.line_to(bx, ty);
+      b.used.add("fill");
+      b.fill.add_polygon([[tx, ty], [bx, ty - half], [bx, ty + half]], true);
+    } else {
+      line.line_to(tx, ty);
+      b.used.add("open");
+      b.open.move_to(bx, ty - half).line_to(tx, ty).line_to(bx, ty + half);
+    }
+  }
+  const out = [];
+  for (const c of ["dim", "normal", "lit"]) {
+    const b = builders.get(c);
+    if (!b)
+      continue;
+    for (const part of ["lifeline", "dashed", "solid", "open", "fill"])
+      if (b.used.has(part))
+        out.push({ path: b[part].build(), paint: color[c] });
+  }
+  return out;
+}
+function askParticipant(d, id) {
+  const p = d.drawn.model.participants.find((x) => x.id === id);
+  if (!p)
+    return;
+  const message = `Tell me more about ${p.label}`;
+  d.ctx.trigger(message, p.action ?? { steps: [{ type: e0.ToAssistant, message, context: { diagram: d.statementId, node: id } }] });
+}
+function askMessage(d, n) {
+  const msg = d.drawn.model.messages.find((x) => x.n === n);
+  if (!msg)
+    return;
+  const message = `Tell me more about message ${n}: ${msg.label}`;
+  d.ctx.trigger(message, { steps: [{ type: e0.ToAssistant, message, context: { diagram: d.statementId, message: n } }] });
+}
+function drawing2(o, d, z, part) {
+  const t = o.t;
+  const { drawn, local, state, s } = d;
+  const { layout, model } = drawn;
+  const step = state.step === null ? undefined : model.steps[state.step];
+  const m = marks2(model, step?.complete ? step.highlight : null, state.hover);
+  const classOf = (lit) => lit ? "lit" : m.active ? "dim" : "normal";
+  const pathKey = `${z}|${m.active}|${[...m.participants].join(",")}|${[...m.messages].join(",")}`;
+  let built = local.paths[part];
+  if (built?.key !== pathKey) {
+    const muted = t.textNeutralSecondary;
+    built = { key: pathKey, painted: paths(drawn, z, m, { normal: muted, dim: alpha(muted, DIMMED), lit: t.interactiveAccentDefault }) };
+    local.paths[part] = built;
+  }
+  const frames = layout.blocks.map((f) => {
+    const lit = [...m.messages].some((n) => n >= f.first && n <= f.last);
+    const frame = div35().absolute().left(f.x * z).top(f.y * z).w(f.w * z).h(f.h * z).rounded(t.radiusM * z).bg(t.sunkLight).border_1().border_color(t.borderDefault).when(m.active && !lit, (el) => el.opacity(0.6));
+    const title = div35().absolute().left(f.x * z).top(f.y * z).rounded_tl(t.radiusM * z).rounded_br(t.radiusM * z).bg(t.foreground).when(m.active && !lit, (el) => el.opacity(0.6)).child(textStyle(div35().flex().items_center().whitespace_nowrap(), scaled(s.block, z)).h(f.titleH * z).px(BLOCK_TITLE_PAD_X * z).rounded_tl(t.radiusM * z).rounded_br(t.radiusM * z).bg(t.sunk).border_r_1().border_b_1().border_color(t.borderDefault).text_color(t.textNeutralSecondary).child(f.label));
+    return { frame, title };
+  });
+  const labelOf = new Map(model.messages.map((msg) => [msg.n, msg.label]));
+  const messages = layout.messages.map((row) => {
+    const c = classOf(m.messages.has(row.n));
+    const lit = c === "lit";
+    let label = textStyle(div35().size_full().flex().items_center().justify_center().whitespace_nowrap(), scaled(s.message, z)).text_color(lit ? t.interactiveAccentDefault : t.textNeutralSecondary).child(labelOf.get(row.n) ?? "");
+    for (let i = 0;i < row.depth; i++)
+      label = div35().size_full().bg(t.sunkLight).child(label);
+    const plate = div35().absolute().left((row.label.x - row.hit.x) * z).top((row.label.y - row.hit.y) * z).w(row.label.w * z).h(row.label.h * z).bg(t.foreground).child(label);
+    const badge = div35().absolute().left((row.badge.x - row.hit.x) * z).top((row.badge.y - row.hit.y) * z).w(row.badge.w * z).h(row.badge.h * z).rounded(row.badge.h * z).bg(t.foreground).child(textStyle(div35().size_full().flex().items_center().justify_center(), scaled(s.badge, z)).rounded(row.badge.h * z).bg(lit ? t.interactiveAccentDefault : t.elevated).border_1().border_color(lit ? t.interactiveAccentDefault : t.borderDefault).text_color(lit ? t.textWhite : t.textNeutralSecondary).child(String(row.n)));
+    return pointable(div35().id(o.id(`${part}-msg-${row.n}`)).absolute().left(row.hit.x * z).top(row.hit.y * z).w(row.hit.w * z).h(row.hit.h * z).when(c === "dim", (el) => el.opacity(DIMMED)), state, `m:${row.n}`, () => askMessage(d, row.n)).children([plate, badge]);
+  });
+  const heads = layout.participants.flatMap((p) => {
+    const info = model.participants.find((x) => x.id === p.id);
+    if (!info)
+      return [];
+    const c = classOf(m.participants.has(p.id));
+    const lit = c === "lit";
+    const icon = o.icon(KIND_ICON[info.kind], { size: HEAD_ICON * z });
+    const text = div35().flex().flex_col().min_w_0().gap(SUB_GAP2 * z).child(textStyle(div35().whitespace_nowrap(), scaled(s.label, z)).text_color(t.textNeutralPrimary).child(info.label)).children(info.sub ? [textStyle(div35().whitespace_nowrap(), scaled(s.sub, z)).text_color(t.textNeutralSecondary).child(info.sub)] : []);
+    let box = pointable(div35().id(o.id(`${part}-p-${p.id}`)).absolute().left(p.x * z).top(p.y * z).w(p.w * z).h(p.h * z).flex().flex_row().items_center().gap(HEAD_ICON_GAP * z).px(HEAD_PAD_X * z).rounded(t.radiusM * z).bg(lit ? t.highlightSubtle : t.elevated).border_1().border_color(lit ? t.interactiveAccentDefault : t.borderDefault).text_color(lit ? t.interactiveAccentDefault : t.textNeutralSecondary), state, `p:${p.id}`, () => askParticipant(d, p.id)).children(optional(icon)).child(text);
+    if (info.kind === "external")
+      box = box.border_dashed();
+    if (c === "dim")
+      box = box.opacity(DIMMED);
+    return [box];
+  });
+  return div35().relative().w(layout.width * z).h(layout.height * z).children(frames.map((f) => f.frame)).children(built.painted.map(layer)).children(frames.map((f) => f.title)).children(messages).children(heads);
+}
+var Sequence2 = {
+  render(props, ctx, node) {
+    const model = sequenceModel(props, ctx.streaming);
+    const statementId = node.statementId ?? "";
+    const local = ctx.local({ drawn: null, key: null, paths: {} });
+    const state = canvasState(ctx, model.steps.length);
+    const s = styles2(ctx.t);
+    const m = measurers2(ctx, s, model);
+    const ms = Object.values(m);
+    if (model.participants.length && ms.every((x) => x.charsReady)) {
+      const widths = widthsVersion();
+      if (local.key?.props !== props || local.key.widths !== widths) {
+        local.drawn = { model, layout: sequenceLayout(model, m) };
+        local.key = { props, widths };
+        local.paths = {};
+      }
+    } else if (!model.participants.length)
+      local.drawn = null;
+    const drawn = local.drawn;
+    let content = null;
+    if (drawn) {
+      const current = { model: { ...drawn.model, steps: model.steps }, layout: drawn.layout };
+      const d = { ctx, drawn: current, local, state, s, statementId };
+      content = {
+        width: drawn.layout.width,
+        height: drawn.layout.height,
+        draw: (o, z, part) => drawing2(o, d, z, part),
+        reveal: (highlight) => revealBox2(drawn, highlight)
+      };
+    }
+    return canvas(ctx, state, {
+      content,
+      placeholder: model.participants.length ? "Measuring…" : "No participants yet",
+      steps: model.steps,
+      askStep: (i) => stepQuestion(ctx, statementId, model.steps, i),
+      extra: ms.map((x) => x.probes()).filter((p) => p !== null)
+    });
+  }
+};
+
+// src/components/timeline.ts
+import { div as div36, PathBuilder as PathBuilder12 } from "gpui-kit";
+
+// src/diagram/timeline.ts
+var TASK_STATUSES = ["planned", "active", "done", "blocked"];
+var MAX_TASKS = 40;
+var when = e258.union([e258.string(), e258.number()]);
+var Task = e15({
+  name: "Task",
+  props: e258.object({
+    id: e258.string(),
+    label: e258.string(),
+    start: when,
+    end: when.optional(),
+    lane: e258.string().optional(),
+    after: e258.array(e258.string()).optional(),
+    status: e258.enum(TASK_STATUSES).optional()
+  }),
+  description: 'A bar on a Timeline from start to end, both included. start/end: ISO days ("2027-01-04") or numbers (sprint 1, 2…), one kind per Timeline; no end: a milestone (a diamond at start). lane: rows group under lane headers. after: ids of the tasks it waits for. status: planned (default), active, done or blocked.',
+  component: null
+});
+var Timeline = e15({
+  name: "Timeline",
+  props: e258.object({
+    tasks: e258.array(Task.ref),
+    steps: e258.array(DiagramStep.ref).optional()
+  }),
+  description: "Tasks on a time axis (a Gantt chart, a roadmap), one row each, grouped by lane, with arrows from each task's dependencies. steps: DiagramSteps whose highlight lists task ids.",
+  component: null
+});
+var TIMELINE_NOTES = [
+  "Write each Timeline as its own statement and its tasks as their own list: `t = Timeline(tTasks, tSteps)`.",
+  'Clicking a task sends you `Tell me more about <label>` with context {diagram: "<statement id>", task: "<id>"}.'
+];
+var ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+var DAY_MS = 86400000;
+function parseWhen(v) {
+  if (typeof v === "number")
+    return Number.isFinite(v) ? { unit: "number", value: v } : null;
+  if (typeof v !== "string")
+    return null;
+  const m = ISO_DAY.exec(v);
+  if (!m)
+    return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const ms = Date.UTC(y, mo - 1, d);
+  const date = new Date(ms);
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== mo - 1 || date.getUTCDate() !== d)
+    return null;
+  return { unit: "date", value: ms / DAY_MS };
+}
+function dayParts(day) {
+  const d = new Date(day * DAY_MS);
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth(), date: d.getUTCDate(), weekday: ((day + 3) % 7 + 7) % 7 };
+}
+var dayOf = (year, month, date = 1) => Date.UTC(year, month, date) / DAY_MS;
+var text4 = (v) => typeof v === "string" ? v : undefined;
+var written = (v) => typeof v === "string" ? `"${v}"` : String(v);
+function timelineModel(props, streaming) {
+  const els = Array.isArray(props.tasks) ? props.tasks.filter((x) => e24(x) && x.typeName === "Task") : [];
+  let tasks = [];
+  for (const el of els) {
+    const p = el.props;
+    const id = text4(p.id);
+    if (!id || p.start == null)
+      continue;
+    const start = parseWhen(p.start);
+    const hasEnd = p.end != null;
+    const end = hasEnd ? parseWhen(p.end) : null;
+    if (streaming && (!start || hasEnd && !end))
+      continue;
+    const lane = text4(p.lane);
+    tasks.push({
+      id,
+      label: text4(p.label) ?? "",
+      start,
+      end,
+      startText: written(p.start),
+      ...hasEnd ? { endText: written(p.end) } : {},
+      ...lane ? { lane } : {},
+      after: Array.isArray(p.after) ? p.after.filter((a) => typeof a === "string") : [],
+      status: TASK_STATUSES.includes(p.status) ? p.status : "planned"
+    });
+  }
+  const unit = tasks.find((t) => t.start)?.start?.unit ?? null;
+  if (streaming) {
+    const ids = new Set(tasks.map((t) => t.id));
+    tasks = tasks.map((t) => ({ ...t, after: t.after.filter((a) => ids.has(a)) }));
+  }
+  return { tasks, steps: diagramSteps(props.steps, streaming), unit };
+}
+function badTimeHint(raw) {
+  const v = raw.startsWith('"') ? raw.slice(1, -1) : raw;
+  if (/^-?\d+(\.\d+)?$/.test(v))
+    return `Write the number without quotes: ${v}.`;
+  const day = /^(\d{4}-\d{2}-\d{2})[T ]/.exec(v);
+  if (day)
+    return `Use the calendar day alone: "${day[1]}".`;
+  if (ISO_DAY.test(v))
+    return `${raw} is no calendar day.`;
+  return 'Write an ISO day ("2027-01-04") or a number (1, 2, 3).';
+}
+function validateTimeline(model, statementId) {
+  const errors = [];
+  const report = (code, message, hint, warning = false) => errors.push({
+    source: "parser",
+    code,
+    message,
+    component: "Timeline",
+    ...statementId ? { statementId } : {},
+    ...hint ? { hint } : {},
+    ...warning ? { severity: "warning" } : {}
+  });
+  const didYouMean = (id, ids) => {
+    const match = closest(id, ids);
+    return match ? `Did you mean "${match}"?` : undefined;
+  };
+  if (!model.tasks.length) {
+    report("timeline-empty", "the Timeline has no tasks", "Give it Tasks, or remove it.");
+    return errors;
+  }
+  const ids = new Set;
+  for (const t of model.tasks) {
+    if (ids.has(t.id))
+      report("timeline-duplicate-id", `task id "${t.id}" is used twice`, "Task ids are unique per Timeline: rename one.");
+    ids.add(t.id);
+  }
+  if (model.tasks.length > MAX_TASKS) {
+    report("timeline-too-big", `the Timeline has ${model.tasks.length} tasks`, `More than ${MAX_TASKS} is hard to read: split it into several Timelines.`, true);
+  }
+  const unit = model.unit;
+  const first = model.tasks.find((t) => t.start);
+  for (const t of model.tasks) {
+    if (!t.start)
+      report("timeline-bad-date", `task "${t.id}": start ${t.startText} is no date or number`, badTimeHint(t.startText));
+    if (t.endText !== undefined && !t.end)
+      report("timeline-bad-date", `task "${t.id}": end ${t.endText} is no date or number`, badTimeHint(t.endText));
+    const odd = [t.start && ["start", t.startText, t.start], t.end && ["end", t.endText, t.end]].find((x) => x && unit && x[2].unit !== unit);
+    if (odd && unit && first) {
+      report("timeline-mixed-units", `task "${t.id}": ${odd[0]} ${odd[1]} is a ${odd[2].unit}, but this Timeline uses ${unit === "date" ? "dates" : "numbers"} (task "${first.id}" starts ${first.startText})`, 'One Timeline uses ISO days ("2027-01-04") or numbers (1, 2, 3), not both.');
+    } else if (t.start && t.end && t.end.value < t.start.value) {
+      report("timeline-end-before-start", `task "${t.id}": ends ${t.endText} before it starts ${t.startText}`, "Swap them; or leave end out for a milestone.");
+    }
+  }
+  const lanes = new Set(model.tasks.flatMap((t) => t.lane ? [t.lane] : []));
+  for (const t of model.tasks) {
+    for (const a of t.after) {
+      if (ids.has(a))
+        continue;
+      report("timeline-unknown-dependency", `task "${t.id}": after "${a}": no task "${a}"`, lanes.has(a) ? `"${a}" is a lane; name the tasks it waits for.` : didYouMean(a, ids));
+    }
+  }
+  model.steps.forEach((step, i) => {
+    if (!step.complete)
+      return;
+    for (const id of step.highlight) {
+      if (ids.has(id))
+        continue;
+      report("timeline-unknown-highlight", `step ${i + 1} "${step.title}": no task "${id}"`, lanes.has(id) ? `"${id}" is a lane; highlight its tasks.` : didYouMean(id, ids));
+    }
+  });
+  return errors;
+}
+
+// src/diagram/timelineLayout.ts
+var PLOT_W = 840;
+var LEFT = 16;
+var RIGHT = 16;
+var AXIS_TOP = 22;
+var AXIS_BOTTOM = 6;
+var TICK_LABEL_PAD = 5;
+var TICK_LABEL_GAP = 8;
+var LANE_PAD_Y = 6;
+var LANE_PAD_X = 10;
+var ROW_PAD_Y2 = 7;
+var BAR_PAD_X = 8;
+var BAR_PAD_Y = 5;
+var LABEL_GAP2 = 6;
+var STUB = 10;
+var INSET = 6;
+var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+var clamp3 = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+function numberScale(lo, hi) {
+  const a = Math.floor(lo);
+  const b = Math.max(Math.ceil(hi), a + 1);
+  const ppu = clamp3(PLOT_W / (b - a), 6, 140);
+  const step = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].find((s) => s * ppu >= 28) ?? 1000;
+  const first = Math.floor(a / step) * step;
+  const last = Math.ceil(b / step) * step;
+  const ticks = [];
+  for (let v = first;v <= last; v += step)
+    ticks.push({ v, label: String(v) });
+  return { kind: "number", lo: first, hi: last, ppu, ticks };
+}
+function dateScale(lo, hi) {
+  const span = Math.max(hi - lo, 1);
+  const label = (day, long) => {
+    const p = dayParts(day);
+    return long ? `${MONTHS[p.month]} ${p.date}` : String(p.date);
+  };
+  if (span <= 31) {
+    const ppu = clamp3(PLOT_W / span, 28, 80);
+    const ticks = [];
+    for (let d = lo;d <= hi; d++)
+      ticks.push({ v: d, label: label(d, d === lo || dayParts(d).date === 1) });
+    return { kind: "day", lo, hi, ppu, ticks };
+  }
+  if (span <= 140) {
+    const first = lo - dayParts(lo).weekday;
+    const last = hi + (7 - dayParts(hi).weekday) % 7;
+    const ppu = clamp3(PLOT_W / (last - first), 6, 24);
+    const ticks = [];
+    for (let d = first;d <= last; d += 7)
+      ticks.push({ v: d, label: label(d, true) });
+    return { kind: "week", lo: first, hi: last, ppu, ticks };
+  }
+  const start = dayParts(lo);
+  const end = dayParts(hi);
+  const firstMonth = start.year * 12 + start.month;
+  const lastMonth = end.year * 12 + end.month + (end.date > 1 ? 1 : 0);
+  const days = dayOf(Math.floor(lastMonth / 12), lastMonth % 12) - dayOf(start.year, start.month);
+  const ppu = clamp3(PLOT_W / days, 0.3, 4);
+  const step = [1, 3, 6, 12].find((s) => s * 30.4 * ppu >= 34) ?? 12;
+  const from = Math.floor(firstMonth / step) * step;
+  const to = Math.ceil(lastMonth / step) * step;
+  const ticks = [];
+  for (let m = from;m <= to; m += step) {
+    const [year, month] = [Math.floor(m / 12), m % 12];
+    const text = step === 12 ? String(year) : m === from || month === 0 ? `${MONTHS[month]} ${year}` : MONTHS[month];
+    ticks.push({ v: dayOf(year, month), label: text });
+  }
+  return { kind: "month", lo: ticks[0].v, hi: ticks[ticks.length - 1].v, ppu, ticks };
+}
+function span(t, unit) {
+  if (!t.start || t.start.unit !== unit)
+    return null;
+  if (t.endText === undefined)
+    return [t.start.value, t.start.value];
+  if (!t.end || t.end.unit !== unit)
+    return null;
+  const [a, b] = t.start.value <= t.end.value ? [t.start.value, t.end.value] : [t.end.value, t.start.value];
+  return [a, b + 1];
+}
+function route(src, dst) {
+  const ty = dst.y + dst.h / 2;
+  const tx = dst.x0;
+  if (src.inside && tx - src.x1 >= 2 * STUB) {
+    const sy = src.y + src.h / 2;
+    return [[src.x1, sy], [src.x1 + STUB, sy], [src.x1 + STUB, ty], [tx, ty]];
+  }
+  const down = dst.rowY > src.rowY;
+  const leave = down ? src.y + src.h : src.y;
+  const ex = src.milestone ? (src.x0 + src.x1) / 2 : clamp3(Math.min(tx, src.x1) - STUB, src.x0 + INSET, src.x1 - INSET);
+  if (tx - ex >= STUB)
+    return [[ex, leave], [ex, ty], [tx, ty]];
+  if (!dst.milestone && ex >= dst.x0 + INSET && ex <= dst.x1 - INSET)
+    return [[ex, leave], [ex, down ? dst.y : dst.y + dst.h]];
+  const gy = down ? dst.rowY : dst.rowY + dst.rowH;
+  return [[ex, leave], [ex, gy], [tx - STUB, gy], [tx - STUB, ty], [tx, ty]];
+}
+function timelineLayout(model, m) {
+  const unit = model.unit;
+  if (!unit)
+    return null;
+  const placed = model.tasks.flatMap((t) => {
+    const s = span(t, unit);
+    return s ? [{ t, s }] : [];
+  });
+  if (!placed.length)
+    return null;
+  const lo = Math.min(...placed.map((p) => p.s[0]));
+  const hi = Math.max(...placed.map((p) => p.s[1]));
+  const scale = unit === "date" ? dateScale(lo, hi) : numberScale(lo, hi);
+  const x = (v) => LEFT + (v - scale.lo) * scale.ppu;
+  const lastStart = Math.max(...placed.map((p) => p.s[0]));
+  const ticks = [];
+  let free = -Infinity;
+  scale.ticks.forEach((tk, i) => {
+    const tx = x(tk.v);
+    const labelX = tx + TICK_LABEL_PAD;
+    const fits = labelX >= free && (i < scale.ticks.length - 1 || lastStart >= tk.v);
+    ticks.push({ x: tx, label: fits ? tk.label : null, labelX });
+    if (fits)
+      free = labelX + m.tick(tk.label) + TICK_LABEL_GAP;
+  });
+  const axisH = AXIS_TOP + m.tickH + AXIS_BOTTOM;
+  const order = [];
+  for (const p of placed)
+    if (!order.includes(p.t.lane))
+      order.push(p.t.lane);
+  const barH = m.contentH + BAR_PAD_Y * 2;
+  const rowH = barH + ROW_PAD_Y2 * 2;
+  const laneH = m.laneH + LANE_PAD_Y * 2;
+  const lanes = [];
+  const bars = [];
+  const after = [];
+  let y = axisH;
+  let right = x(scale.hi);
+  for (const lane of order) {
+    if (lane !== undefined) {
+      lanes.push({ label: lane, labelX: LANE_PAD_X, y, h: laneH });
+      right = Math.max(right, LANE_PAD_X * 2 + m.lane(lane));
+      y += laneH;
+    }
+    for (const { t, s } of placed.filter((p) => p.t.lane === lane)) {
+      const w = m.content(t);
+      const milestone = t.endText === undefined;
+      const by = y + ROW_PAD_Y2;
+      let bar;
+      if (milestone) {
+        const cx = x(s[0]);
+        bar = { id: t.id, rowY: y, rowH, x0: cx - barH / 2, x1: cx + barH / 2, y: by, h: barH, milestone, labelX: cx + barH / 2 + LABEL_GAP2, labelW: w, inside: false };
+      } else {
+        const [x0, x1] = [x(s[0]), x(s[1])];
+        const inside = w + BAR_PAD_X * 2 <= x1 - x0;
+        bar = { id: t.id, rowY: y, rowH, x0, x1, y: by, h: barH, milestone, labelX: inside ? x0 + BAR_PAD_X : x1 + LABEL_GAP2, labelW: w, inside };
+      }
+      bars.push(bar);
+      after.push(t.after);
+      right = Math.max(right, bar.inside ? bar.x1 : bar.labelX + w);
+      y += rowH;
+    }
+  }
+  const byId = new Map(bars.map((b) => [b.id, b]));
+  const arrows = [];
+  bars.forEach((b, i) => {
+    for (const dep of new Set(after[i])) {
+      const src = byId.get(dep);
+      if (!src || dep === b.id)
+        continue;
+      arrows.push({ id: `${dep}>${b.id}`, from: dep, to: b.id, points: route(src, b) });
+    }
+  });
+  const ticksRight = ticks.reduce((r, tk) => tk.label ? Math.max(r, tk.labelX + m.tick(tk.label)) : r, 0);
+  return {
+    width: Math.ceil(Math.max(right, ticksRight) + RIGHT),
+    height: y,
+    unit,
+    tickKind: scale.kind,
+    axisH,
+    tickY: AXIS_TOP,
+    x0: x(scale.lo),
+    x1: x(scale.hi),
+    ticks,
+    lanes,
+    bars,
+    arrows
+  };
+}
+
+// src/components/timeline.ts
+var ICON = 12;
+var ICON_GAP = 5;
+var RING = 3;
+var DIAMOND = 0.42;
+var ARROW_LEN2 = 7;
+var ARROW_HALF3 = 4;
+var STATUS_ICON = { done: "Check", blocked: "Ban" };
+var styles3 = (t) => ({
+  label: typography(t, "label", "heavy"),
+  lane: typography(t, "label", "small-heavy"),
+  tick: typography(t, "label", "small")
+});
+function look2(t, status) {
+  switch (status) {
+    case "active":
+      return { bg: t.interactiveAccentDefault, border: t.interactiveAccentDefault, fg: t.textAccentPrimary, outside: t.textNeutralPrimary };
+    case "done":
+      return { bg: over(t.sunk, t.foreground), border: t.borderInteractive, fg: t.textNeutralSecondary, outside: t.textNeutralSecondary };
+    case "blocked":
+      return { bg: over(t.dangerBackground, t.foreground), border: t.borderDanger, fg: t.textDangerPrimary, outside: t.textDangerPrimary };
+    default:
+      return { bg: t.foreground, border: t.borderInteractiveEmphasis, fg: t.textNeutralPrimary, outside: t.textNeutralPrimary };
+  }
+}
+function marks3(layout, highlight, hover) {
+  const tasks = new Set(highlight ?? []);
+  const arrows = new Set(layout.arrows.filter((a) => tasks.has(a.from) && tasks.has(a.to)).map((a) => a.id));
+  if (hover) {
+    tasks.add(hover);
+    for (const a of layout.arrows)
+      if (a.from === hover || a.to === hover)
+        arrows.add(a.id);
+  }
+  return { active: highlight !== null, tasks, arrows };
+}
+var extent = (b) => ({ x0: b.x0, y0: b.y, x1: b.inside ? b.x1 : b.labelX + b.labelW, y1: b.y + b.h });
+function revealBox3(layout, highlight) {
+  const lit = layout.bars.filter((b) => highlight.includes(b.id));
+  if (!lit.length)
+    return null;
+  return lit.map(extent).reduce((a, b) => ({ x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) }));
+}
+function paths2(d, z, m) {
+  const { t, layout, model } = d;
+  const fills = new Map;
+  const strokes = new Map;
+  const fill = (c) => fills.get(c) ?? (fills.set(c, PathBuilder12.fill()), fills.get(c));
+  const stroke = (c, width) => {
+    const key = `${c}|${width}`;
+    let s = strokes.get(key);
+    if (!s)
+      strokes.set(key, s = { width, color: c, b: PathBuilder12.stroke(width) });
+    return s.b;
+  };
+  const muted = t.textNeutralSecondary;
+  const arrowColor = { normal: muted, dim: alpha(muted, DIMMED), lit: t.interactiveAccentDefault };
+  const out = [];
+  for (const c of ["dim", "normal", "lit"]) {
+    const arrows = layout.arrows.filter((a) => (m.arrows.has(a.id) ? "lit" : m.active ? "dim" : "normal") === c);
+    if (!arrows.length)
+      continue;
+    const line = PathBuilder12.stroke(c === "lit" ? 2 : 1.25);
+    const head = PathBuilder12.fill();
+    for (const a of arrows) {
+      const pts = a.points.map(([x, y]) => [x * z, y * z]);
+      const [tx, ty] = pts[pts.length - 1];
+      const [sx, sy] = pts[pts.length - 2];
+      const len = Math.hypot(tx - sx, ty - sy) || 1;
+      const [dx, dy] = [(tx - sx) / len, (ty - sy) / len];
+      const arrow = Math.min(ARROW_LEN2 * Math.max(z, 0.6), len);
+      const half = ARROW_HALF3 * Math.max(z, 0.6);
+      const [bx, by] = [tx - dx * arrow, ty - dy * arrow];
+      line.move_to(pts[0][0], pts[0][1]);
+      for (let i = 1;i < pts.length - 1; i++)
+        line.line_to(pts[i][0], pts[i][1]);
+      line.line_to(bx, by);
+      head.add_polygon([[tx, ty], [bx - dy * half, by + dx * half], [bx + dy * half, by - dx * half]], true);
+    }
+    out.push({ path: line.build(), paint: arrowColor[c] }, { path: head.build(), paint: arrowColor[c] });
+  }
+  for (const b of layout.bars) {
+    if (!b.milestone)
+      continue;
+    const task = model.tasks.find((x) => x.id === b.id);
+    const cx = (b.x0 + b.x1) / 2 * z;
+    const cy = (b.y + b.h / 2) * z;
+    const r = b.h * DIAMOND * z;
+    const diamond = (half) => [[cx, cy - half], [cx + half, cy], [cx, cy + half], [cx - half, cy]];
+    const lit = m.tasks.has(b.id);
+    const k = look2(t, task.status);
+    const fade = (c) => m.active && !lit ? alpha(c, DIMMED) : c;
+    fill(fade(k.bg)).add_polygon(diamond(r), true);
+    stroke(fade(k.border), 1.25).add_polygon(diamond(r), true);
+    if (lit)
+      stroke(t.interactiveAccentDefault, 2).add_polygon(diamond(r + RING * 1.5 * z), true);
+  }
+  for (const [c, b] of fills)
+    out.push({ path: b.build(), paint: c });
+  for (const s of strokes.values())
+    out.push({ path: s.b.build(), paint: s.color });
+  return out;
+}
+function askTask(d, id) {
+  const task = d.model.tasks.find((x) => x.id === id);
+  if (!task)
+    return;
+  const message = `Tell me more about ${task.label}`;
+  d.ctx.trigger(message, { steps: [{ type: e0.ToAssistant, message, context: { diagram: d.statementId, task: id } }] });
+}
+function content(o, d, task, z, color) {
+  const name = STATUS_ICON[task.status];
+  return div36().flex().flex_row().items_center().gap(ICON_GAP * z).text_color(color).children(name ? optional(o.icon(name, { size: ICON * z })) : []).child(textStyle(div36().whitespace_nowrap(), scaled(d.s.label, z)).child(task.label));
+}
+function drawing3(o, d, z, part) {
+  const t = o.t;
+  const { layout, model, local, state, s } = d;
+  const step = state.step === null ? undefined : model.steps[state.step];
+  const m = marks3(layout, step?.complete ? step.highlight : null, state.hover);
+  const W = layout.width * z;
+  const pathKey = `${z}|${m.active}|${[...m.tasks].join(",")}|${[...m.arrows].join(",")}`;
+  let built = local.paths[part];
+  if (built?.key !== pathKey) {
+    built = { key: pathKey, painted: paths2(d, z, m) };
+    local.paths[part] = built;
+  }
+  const lines = layout.ticks.map((tk) => div36().absolute().left(tk.x * z).top(0).w(1).h(layout.height * z).bg(t.borderDefault));
+  const tickLabels = layout.ticks.flatMap((tk) => tk.label ? [
+    textStyle(div36().absolute().whitespace_nowrap(), scaled(s.tick, z)).left(tk.labelX * z).top(layout.tickY * z).text_color(t.textNeutralSecondary).child(tk.label)
+  ] : []);
+  const bands = layout.lanes.flatMap((l) => [
+    div36().absolute().left(0).top(l.y * z).w(W).h(l.h * z).bg(over(t.sunkLight, t.foreground)).border_t_1().border_b_1().border_color(t.borderDefault),
+    textStyle(div36().absolute().whitespace_nowrap(), scaled(s.lane, z)).left(l.labelX * z).top(l.y * z).h(l.h * z).flex().items_center().text_color(t.textNeutralSecondary).when(m.active, (el) => el.opacity(0.6)).child(l.label)
+  ]);
+  const axisLine = div36().absolute().left(0).top(layout.axisH * z - 1).w(W).h(1).bg(t.borderDefault);
+  const tasks = layout.bars.flatMap((b) => {
+    const task = model.tasks.find((x) => x.id === b.id);
+    if (!task)
+      return [];
+    const lit = m.tasks.has(b.id);
+    const dim = m.active && !lit;
+    const k = look2(t, task.status);
+    const items = [];
+    if (!b.milestone) {
+      let bar = pointable(div36().id(o.id(`${part}-task-${b.id}`)).absolute().left(b.x0 * z).top(b.y * z).w((b.x1 - b.x0) * z).h(b.h * z).flex().items_center().overflow_hidden().rounded(t.radiusM * z).bg(k.bg).border_1().border_color(k.border), state, b.id, () => askTask(d, b.id));
+      if (b.inside)
+        bar = bar.pl((b.labelX - b.x0) * z).child(content(o, d, task, z, k.fg));
+      if (dim)
+        bar = bar.opacity(DIMMED);
+      if (lit) {
+        items.push(div36().absolute().left((b.x0 - RING) * z).top((b.y - RING) * z).w((b.x1 - b.x0 + RING * 2) * z).h((b.h + RING * 2) * z).rounded((t.radiusM + RING) * z).border_2().border_color(t.interactiveAccentDefault));
+      }
+      items.push(bar);
+    } else {
+      items.push(pointable(div36().id(o.id(`${part}-task-${b.id}`)).absolute().left(b.x0 * z).top(b.y * z).w((b.x1 - b.x0) * z).h(b.h * z), state, b.id, () => askTask(d, b.id)));
+    }
+    if (!b.inside) {
+      let label = pointable(div36().id(o.id(`${part}-label-${b.id}`)).absolute().left(b.labelX * z).top(b.y * z).h(b.h * z).flex().items_center().child(content(o, d, task, z, lit ? t.interactiveAccentDefault : k.outside)), state, b.id, () => askTask(d, b.id));
+      if (dim)
+        label = label.opacity(DIMMED);
+      items.push(label);
+    }
+    return items;
+  });
+  return div36().relative().w(W).h(layout.height * z).children(lines).children(bands).children(tickLabels).child(axisLine).children(built.painted.map(layer)).children(tasks);
+}
+var TICK_CHARS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec -0123456789";
+var Timeline2 = {
+  render(props, ctx, node) {
+    const t = ctx.t;
+    const model = timelineModel(props, ctx.streaming);
+    const statementId = node.statementId ?? "";
+    const local = ctx.local({ layout: null, key: "", paths: {} });
+    const state = canvasState(ctx, model.steps.length);
+    const s = styles3(t);
+    const m = {
+      label: new Measurer(ctx, s.label, "m-label").want(model.tasks.map((x) => x.label)),
+      lane: new Measurer(ctx, s.lane, "m-lane").want(model.tasks.flatMap((x) => x.lane ? [x.lane] : [])),
+      tick: new Measurer(ctx, s.tick, "m-tick").want([TICK_CHARS])
+    };
+    if (m.label.ready && m.lane.ready && m.tick.charsReady) {
+      const laid = timelineLayout(model, {
+        content: (task) => m.label.width(task.label) + (STATUS_ICON[task.status] ? ICON + ICON_GAP : 0),
+        contentH: m.label.lineHeight,
+        lane: (label) => m.lane.width(label),
+        laneH: m.lane.lineHeight,
+        tick: (label) => m.tick.width(label),
+        tickH: m.tick.lineHeight
+      });
+      const key = laid ? JSON.stringify(laid) : "";
+      if (key !== local.key) {
+        local.layout = laid;
+        local.key = key;
+        local.paths = {};
+      }
+    }
+    const probes = [m.label.probes(), m.lane.probes(), m.tick.probes()].filter((p) => p !== null);
+    const layout = local.layout;
+    const d = layout && { ctx, t, model, layout, local, state, s, statementId };
+    const n = model.tasks.length;
+    return canvas(ctx, state, {
+      content: d && {
+        width: d.layout.width,
+        height: d.layout.height,
+        draw: (o, z, part) => drawing3(o, { ...d, t: o.t }, z, part),
+        reveal: (highlight) => revealBox3(d.layout, highlight)
+      },
+      placeholder: n ? `Laying out ${n} tasks…` : "No tasks yet",
+      steps: model.steps,
+      askStep: (i) => stepQuestion(ctx, statementId, model.steps, i),
+      extra: probes
+    });
+  }
+};
+var TimelinePart = {
+  render() {
+    return null;
+  }
+};
+
 // src/components/editable-table.ts
 import { Input as GInput, InputState } from "gpui-base";
-import { div as div34 } from "gpui-kit";
+import { div as div38 } from "gpui-kit";
 
 // src/components/editable-table-model.ts
 var DEFAULT_COLUMN_WIDTH = 120;
@@ -7663,7 +10009,7 @@ function columnLayout(min, max, viewport, wasScrollable = false) {
 
 // src/components/select.ts
 import { Popup as Popup2, Select as GSelect, v_virtual_list, VirtualListScrollHandle } from "gpui-base";
-import { div as div33 } from "gpui-kit";
+import { div as div37 } from "gpui-kit";
 
 // src/components/menu.ts
 var MENU_ROW_HEIGHT = 32;
@@ -7784,8 +10130,8 @@ function selectControl(o) {
       };
     }
   });
-  let trigger = textStyle(div33().id(`${key}:trigger`).flex().flex_row().items_center().justify_between().gap(t.spaceS).border_1().py(box.py).px(box.px).rounded(box.radius).when(o.width !== undefined, (e) => e.w(o.width)).when(o.width === undefined, (e) => e.w_full()).when(o.height !== undefined, (e) => e.h(o.height)), body);
-  const valueText = div33().child(placeholder ? o.placeholder ?? "" : shown);
+  let trigger = textStyle(div37().id(`${key}:trigger`).flex().flex_row().items_center().justify_between().gap(t.spaceS).border_1().py(box.py).px(box.px).rounded(box.radius).when(o.width !== undefined, (e) => e.w(o.width)).when(o.width === undefined, (e) => e.w_full()).when(o.height !== undefined, (e) => e.h(o.height)), body);
+  const valueText = div37().child(placeholder ? o.placeholder ?? "" : shown);
   const chevron = ctx.icon(open ? "ChevronUp" : "ChevronDown", { size: 16 });
   trigger = trigger.child(valueText).children(optional(chevron));
   if (o.disabled) {
@@ -7897,16 +10243,16 @@ function selectControl(o) {
       for (let i = range.start;i < range.end; i++) {
         const item = items[i];
         const isSelected = i === selected;
-        const row = textStyle(menuRow(t, div33().w_full().justify_between().relative().pr(t.spaceXl), {
+        const row = textStyle(menuRow(t, div37().w_full().justify_between().relative().pr(t.spaceXl), {
           highlighted: isSelected || i === ui.hi,
           first: i === 0,
           last: i === rows - 1
-        }), itemText).cursor_default().hover((s) => s.bg(t.highlight)).child(div33().flex_1().whitespace_nowrap().text_color(t.textNeutralPrimary).child(item.label));
-        out.push(isSelected ? row.child(div33().absolute().right(6).top(9).child(ctx.icon("Check", { size: 16 }))) : row);
+        }), itemText).cursor_default().hover((s) => s.bg(t.highlight)).child(div37().flex_1().whitespace_nowrap().text_color(t.textNeutralPrimary).child(item.label));
+        out.push(isSelected ? row.child(div37().absolute().right(6).top(9).child(ctx.icon("Check", { size: 16 }))) : row);
       }
       return out;
     }).track_scroll(native.scroll).when(rows > 0, (e) => e.with_item_to_measure_index(longest)).h(listHeight).on_item_click((k, cx) => choose(Number(k), cx));
-    return menuSurface(t, div33().id(`${key}:menu`)).min_w(Math.max(o.width ?? 0, ui.triggerWidth)).when(ui.side === "above", (e) => e.mb(SIDE_OFFSET2)).when(ui.side !== "above", (e) => e.mt(SIDE_OFFSET2)).track_focus(native.list).on_mouse_down_out((_e, cx) => {
+    return menuSurface(t, div37().id(`${key}:menu`)).min_w(Math.max(o.width ?? 0, ui.triggerWidth)).when(ui.side === "above", (e) => e.mb(SIDE_OFFSET2)).when(ui.side !== "above", (e) => e.mt(SIDE_OFFSET2)).track_focus(native.list).on_mouse_down_out((_e, cx) => {
       if (!ui.overTrigger)
         setOpen(false, cx);
     }).on_key_down((e, cx) => {
@@ -7992,7 +10338,7 @@ function bindTabKeys(cx) {
   tabKeysBound = true;
 }
 var ROW_HEIGHT = 48;
-var ICON = 16;
+var ICON2 = 16;
 function readColumns(value) {
   if (!Array.isArray(value))
     return [];
@@ -8233,25 +10579,25 @@ var EditableTable = {
       cx.notify();
     };
     const pad = 2 * t.spaceM;
-    const measure = (key, content) => div34().id(ctx.id(`m-${key}`)).flex().flex_row().flex_none().items_center().whitespace_nowrap().on_size_change((size, cx) => {
+    const measure = (key, content) => div38().id(ctx.id(`m-${key}`)).flex().flex_row().flex_none().items_center().whitespace_nowrap().on_size_change((size, cx) => {
       if (st.sizes[key] !== size.width) {
         st.sizes[key] = size.width;
         cx.notify();
       }
     }).children(content);
-    const ghost = (key, text, style) => div34().absolute().top(0).left(0).h(0).opacity(0).overflow_hidden().flex().flex_row().child(textStyle(measure(key, [text]), style));
+    const ghost = (key, text, style) => div38().absolute().top(0).left(0).h(0).opacity(0).overflow_hidden().flex().flex_row().child(textStyle(measure(key, [text]), style));
     const width = (key) => st.sizes[key] ?? 0;
     const smallText = typography(t, "body", "small");
     const defaultText = typography(t, "body", "default");
     const mins = columns.map((col, ci) => {
       const border = ci < columns.length - 1 ? 1 : 0;
-      let min = pad + width(`h${ci}`) + t.spaceS + (headerIcon(col.type) ? ICON : 0);
+      let min = pad + width(`h${ci}`) + t.spaceS + (headerIcon(col.type) ? ICON2 : 0);
       for (let ri = 0;ri < rows.length; ri++) {
         const type = col.type || "text";
         if (type === "select")
-          min = Math.max(min, pad + 2 + 2 * (t.spaceM - 1) + width(`r${ri}c${ci}`) + t.spaceS + ICON);
+          min = Math.max(min, pad + 2 + 2 * (t.spaceM - 1) + width(`r${ri}c${ci}`) + t.spaceS + ICON2);
         else if (type === "date-single")
-          min = Math.max(min, pad + 2 + 2 * t.spaceM + width(`r${ri}c${ci}`) + ICON);
+          min = Math.max(min, pad + 2 + 2 * t.spaceM + width(`r${ri}c${ci}`) + ICON2);
       }
       return Math.ceil(min) + border;
     });
@@ -8277,15 +10623,15 @@ var EditableTable = {
       st.offset = Math.min(Math.max(0, st.offset), maxOffset);
       st.smooth = false;
     }
-    const header = div34().flex().flex_row().children(columns.map((col, ci) => {
+    const header = div38().flex().flex_row().children(columns.map((col, ci) => {
       const icon = headerIcon(col.type);
-      return textStyle(div34().flex().flex_row().items_center().flex_none().w(widths[ci]).h(ROW_HEIGHT).py(t.spaceS).px(t.spaceM).overflow_hidden().text_color(t.textNeutralSecondary).when(ci < columns.length - 1, (el) => el.border_r_1().border_color(t.borderDefault)), smallText).child(div34().flex().flex_row().items_center().justify_between().gap(t.spaceS).w_full().child(measure(`h${ci}`, [col.header])).child(div34().flex_none().children(icon ? optional(ctx.icon(icon, { size: ICON })) : [])));
+      return textStyle(div38().flex().flex_row().items_center().flex_none().w(widths[ci]).h(ROW_HEIGHT).py(t.spaceS).px(t.spaceM).overflow_hidden().text_color(t.textNeutralSecondary).when(ci < columns.length - 1, (el) => el.border_r_1().border_color(t.borderDefault)), smallText).child(div38().flex().flex_row().items_center().justify_between().gap(t.spaceS).w_full().child(measure(`h${ci}`, [col.header])).child(div38().flex_none().children(icon ? optional(ctx.icon(icon, { size: ICON2 })) : [])));
     }));
     const outline = (selected, editing) => {
       if (!selected && !editing)
         return [];
       const w = editing ? 1.5 : 1;
-      const bar = () => div34().absolute().bg(t.borderInteractiveSelected);
+      const bar = () => div38().absolute().bg(t.borderInteractiveSelected);
       return [
         bar().top(0).left(0).w_full().h(w),
         bar().bottom(0).left(0).w_full().h(w),
@@ -8293,8 +10639,8 @@ var EditableTable = {
         bar().top(0).right(0).h_full().w(w)
       ];
     };
-    const displayLine = () => div34().absolute().left(t.spaceM).right(t.spaceM).top(0).bottom(0).flex().flex_row().items_center();
-    const clipped = (text) => div34().min_w_0().overflow_hidden().whitespace_nowrap().text_ellipsis().child(text);
+    const displayLine = () => div38().absolute().left(t.spaceM).right(t.spaceM).top(0).bottom(0).flex().flex_row().items_center();
+    const clipped = (text) => div38().min_w_0().overflow_hidden().whitespace_nowrap().text_ellipsis().child(text);
     const cell = (ri, ci) => {
       const col = columns[ci];
       const columnId = col.key;
@@ -8305,7 +10651,7 @@ var EditableTable = {
       const live = isSelected || isEditing;
       const part = `r${ri}c${ci}`;
       const key = ctx.id(`cell-${part}`);
-      let base = textStyle(div34().id(key).relative().flex().flex_col().flex_1().py(t.spaceS).px(t.spaceM).text_color(t.textNeutralPrimary), smallText);
+      let base = textStyle(div38().id(key).relative().flex().flex_col().flex_1().py(t.spaceS).px(t.spaceM).text_color(t.textNeutralPrimary), smallText);
       if (TEXT_CELL_TYPES.includes(type)) {
         base = base.on_click((_e, cx) => {
           cx.stop_propagation();
@@ -8320,7 +10666,7 @@ var EditableTable = {
         } else if (type === "url") {
           const raw = toDisplayString(value);
           const safeHref = e117(raw);
-          let link = div34().id(ctx.id(`link-${part}`)).flex_1().min_w_0().overflow_hidden().whitespace_nowrap().text_ellipsis().hover((s) => s.underline()).on_click((_e, cx) => {
+          let link = div38().id(ctx.id(`link-${part}`)).flex_1().min_w_0().overflow_hidden().whitespace_nowrap().text_ellipsis().hover((s) => s.underline()).on_click((_e, cx) => {
             cx.stop_propagation();
             if (safeHref && OPENABLE_URL.test(safeHref)) {
               try {
@@ -8330,7 +10676,7 @@ var EditableTable = {
           }).child(raw);
           if (safeHref)
             link = link.cursor_pointer();
-          base = base.child(displayLine().gap(t.spaceS).child(div34().flex_none().text_color(t.textNeutralSecondary).children(optional(ctx.icon("Link", { size: ICON })))).child(link));
+          base = base.child(displayLine().gap(t.spaceS).child(div38().flex_none().text_color(t.textNeutralSecondary).children(optional(ctx.icon("Link", { size: ICON2 })))).child(link));
         } else if (type === "number") {
           base = base.child(textStyle(displayLine().justify_end(), typography(t, "number", "small")).child(clipped(toDisplayString(value))));
         } else {
@@ -8405,9 +10751,9 @@ var EditableTable = {
           }
         }));
       }
-      return div34().flex().flex_col().flex_none().w(widths[ci]).when(ci < columns.length - 1, (el) => el.border_r_1().border_color(t.borderDefault)).child(base.children(outline(isSelected, isEditing)));
+      return div38().flex().flex_col().flex_none().w(widths[ci]).when(ci < columns.length - 1, (el) => el.border_r_1().border_color(t.borderDefault)).child(base.children(outline(isSelected, isEditing)));
     };
-    const body = rows.map((_, ri) => div34().flex().flex_row().min_h(ROW_HEIGHT).when(ri < rows.length - 1, (el) => el.border_b_1().border_color(t.borderDefault)).children(columns.map((_, ci) => cell(ri, ci))));
+    const body = rows.map((_, ri) => div38().flex().flex_row().min_h(ROW_HEIGHT).when(ri < rows.length - 1, (el) => el.border_b_1().border_color(t.borderDefault)).children(columns.map((_, ci) => cell(ri, ci))));
     const scrollTo = (next, smooth, cx) => {
       st.offset = Math.min(Math.max(0, next), maxOffset);
       st.smooth = smooth;
@@ -8417,19 +10763,19 @@ var EditableTable = {
       const canGo = side === "left" ? offset > 0 : offset < maxOffset - 1;
       if (!layout.scrollable || !canGo)
         return null;
-      return div34().absolute().top(t.spaceS).when(side === "left", (el) => el.left(t.spaceS)).when(side === "right", (el) => el.right(t.spaceS)).rounded(t.radiusS).bg(t.elevated).child(iconButton(ctx, {
+      return div38().absolute().top(t.spaceS).when(side === "left", (el) => el.left(t.spaceS)).when(side === "right", (el) => el.right(t.spaceS)).rounded(t.radiusS).bg(t.elevated).child(iconButton(ctx, {
         id: ctx.id(`scroll-${side}`),
         icon: side === "left" ? "ChevronLeft" : "ChevronRight",
         size: "small",
         variant: "secondary",
-        iconSize: ICON,
+        iconSize: ICON2,
         onClick: (cx) => {
           const target = side === "left" ? lefts.filter((l) => l < offset - 1).at(-1) ?? 0 : lefts.find((l) => l > offset + 1) ?? maxOffset;
           scrollTo(Math.min(target, maxOffset), true, cx);
         }
       }));
     };
-    let wrapper = div34().id(ctx.id()).relative().w_full().overflow_hidden().border_1().border_color(t.borderDefault).rounded_t(t.radiusXl).on_size_change((size, cx) => {
+    let wrapper = div38().id(ctx.id()).relative().w_full().overflow_hidden().border_1().border_color(t.borderDefault).rounded_t(t.radiusXl).on_size_change((size, cx) => {
       const inner = size.width - 2;
       if (st.viewport !== inner) {
         st.viewport = inner;
@@ -8454,7 +10800,7 @@ var EditableTable = {
     if (native) {
       wrapper = wrapper.track_focus(native.focus).tab_index(0).key_context(KEY_CONTEXT2).on_action(TAB_ACTION, (_e, cx) => onTab(false, cx)).on_action(TAB_PREV_ACTION, (_e, cx) => onTab(true, cx)).on_key_down(onKey);
     }
-    const table = wrapper.children(columns.length ? [div34().absolute().top(0).left(0).right(0).h(ROW_HEIGHT).bg(t.highlightSubtle)] : []).child(div34().id(ctx.id("content")).relative().flex().flex_col().when(layout.scrollable, (el) => el.w(tableWidth).left(-offset)).when(!layout.scrollable, (el) => el.w_full()).when(st.smooth, (el) => el.transition("left", { duration: 300, easing: "ease-in-out" })).when(columns.length > 0, (el) => el.child(header)).children(body)).children([control("left"), control("right")].filter((c) => c !== null));
+    const table = wrapper.children(columns.length ? [div38().absolute().top(0).left(0).right(0).h(ROW_HEIGHT).bg(t.highlightSubtle)] : []).child(div38().id(ctx.id("content")).relative().flex().flex_col().when(layout.scrollable, (el) => el.w(tableWidth).left(-offset)).when(!layout.scrollable, (el) => el.w_full()).when(st.smooth, (el) => el.transition("left", { duration: 300, easing: "ease-in-out" })).when(columns.length > 0, (el) => el.child(header)).children(body)).children([control("left"), control("right")].filter((c) => c !== null));
     const out = [table];
     if (st.changed > 0)
       out.push(changesBar());
@@ -8474,19 +10820,19 @@ var EditableTable = {
         st.baseline = baselineOf(saved);
         cx.notify();
       };
-      return shadow(div34().flex().flex_row().items_center().justify_between().gap(t.spaceS).pt(t.spaceS).pr(t.spaceS).pb(t.spaceS).pl(t.spaceM).bg(t.elevated).rounded(t.radiusXl).border_1().border_color(t.borderDefault), t.shadowS, t.elevated).child(textStyle(div34().text_color(t.textNeutralPrimary), defaultText).child(`${st.changed} changes made`)).child(div34().flex().flex_row().gap(t.spaceS).child(button(ctx, { id: ctx.id("reset"), label: "Reset", variant: "secondary", size: "small", iconLeft: "RotateCcw", onClick: handleReset })).child(button(ctx, { id: ctx.id("save"), label: "Save Changes", variant: "primary", size: "small", iconLeft: "Check", onClick: handleSubmit })));
+      return shadow(div38().flex().flex_row().items_center().justify_between().gap(t.spaceS).pt(t.spaceS).pr(t.spaceS).pb(t.spaceS).pl(t.spaceM).bg(t.elevated).rounded(t.radiusXl).border_1().border_color(t.borderDefault), t.shadowS, t.elevated).child(textStyle(div38().text_color(t.textNeutralPrimary), defaultText).child(`${st.changed} changes made`)).child(div38().flex().flex_row().gap(t.spaceS).child(button(ctx, { id: ctx.id("reset"), label: "Reset", variant: "secondary", size: "small", iconLeft: "RotateCcw", onClick: handleReset })).child(button(ctx, { id: ctx.id("save"), label: "Save Changes", variant: "primary", size: "small", iconLeft: "Check", onClick: handleSubmit })));
     }
   }
 };
 
 // src/components/forms.ts
 import { Input as GInput2, InputState as InputState2, Textarea, TextareaState } from "gpui-base";
-import { div as div35 } from "gpui-kit";
+import { div as div39 } from "gpui-kit";
 var Form = {
   render(props, ctx) {
     const name = String(props.name ?? "form");
     const inner = ctx.child("form", { ...ctx.scope, formName: name });
-    return div35().id(ctx.id()).flex().flex_col().gap(16).children(inner.children(props.fields, "f")).children(inner.children(props.buttons, "b"));
+    return div39().id(ctx.id()).flex().flex_col().gap(16).children(inner.children(props.fields, "f")).children(inner.children(props.buttons, "b"));
   }
 };
 function inputName(input) {
@@ -8508,9 +10854,9 @@ var FormControl = {
     const t = ctx.t;
     const name = inputName(props.input);
     const error = name ? ctx.form?.getFieldError(name) : undefined;
-    const label = textStyle(div35().flex().flex_row().gap(t.space3xs).text_color(t.textNeutralPrimary), typography(t, "body", "default")).child(String(props.label ?? "")).when(isRequired(props.input), (el) => el.child("*"));
-    const hint = (text, isError) => textStyle(div35().flex().flex_row().items_center().gap(t.spaceXs).text_color(isError ? t.textDangerPrimary : t.textNeutralSecondary), typography(t, "body", "small")).children(isError ? optional(ctx.icon("AlertCircle", { size: 14 })) : []).child(text);
-    return div35().flex().flex_col().gap(t.spaceS).child(label).children(ctx.children(props.input, "in")).when(!!error, (el) => el.child(hint(String(error), true))).when(!error && !!props.hint, (el) => el.child(hint(String(props.hint), false)));
+    const label = textStyle(div39().flex().flex_row().gap(t.space3xs).text_color(t.textNeutralPrimary), typography(t, "body", "default")).child(String(props.label ?? "")).when(isRequired(props.input), (el) => el.child("*"));
+    const hint = (text, isError) => textStyle(div39().flex().flex_row().items_center().gap(t.spaceXs).text_color(isError ? t.textDangerPrimary : t.textNeutralSecondary), typography(t, "body", "small")).children(isError ? optional(ctx.icon("AlertCircle", { size: 14 })) : []).child(text);
+    return div39().flex().flex_col().gap(t.spaceS).child(label).children(ctx.children(props.input, "in")).when(!!error, (el) => el.child(hint(String(error), true))).when(!error && !!props.hint, (el) => el.child(hint(String(props.hint), false)));
   }
 };
 function textField(kind, props, ctx, makeState, makeElement, frame) {
@@ -8564,7 +10910,7 @@ function textField(kind, props, ctx, makeState, makeElement, frame) {
   };
   if (!state) {
     const value = String(field.value ?? "");
-    return styled(div35()).text_color(value ? t.textNeutralPrimary : t.textNeutralSecondary).child(value || String(props.placeholder ?? ""));
+    return styled(div39()).text_color(value ? t.textNeutralPrimary : t.textNeutralSecondary).child(value || String(props.placeholder ?? ""));
   }
   return styled(makeElement(state));
 }
@@ -8590,7 +10936,7 @@ var TextArea = {
 };
 
 // src/components/images.ts
-import { div as div36, svg as svg2 } from "gpui-kit";
+import { div as div40, svg as svg2 } from "gpui-kit";
 function measure(ctx, part) {
   const local = ctx.local({ width: 0 }, part);
   const report = (size, cx) => {
@@ -8602,7 +10948,7 @@ function measure(ctx, part) {
   return {
     width: local.width,
     track: (el) => el.id(ctx.id(`${part}-size`)).on_size_change(report),
-    probe: () => div36().id(ctx.id(`${part}-probe`)).absolute().top(0).left(0).size_full().on_size_change(report)
+    probe: () => div40().id(ctx.id(`${part}-probe`)).absolute().top(0).left(0).size_full().on_size_change(report)
   };
 }
 function picture(state, box, fit, alt, options = {}) {
@@ -8611,7 +10957,7 @@ function picture(state, box, fit, alt, options = {}) {
   if (state.status === "ready")
     return fitImage(state, box, fit, options);
   if (state.status === "failed" && alt)
-    return div36().w(box.width).h(box.height).overflow_hidden().child(alt);
+    return div40().w(box.width).h(box.height).overflow_hidden().child(alt);
   return null;
 }
 var IMAGE_RATIO = 3 / 2;
@@ -8622,21 +10968,21 @@ var Image = {
     const alt = String(props.alt ?? "");
     const state = ctx.image(src);
     const local = ctx.local({ width: 0, height: 0 }, "ratio");
-    const img = state.status === "failed" ? null : div36().size_full().overflow_hidden().border_1().border_color(t.borderDefault).rounded(t.radiusM).bg(t.foreground).children(optional(picture(state, { width: local.width - 2, height: local.height - 2 }, "cover", alt)));
-    const fill = div36().id(ctx.id("ratio-fill")).absolute().top(0).left(0).size_full().on_size_change((size, cx) => {
+    const img = state.status === "failed" ? null : div40().size_full().overflow_hidden().border_1().border_color(t.borderDefault).rounded(t.radiusM).bg(t.foreground).children(optional(picture(state, { width: local.width - 2, height: local.height - 2 }, "cover", alt)));
+    const fill = div40().id(ctx.id("ratio-fill")).absolute().top(0).left(0).size_full().on_size_change((size, cx) => {
       if (local.width !== size.width || local.height !== size.height) {
         local.width = size.width;
         local.height = size.height;
         cx.notify();
       }
     }).children(optional(img));
-    return div36().relative().w_full().min_w_0().pb(`${100 / IMAGE_RATIO}%`).child(fill);
+    return div40().relative().w_full().min_w_0().pb(`${100 / IMAGE_RATIO}%`).child(fill);
   }
 };
 var SPINNER_ARC = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">' + '<path d="M4.575 4.575A10.5 10.5 0 0 1 19.425 4.575" fill="none" stroke="#000" stroke-width="3"/></svg>');
 function spinner(ctx) {
   const arc = ctx.image(SPINNER_ARC);
-  return div36().absolute().size(24).rounded(ctx.t.radiusFull).border(3).border_color("#d1d5dbff").when(arc.status === "ready", (el) => el.child(svg2(arc.path).absolute().top(-3).left(-3).size(24).text_color("#2563ebff").spin(1000)));
+  return div40().absolute().size(24).rounded(ctx.t.radiusFull).border(3).border_color("#d1d5dbff").when(arc.status === "ready", (el) => el.child(svg2(arc.path).absolute().top(-3).left(-3).size(24).text_color("#2563ebff").spin(1000)));
 }
 var BLOCK_HEIGHT = 240;
 var ImageBlock = {
@@ -8648,7 +10994,7 @@ var ImageBlock = {
     const state = ctx.image(src);
     const { width, track } = measure(ctx, "block");
     const mobile = width < 480;
-    const wrapper = track(div36()).relative().flex().flex_row().flex_1().min_w_0().w_full().min_h(BLOCK_HEIGHT).max_h(BLOCK_HEIGHT).h(BLOCK_HEIGHT).justify_center().items_center().overflow_hidden().rounded(t.radius2xl);
+    const wrapper = track(div40()).relative().flex().flex_row().flex_1().min_w_0().w_full().min_h(BLOCK_HEIGHT).max_h(BLOCK_HEIGHT).h(BLOCK_HEIGHT).justify_center().items_center().overflow_hidden().rounded(t.radius2xl);
     if (state.status === "failed")
       return wrapper;
     const padX = mobile ? 0 : t.spaceL + 2;
@@ -8660,11 +11006,11 @@ var ImageBlock = {
       const back = { width: width + 40, height: BLOCK_HEIGHT + 40 };
       const bw = back.width * 1.5;
       const bh = bw * state.height / state.width;
-      const backdrop = div36().absolute().left(-20 + (back.width - bw) / 2).top(-20 + (back.height - bh) / 2).opacity(0.2).child(fitImage(state, { width: bw, height: bh }, "cover"));
+      const backdrop = div40().absolute().left(-20 + (back.width - bw) / 2).top(-20 + (back.height - bh) / 2).opacity(0.2).child(fitImage(state, { width: bw, height: bh }, "cover"));
       const ratio = state.width / state.height;
       const box = mobile ? { width: inner.width - 2 * border, height: (inner.width - 2 * border) / ratio } : { width: Math.min((inner.height - 2 * border) * ratio, inner.width - 2 * border), height: inner.height - 2 * border };
       const radius = mobile ? t.radius2xl : t.radiusL;
-      const img = div36().flex_none().w(box.width + 2 * border).h(box.height + 2 * border).border(border).border_color(t.borderDefault).rounded(radius).overflow_hidden().child(fitImage(state, box, "cover", { radius: radius - border }));
+      const img = div40().flex_none().w(box.width + 2 * border).h(box.height + 2 * border).border(border).border_color(t.borderDefault).rounded(radius).overflow_hidden().child(fitImage(state, box, "cover", { radius: radius - border }));
       content = [backdrop, img];
     }
     return wrapper.children(content).when(state.status === "loading", (el) => el.child(spinner(ctx)));
@@ -8736,7 +11082,7 @@ var ImageGallery = {
     const cells = visible.map((item, i) => {
       const cell = grid.cells[i];
       const alt = item.alt || `Gallery image ${i + 1}`;
-      return div36().id(ctx.id(`img-${i}`)).absolute().left(cell.left).top(cell.top).w(cell.width).h(cell.height).overflow_hidden().cursor_pointer().on_hover((hovered, cx) => {
+      return div40().id(ctx.id(`img-${i}`)).absolute().left(cell.left).top(cell.top).w(cell.width).h(cell.height).overflow_hidden().cursor_pointer().on_hover((hovered, cx) => {
         const next = hovered ? i : local.hovered === i ? -1 : local.hovered;
         if (next !== local.hovered) {
           local.hovered = next;
@@ -8748,13 +11094,13 @@ var ImageGallery = {
         open(i, cx);
       }).children(optional(picture(states[i], cell, "cover", alt, { zoom: local.hovered === i && !local.overShowAll ? 1.05 : 1, transition: 300 })));
     });
-    const showAll = images.length > MAX_GRID_IMAGES ? div36().absolute().bottom(5).right(5).id(ctx.id("show-all-box")).on_hover((hovered, cx) => {
+    const showAll = images.length > MAX_GRID_IMAGES ? div40().absolute().bottom(5).right(5).id(ctx.id("show-all-box")).on_hover((hovered, cx) => {
       if (local.overShowAll !== hovered) {
         local.overShowAll = hovered;
         cx.notify();
       }
     }).child(button(ctx, { id: ctx.id("show-all"), label: "Show All", variant: "primary", size: "small", bubble: true, onClick: (cx) => open(local.selected, cx) })) : null;
-    return div36().relative().w_full().h(grid.height).min_w_0().overflow_hidden().rounded(t.radiusM).child(probe()).children(cells).children(optional(showAll));
+    return div40().relative().w_full().h(grid.height).min_w_0().overflow_hidden().rounded(t.radiusM).child(probe()).children(cells).children(optional(showAll));
   }
 };
 var galleryLocal = () => ({ selected: 0, hovered: -1, open: false, offset: 0, smooth: false, thumbHovered: -1, width: 0, height: 0, overShowAll: false, overControl: { left: false, right: false } });
@@ -8780,7 +11126,7 @@ function galleryModal(ctx, images, states, local) {
   const selected = Math.min(local.selected, images.length - 1);
   const state = states[selected];
   const strip = local;
-  const header = div36().flex().flex_row().items_center().justify_between().px(pad).child(textStyle(div36().text_color(t.textNeutralPrimary), typography(t, "heading", "extra-small")).child("All Photos")).child(iconButton(ctx, { id: ctx.id("modal-close"), icon: "X", size: "small", variant: "secondary", onClick: close }));
+  const header = div40().flex().flex_row().items_center().justify_between().px(pad).child(textStyle(div40().text_color(t.textNeutralPrimary), typography(t, "heading", "extra-small")).child("All Photos")).child(iconButton(ctx, { id: ctx.id("modal-close"), icon: "X", size: "small", variant: "secondary", onClick: close }));
   const mainW = boxW - 2 - 2 * pad;
   const mainH = Math.max(0, boxH - 2 - 2 * pad - 2 * t.spaceXl - ICON_BUTTON.small.box - THUMB_HEIGHT);
   let shown = null;
@@ -8788,9 +11134,9 @@ function galleryModal(ctx, images, states, local) {
     const scale = Math.max(0, Math.min(1, mainW / state.width, mainH / state.height));
     shown = fitImage(state, { width: state.width * scale, height: state.height * scale }, "contain", { radius: t.radiusS });
   } else if (state.status === "failed") {
-    shown = div36().max_w(mainW).overflow_hidden().child(images[selected].alt || `Gallery image ${selected + 1}`);
+    shown = div40().max_w(mainW).overflow_hidden().child(images[selected].alt || `Gallery image ${selected + 1}`);
   }
-  const main = div36().flex().flex_1().min_h_0().justify_center().items_center().px(pad).children(optional(shown));
+  const main = div40().flex().flex_1().min_h_0().justify_center().items_center().px(pad).children(optional(shown));
   const viewW = boxW - 2;
   const gap = t.spaceS;
   const n = images.length;
@@ -8806,7 +11152,7 @@ function galleryModal(ctx, images, states, local) {
   const onControl = strip.overControl.left && offset > 0 || strip.overControl.right && offset + viewW < contentW - 0.5;
   const thumbs = images.map((_, i) => {
     const active = i === selected;
-    return div36().id(ctx.id(`thumb-${i}`)).flex_none().w(thumbW).h(THUMB_HEIGHT).cursor_pointer().rounded(t.radiusS).border_1().border_color(active ? t.borderInteractiveSelected : TRANSPARENT).overflow_hidden().opacity(active ? 1 : strip.thumbHovered === i && !onControl ? 0.8 : 0.6).transition("opacity", { duration: 200, easing: "ease-in-out" }).on_hover((hovered, cx) => {
+    return div40().id(ctx.id(`thumb-${i}`)).flex_none().w(thumbW).h(THUMB_HEIGHT).cursor_pointer().rounded(t.radiusS).border_1().border_color(active ? t.borderInteractiveSelected : TRANSPARENT).overflow_hidden().opacity(active ? 1 : strip.thumbHovered === i && !onControl ? 0.8 : 0.6).transition("opacity", { duration: 200, easing: "ease-in-out" }).on_hover((hovered, cx) => {
       strip.thumbHovered = hovered ? i : strip.thumbHovered === i ? -1 : strip.thumbHovered;
       cx.notify();
     }).on_click((_e, cx) => {
@@ -8816,18 +11162,18 @@ function galleryModal(ctx, images, states, local) {
       cx.notify();
     }).children(optional(picture(states[i], { width: thumbW - 2, height: THUMB_HEIGHT - 2 }, "cover", "")));
   });
-  const carousel = div36().id(ctx.id("modal-carousel")).w(viewW).h(THUMB_HEIGHT).overflow_hidden().when(maxOffset > 0, (el) => el.on_scroll_wheel((e, cx) => {
+  const carousel = div40().id(ctx.id("modal-carousel")).w(viewW).h(THUMB_HEIGHT).overflow_hidden().when(maxOffset > 0, (el) => el.on_scroll_wheel((e, cx) => {
     const dx = e.delta.x !== 0 ? e.delta.x : e.delta.y;
     if (dx === 0)
       return;
     cx.stop_propagation();
     scrollTo(strip.offset - dx, false, cx);
-  })).child(div36().relative().flex().flex_row().gap(gap).px(pad).w(contentW).left(-offset).when(strip.smooth, (el) => el.transition("left", { duration: 300, easing: "ease-in-out" })).children(thumbs));
+  })).child(div40().relative().flex().flex_row().gap(gap).px(pad).w(contentW).left(-offset).when(strip.smooth, (el) => el.transition("left", { duration: 300, easing: "ease-in-out" })).children(thumbs));
   const control = (side) => {
     const show = side === "left" ? offset > 0 : offset + viewW < contentW - 0.5;
     if (!show)
       return null;
-    return div36().id(ctx.id(`modal-control-${side}`)).on_hover((hovered, cx) => {
+    return div40().id(ctx.id(`modal-control-${side}`)).on_hover((hovered, cx) => {
       if (strip.overControl[side] !== hovered) {
         strip.overControl[side] = hovered;
         cx.notify();
@@ -8840,9 +11186,9 @@ function galleryModal(ctx, images, states, local) {
       onClick: (cx) => scrollTo(offset + (side === "left" ? -1 : 1) * viewW * 0.28, true, cx)
     }));
   };
-  const carouselContainer = div36().relative().flex().flex_row().items_center().justify_center().w_full().child(carousel).children([control("left"), control("right")].filter((c) => c !== null));
-  const content = div36().id(ctx.id("modal")).flex().flex_col().flex_none().w(boxW).h(boxH).overflow_hidden().gap(t.spaceXl).py(pad).border_1().border_color(t.borderDefault).bg(t.foreground).rounded(full ? 0 : t.radiusXl).on_mouse_down("left", (_e, cx) => cx.stop_propagation()).child(header).child(main).child(carouselContainer);
-  const backdrop = div36().id(ctx.id("modal-backdrop")).size_full().flex().justify_center().items_center().bg(t.overlay).on_mouse_down("left", (_e, cx) => {
+  const carouselContainer = div40().relative().flex().flex_row().items_center().justify_center().w_full().child(carousel).children([control("left"), control("right")].filter((c) => c !== null));
+  const content = div40().id(ctx.id("modal")).flex().flex_col().flex_none().w(boxW).h(boxH).overflow_hidden().gap(t.spaceXl).py(pad).border_1().border_color(t.borderDefault).bg(t.foreground).rounded(full ? 0 : t.radiusXl).on_mouse_down("left", (_e, cx) => cx.stop_propagation()).child(header).child(main).child(carouselContainer);
+  const backdrop = div40().id(ctx.id("modal-backdrop")).size_full().flex().justify_center().items_center().bg(t.overlay).on_mouse_down("left", (_e, cx) => {
     cx.stop_propagation();
     close(cx);
   }).on_key_down((e, cx) => {
@@ -8868,14 +11214,14 @@ var ImageText = {
     const horizontal = props.layout !== "vertical";
     const size = typeof props.imageSize === "number" && props.imageSize > 0 ? props.imageSize : t.space2xl + t.space2xs;
     const state = ctx.image(src);
-    const box = div36().flex().flex_none().items_center().justify_center().w(size).h(size).rounded(t.radiusM).overflow_hidden().bg(t.sunk).children(optional(picture(state, { width: size, height: size }, "cover", alt)));
+    const box = div40().flex().flex_none().items_center().justify_center().w(size).h(size).rounded(t.radiusM).overflow_hidden().bg(t.sunk).children(optional(picture(state, { width: size, height: size }, "cover", alt)));
     const block = textBlock(ctx, props.bold === true ? "highlight-text-number-subtext" : "text-subtext", {
       value: title,
       subtext: props.subtitle,
       size: horizontal ? "xs" : "sm"
     });
-    const content = div36().flex().flex_col().min_w_0().when(horizontal, (el) => el.pt(t.space3xs)).child(block);
-    const root = div36().flex().gap(t.spaceM).child(box).child(content);
+    const content = div40().flex().flex_col().min_w_0().when(horizontal, (el) => el.pt(t.space3xs)).child(block);
+    const root = div40().flex().gap(t.spaceM).child(box).child(content);
     return horizontal ? root.flex_row().items_center() : root.flex_col().items_start();
   }
 };
@@ -8888,13 +11234,13 @@ var ImageTextLarge = {
     const alt = typeof props.alt === "string" ? props.alt : title;
     const state = ctx.image(src);
     const { width, track } = measure(ctx, "banner");
-    const wrap = track(div36()).relative().flex().w_full().h(LARGE_HEIGHT).flex_none().rounded(t.radiusM).overflow_hidden().bg(t.sunk).children(optional(picture(state, { width, height: LARGE_HEIGHT }, "cover", alt)));
-    return div36().flex().flex_col().w_full().min_w_0().gap(t.spaceM).child(wrap).child(textBlock(ctx, "highlight-text", { value: title, subtext: props.subtitle, size: "sm" }));
+    const wrap = track(div40()).relative().flex().w_full().h(LARGE_HEIGHT).flex_none().rounded(t.radiusM).overflow_hidden().bg(t.sunk).children(optional(picture(state, { width, height: LARGE_HEIGHT }, "cover", alt)));
+    return div40().flex().flex_col().w_full().min_w_0().gap(t.spaceM).child(wrap).child(textBlock(ctx, "highlight-text", { value: title, subtext: props.subtitle, size: "sm" }));
   }
 };
 
 // src/components/layout.ts
-import { div as div37 } from "gpui-kit";
+import { div as div41 } from "gpui-kit";
 function gap(t, value) {
   switch (value) {
     case "none":
@@ -8948,7 +11294,7 @@ function justifyContent(el, value) {
   }
 }
 function flexBox(direction) {
-  return direction === "row" ? div37().flex().flex_row() : div37().flex().flex_col();
+  return direction === "row" ? div41().flex().flex_row() : div41().flex().flex_col();
 }
 var Stack = {
   render(props, ctx) {
@@ -8982,20 +11328,20 @@ var Card = {
 var CardHeader = {
   render(props, ctx) {
     const t = ctx.t;
-    const top = div37().flex().flex_row().justify_between().items_center().child(textStyle(div37().flex().flex_row().items_center().gap(t.spaceXs).text_color(t.textNeutralPrimary), typography(t, "heading", "small")).when(props.title != null && props.title !== "", (el) => el.child(String(props.title))));
-    return div37().flex().flex_col().gap(t.spaceXs).mb(t.space2xs).child(top).when(!!props.subtitle, (el) => el.child(textStyle(div37().text_color(t.textNeutralSecondary), typography(t, "body", "default")).child(String(props.subtitle))));
+    const top = div41().flex().flex_row().justify_between().items_center().child(textStyle(div41().flex().flex_row().items_center().gap(t.spaceXs).text_color(t.textNeutralPrimary), typography(t, "heading", "small")).when(props.title != null && props.title !== "", (el) => el.child(String(props.title))));
+    return div41().flex().flex_col().gap(t.spaceXs).mb(t.space2xs).child(top).when(!!props.subtitle, (el) => el.child(textStyle(div41().text_color(t.textNeutralSecondary), typography(t, "body", "default")).child(String(props.subtitle))));
   }
 };
 var Separator = {
   render(props, ctx) {
-    const line = div37().flex_none().bg(ctx.t.borderDefault);
+    const line = div41().flex_none().bg(ctx.t.borderDefault);
     return props.orientation === "vertical" ? line.w(1).h_full() : line.h(1).w_full();
   }
 };
 
 // src/components/lists.ts
 import { Accordion as BaseAccordion2, AccordionHeader as AccordionHeader2, AccordionItem as BaseAccordionItem2, AccordionPanel as AccordionPanel2, AccordionTrigger as AccordionTrigger2, Button as GButton2 } from "gpui-base";
-import { div as div38 } from "gpui-kit";
+import { div as div42 } from "gpui-kit";
 
 // src/components/lists-state.ts
 function getRowConfiguration(n, maxPerRow) {
@@ -9077,8 +11423,8 @@ function entityRow(ctx, raw, rowType, size, key, last) {
   const leftFont = typography(t, "body", small ? "small" : "default");
   const rightFont = small ? right === "number" ? typography(t, "number", "small-heavy") : typography(t, "body", "small-heavy") : rowType === "footer" ? right === "number" ? typography(t, "number", "large-heavy") : typography(t, "body", "large-heavy") : right === "number" ? typography(t, "number", "heavy") : typography(t, "body", "heavy");
   const color = rowType === "header" ? t.textNeutralSecondary : t.textNeutralPrimary;
-  const cell = (part, text, font, align) => textStyle(div38().flex_1().min_w(0).max_w("50%").text_color(color), font).children(text ? [markdownInline(ctx, `${key}-${part}`, text, { font, color, align })] : []);
-  return div38().flex().flex_row().justify_between().items_start().gap(t.spaceM).py(t.spaceM).w_full().text_color(t.textNeutralPrimary).when(!last, (el) => el.border_b_1().border_color(t.borderDefault)).child(cell("left", String(row.left ?? ""), leftFont)).child(cell("right", String(row.right ?? ""), rightFont, "right"));
+  const cell = (part, text, font, align) => textStyle(div42().flex_1().min_w(0).max_w("50%").text_color(color), font).children(text ? [markdownInline(ctx, `${key}-${part}`, text, { font, color, align })] : []);
+  return div42().flex().flex_row().justify_between().items_start().gap(t.spaceM).py(t.spaceM).w_full().text_color(t.textNeutralPrimary).when(!last, (el) => el.border_b_1().border_color(t.borderDefault)).child(cell("left", String(row.left ?? ""), leftFont)).child(cell("right", String(row.right ?? ""), rightFont, "right"));
 }
 var EntityList = {
   render(props, ctx) {
@@ -9092,7 +11438,7 @@ var EntityList = {
       ...rows.map((row) => ({ row, type: "body" })),
       ...footer ? [{ row: footer, type: "footer" }] : []
     ];
-    return div38().flex().flex_col().w_full().children(all.map((r, i) => entityRow(ctx, r.row, r.type, size, `row${i}`, i === all.length - 1)));
+    return div42().flex().flex_col().w_full().children(all.map((r, i) => entityRow(ctx, r.row, r.type, size, `row${i}`, i === all.length - 1)));
   }
 };
 function listItem(ctx, o, hover) {
@@ -9103,26 +11449,26 @@ function listItem(ctx, o, hover) {
   const hovered = hasAction && (hover.over === o.index || focus?.is_focused() === true);
   const id = ctx.id(`item${o.index}`);
   const dim = o.listHasSubtitle ? small ? 36 : 40 : small ? 20 : 24;
-  const indicator = div38().flex().flex_none().items_center().justify_center().w(dim).h(dim).rounded(o.listHasSubtitle ? t.radiusM : t.radiusS).overflow_hidden().bg(hovered ? t.highlightStrong : t.sunk).text_color(t.textNeutralSecondary).when(o.listHasSubtitle, (el) => el.mt(t.space2xs));
+  const indicator = div42().flex().flex_none().items_center().justify_center().w(dim).h(dim).rounded(o.listHasSubtitle ? t.radiusM : t.radiusS).overflow_hidden().bg(hovered ? t.highlightStrong : t.sunk).text_color(t.textNeutralSecondary).when(o.listHasSubtitle, (el) => el.mt(t.space2xs));
   if (o.variant === "number") {
-    indicator.child(textStyle(div38().text_color(t.textNeutralSecondary), small ? typography(t, "number", "small") : typography(t, "label", "default")).child(String(o.index + 1)));
+    indicator.child(textStyle(div42().text_color(t.textNeutralSecondary), small ? typography(t, "number", "small") : typography(t, "label", "default")).child(String(o.index + 1)));
   } else if (o.image && (o.image.src || o.image.alt)) {
     const state = ctx.image(o.image.src);
-    const picture = state.status === "ready" ? fitImage(state, { width: dim, height: dim }, "cover") : state.status === "failed" && o.image.alt ? div38().w(dim).h(dim).overflow_hidden().whitespace_nowrap().child(o.image.alt) : null;
-    indicator.child(div38().flex().items_center().justify_center().w_full().h_full().rounded(t.radiusS).overflow_hidden().children(optional(picture)));
+    const picture = state.status === "ready" ? fitImage(state, { width: dim, height: dim }, "cover") : state.status === "failed" && o.image.alt ? div42().w(dim).h(dim).overflow_hidden().whitespace_nowrap().child(o.image.alt) : null;
+    indicator.child(div42().flex().items_center().justify_center().w_full().h_full().rounded(t.radiusS).overflow_hidden().children(optional(picture)));
   }
   const bodyFont = typography(t, "body", small ? "small" : "default");
-  const content = div38().flex().flex_col().flex_1().min_w(0).when(!!o.title, (el) => el.child(textStyle(div38().text_color(t.textNeutralPrimary), bodyFont).child(o.title))).when(!!o.subtitle, (el) => el.child(textStyle(div38().text_color(t.textNeutralSecondary), bodyFont).child(o.subtitle)));
+  const content = div42().flex().flex_col().flex_1().min_w(0).when(!!o.title, (el) => el.child(textStyle(div42().text_color(t.textNeutralPrimary), bodyFont).child(o.title))).when(!!o.subtitle, (el) => el.child(textStyle(div42().text_color(t.textNeutralSecondary), bodyFont).child(o.subtitle)));
   const actionColor = hovered ? t.textNeutralPrimary : t.textNeutralSecondary;
-  const action = hasAction ? div38().flex().flex_row().flex_none().items_center().gap(t.space2xs).text_color(actionColor).children(optional(o.actionLabel ? textStyle(div38().text_color(actionColor), bodyFont).child(o.actionLabel) : null)).child(textStyle(div38().text_color(actionColor), bodyFont).children(optional(ctx.icon("ChevronRight", { size: 16 })))) : null;
-  const row = div38().id(id).flex().flex_row().gap(small ? t.spaceSM : t.spaceM).when(!!o.subtitle, (el) => el.items_start()).when(!o.subtitle, (el) => el.items_center()).child(indicator).child(div38().flex().flex_row().items_start().justify_between().flex_1().min_w(0).child(content).children(optional(action))).when(hasAction, (el) => el.cursor_pointer().tab_index(0).when(!!focus, (e) => e.track_focus(focus)).on_hover((over, cx) => {
+  const action = hasAction ? div42().flex().flex_row().flex_none().items_center().gap(t.space2xs).text_color(actionColor).children(optional(o.actionLabel ? textStyle(div42().text_color(actionColor), bodyFont).child(o.actionLabel) : null)).child(textStyle(div42().text_color(actionColor), bodyFont).children(optional(ctx.icon("ChevronRight", { size: 16 })))) : null;
+  const row = div42().id(id).flex().flex_row().gap(small ? t.spaceSM : t.spaceM).when(!!o.subtitle, (el) => el.items_start()).when(!o.subtitle, (el) => el.items_center()).child(indicator).child(div42().flex().flex_row().items_start().justify_between().flex_1().min_w(0).child(content).children(optional(action))).when(hasAction, (el) => el.cursor_pointer().tab_index(0).when(!!focus, (e) => e.track_focus(focus)).on_hover((over, cx) => {
     const next = over ? o.index : hover.over === o.index ? -1 : hover.over;
     if (next !== hover.over) {
       hover.over = next;
       cx.notify();
     }
   }).on_click(() => o.onClick()));
-  return div38().flex().flex_col().gap(small ? t.spaceS : t.spaceM).w_full().when(hasAction && !o.last, (el) => el.pb(t.spaceM).border_b_1().border_color(t.borderDefault)).child(row);
+  return div42().flex().flex_col().gap(small ? t.spaceS : t.spaceM).w_full().when(hasAction && !o.last, (el) => el.pb(t.spaceM).border_b_1().border_color(t.borderDefault)).child(row);
 }
 var ListBlock = {
   render(props, ctx) {
@@ -9132,7 +11478,7 @@ var ListBlock = {
     const size = props.size ?? "default";
     const listHasSubtitle = items.some((item) => !!propsOf(item).subtitle);
     const hover = ctx.local({ over: -1 }, "hover");
-    return div38().flex().flex_col().items_start().w_full().gap(size === "small" ? t.spaceM : t.spaceL).children(items.map((item, index) => {
+    return div42().flex().flex_col().items_start().w_full().gap(size === "small" ? t.spaceM : t.spaceL).children(items.map((item, index) => {
       const p = propsOf(item);
       const title = String(p.title ?? "");
       const action = p.action;
@@ -9156,14 +11502,14 @@ var FollowUpBlock = {
   render(props, ctx) {
     const t = ctx.t;
     const items = asArray4(props.items);
-    return div38().flex().flex_col().child(div38().text_color(t.textNeutralSecondary).py(t.spaceS).mb(t.spaceM).border_b_1().border_color(t.borderDefault).child("Related Queries")).children(items.map((item, i) => {
+    return div42().flex().flex_col().child(div42().text_color(t.textNeutralSecondary).py(t.spaceS).mb(t.spaceM).border_b_1().border_color(t.borderDefault).child("Related Queries")).children(items.map((item, i) => {
       const text = String(propsOf(item).text ?? "");
-      return textStyle(GButton2.new(ctx.id(`followup${i}`)).on_click(() => ctx.action(text, undefined)).flex().flex_row().items_center().justify_between().w_full().gap(t.spaceS).py(t.spaceS).text_color(t.textNeutralPrimary).text_left().cursor_pointer().when(i < items.length - 1, (el) => el.border_b_1().border_color(t.borderDefault)), typography(t, "body", "default")).children(text ? [div38().flex_1().min_w(0).text_left().child(text)] : []);
+      return textStyle(GButton2.new(ctx.id(`followup${i}`)).on_click(() => ctx.action(text, undefined)).flex().flex_row().items_center().justify_between().w_full().gap(t.spaceS).py(t.spaceS).text_color(t.textNeutralPrimary).text_left().cursor_pointer().when(i < items.length - 1, (el) => el.border_b_1().border_color(t.borderDefault)), typography(t, "body", "default")).children(text ? [div42().flex_1().min_w(0).text_left().child(text)] : []);
     }));
   }
 };
 function sectionTrigger(ctx, t, id, text, open, toggle) {
-  const wrapper = div38().flex().flex_col().items_start().justify_center().gap(t.spaceL).w_full().child(div38().flex_none().w_full().h(1).bg(t.borderDefault).m(t.space3xs)).child(div38().flex().flex_row().items_center().justify_start().gap(t.spaceS).w_full().child(div38().id(`${id}-chevron`).flex().flex_none().items_center().justify_center().w(20).h(20).border_1().border_color(t.borderInteractive).rounded(t.radiusS).text_color(t.textNeutralPrimary).hover((s) => s.bg(t.highlight)).children(optional(ctx.icon(open ? "ChevronDown" : "ChevronRight", { size: 10 })))).child(textStyle(div38().flex().flex_1().items_center().justify_start().text_color(t.textNeutralPrimary), typography(t, "heading", "small")).child(text)));
+  const wrapper = div42().flex().flex_col().items_start().justify_center().gap(t.spaceL).w_full().child(div42().flex_none().w_full().h(1).bg(t.borderDefault).m(t.space3xs)).child(div42().flex().flex_row().items_center().justify_start().gap(t.spaceS).w_full().child(div42().id(`${id}-chevron`).flex().flex_none().items_center().justify_center().w(20).h(20).border_1().border_color(t.borderInteractive).rounded(t.radiusS).text_color(t.textNeutralPrimary).hover((s) => s.bg(t.highlight)).children(optional(ctx.icon(open ? "ChevronDown" : "ChevronRight", { size: 10 })))).child(textStyle(div42().flex().flex_1().items_center().justify_start().text_color(t.textNeutralPrimary), typography(t, "heading", "small")).child(text)));
   const focusable = keyTrigger(id, toggle).child(wrapper);
   return AccordionTrigger2.new(id).flex().flex_row().items_center().justify_between().w_full().flex_1().pt(t.spaceM).pb(t.spaceXs).text_color(t.textNeutralPrimary).cursor_pointer().on_change((_open, cx) => toggle(cx)).child(focusable);
 }
@@ -9177,7 +11523,7 @@ var SectionBlock = {
     if (!isFoldable) {
       return items.map((item, i) => {
         const p = propsOf(item);
-        return div38().flex().flex_col().items_start().justify_center().gap(t.spaceXl).mt(t.spaceM).child(div38().flex().flex_col().items_start().justify_center().w_full().gap(t.spaceXl).child(div38().flex_none().w_full().h(1).bg(t.borderDefault)).child(div38().flex().flex_row().items_center().justify_start().gap(t.spaceS).mb(t.space2xs).child(textStyle(div38().text_color(t.textNeutralPrimary), typography(t, "heading", "small")).child(String(p.trigger ?? "")))).child(div38().flex().flex_col().w_full().gap(t.spaceXl).children(ctx.children(p.content, `section${i}`))));
+        return div42().flex().flex_col().items_start().justify_center().gap(t.spaceXl).mt(t.spaceM).child(div42().flex().flex_col().items_start().justify_center().w_full().gap(t.spaceXl).child(div42().flex_none().w_full().h(1).bg(t.borderDefault)).child(div42().flex().flex_row().items_center().justify_start().gap(t.spaceS).mb(t.space2xs).child(textStyle(div42().text_color(t.textNeutralPrimary), typography(t, "heading", "small")).child(String(p.trigger ?? "")))).child(div42().flex().flex_col().w_full().gap(t.spaceXl).children(ctx.children(p.content, `section${i}`))));
       });
     }
     return BaseAccordion2.new(ctx.id()).flex().flex_col().gap(t.spaceL).children(items.map((item, i) => {
@@ -9188,14 +11534,14 @@ var SectionBlock = {
         toggleSection(local, value);
         cx.notify();
       };
-      const panel = div38().flex().flex_col().w_full().gap(t.spaceXl).pl(28).children(ctx.children(p.content, `section${i}`));
-      return BaseAccordionItem2.new().open(open).flex().flex_col().gap(t.spaceL).w_full().header(accordionHeader2(sectionTrigger(ctx, t, ctx.id(`trigger-${i}`), String(p.trigger ?? ""), open, toggle)).flex()).panel(AccordionPanel2.new().child(open ? panel : div38()));
+      const panel = div42().flex().flex_col().w_full().gap(t.spaceXl).pl(28).children(ctx.children(p.content, `section${i}`));
+      return BaseAccordionItem2.new().open(open).flex().flex_col().gap(t.spaceL).w_full().header(accordionHeader2(sectionTrigger(ctx, t, ctx.id(`trigger-${i}`), String(p.trigger ?? ""), open, toggle)).flex()).panel(AccordionPanel2.new().child(open ? panel : div42()));
     }));
   }
 };
 
 // src/components/modal.ts
-import { div as div39 } from "gpui-kit";
+import { div as div43 } from "gpui-kit";
 var WIDTHS = { sm: 400, md: 560, lg: 720 };
 var RADIUS = 12;
 var CLOSE_BOX = 28;
@@ -9228,8 +11574,8 @@ var Modal = {
       }
       const size = props.size ?? "md";
       const width = WIDTHS[size];
-      const title = textStyle(div39().flex_1().min_w(0), typography(t, "body", "heavy")).child(String(props.title ?? ""));
-      const closeButton = div39().id(o.id("close")).flex().flex_none().items_center().justify_center().w(CLOSE_BOX).h(CLOSE_BOX).rounded(CLOSE_RADIUS).cursor_pointer().text_color(local.closeHover ? t.textNeutralPrimary : t.textNeutralSecondary).on_hover((hovered, cx) => {
+      const title = textStyle(div43().flex_1().min_w(0), typography(t, "body", "heavy")).child(String(props.title ?? ""));
+      const closeButton = div43().id(o.id("close")).flex().flex_none().items_center().justify_center().w(CLOSE_BOX).h(CLOSE_BOX).rounded(CLOSE_RADIUS).cursor_pointer().text_color(local.closeHover ? t.textNeutralPrimary : t.textNeutralSecondary).on_hover((hovered, cx) => {
         if (local.closeHover === hovered)
           return;
         local.closeHover = hovered;
@@ -9238,9 +11584,9 @@ var Modal = {
         cx.stop_propagation();
         close();
       }).children(optional(o.icon("X", { size: CLOSE_ICON })));
-      const header = div39().flex().flex_row().flex_none().items_center().justify_between().p(t.spaceM).border_b_1().border_color(t.borderDefault).child(title).child(closeButton);
-      const body = div39().id(o.id("body")).flex().flex_col().flex_1().min_h(0).gap(t.spaceM).p(t.spaceM).overflow_y_scroll().children(o.children(props.children, "c"));
-      let content = div39().id(o.id("content")).flex().flex_col().max_h("85%").bg(t.foreground).text_color(t.textNeutralPrimary).border_1().border_color(t.borderDefault).rounded(RADIUS).opacity(opacity).transition("opacity", { duration: FADE_MS2, easing: "ease-out" }).on_mouse_down("left", (_e, cx) => {
+      const header = div43().flex().flex_row().flex_none().items_center().justify_between().p(t.spaceM).border_b_1().border_color(t.borderDefault).child(title).child(closeButton);
+      const body = div43().id(o.id("body")).flex().flex_col().flex_1().min_h(0).gap(t.spaceM).p(t.spaceM).overflow_y_scroll().children(o.children(props.children, "c"));
+      let content = div43().id(o.id("content")).flex().flex_col().max_h("85%").bg(t.foreground).text_color(t.textNeutralPrimary).border_1().border_color(t.borderDefault).rounded(RADIUS).opacity(opacity).transition("opacity", { duration: FADE_MS2, easing: "ease-out" }).on_mouse_down("left", (_e, cx) => {
         cx.stop_propagation();
         local.pressed = false;
       }).on_mouse_up("left", (_e, cx) => {
@@ -9257,7 +11603,7 @@ var Modal = {
         content = content.w(width).max_w("90%");
       if (focus)
         content = content.track_focus(focus);
-      const backdrop = textStyle(div39().id(o.id("overlay")).relative().flex().items_center().justify_center().size_full().cursor_default().text_color(t.textNeutralPrimary), typography(t, "body", "default")).child(div39().absolute().inset_0().bg(t.overlay).opacity(opacity).transition("opacity", { duration: FADE_MS2, easing: "ease-out" })).child(content).on_mouse_down("left", (_e, cx) => {
+      const backdrop = textStyle(div43().id(o.id("overlay")).relative().flex().items_center().justify_center().size_full().cursor_default().text_color(t.textNeutralPrimary), typography(t, "body", "default")).child(div43().absolute().inset_0().bg(t.overlay).opacity(opacity).transition("opacity", { duration: FADE_MS2, easing: "ease-out" })).child(content).on_mouse_down("left", (_e, cx) => {
         cx.stop_propagation();
         local.pressed = true;
       }).on_mouse_up("left", (_e, cx) => {
@@ -9275,14 +11621,14 @@ var Modal = {
 
 // src/components/option-cards.ts
 import { Button as GButton3 } from "gpui-base";
-import { div as div40 } from "gpui-kit";
+import { div as div44 } from "gpui-kit";
 var OptionCard = { render: () => null };
 function isImageTopContent(topContent) {
   return e24(topContent) && typeof topContent.props?.src === "string";
 }
 var TWO_COLUMNS_MAX = 768;
 var ONE_COLUMN_MAX = 480;
-function cardRows(count, width) {
+function cardRows2(count, width) {
   const indices = Array.from({ length: count }, (_, i) => i);
   if (width === 0 || width > TWO_COLUMNS_MAX) {
     let next = 0;
@@ -9298,16 +11644,16 @@ function card(ctx, item, i, selected, disabled, onToggle) {
   const t = ctx.t;
   const hasTop = item.topContent != null;
   const image = isImageTopContent(item.topContent);
-  const top = hasTop ? image ? div40().flex_none().self_start().w(72).h(72).rounded(t.radiusM).overflow_hidden().children(ctx.children(item.topContent, `card${i}:top`)) : div40().flex().flex_none().self_start().items_center().justify_center().w(32).h(32).rounded(t.radiusS).bg(t.sunk).text_color(t.textNeutralPrimary).children(ctx.children(item.topContent, `card${i}:top`)) : null;
+  const top = hasTop ? image ? div44().flex_none().self_start().w(72).h(72).rounded(t.radiusM).overflow_hidden().children(ctx.children(item.topContent, `card${i}:top`)) : div44().flex().flex_none().self_start().items_center().justify_center().w(32).h(32).rounded(t.radiusS).bg(t.sunk).text_color(t.textNeutralPrimary).children(ctx.children(item.topContent, `card${i}:top`)) : null;
   const titleFont = typography(t, "body", "heavy");
   const titleColor = disabled ? t.textNeutralTertiary : t.textNeutralPrimary;
   const subtitleFont = typography(t, "body", "small");
   const subtitleColor = disabled ? t.textNeutralTertiary : t.textNeutralSecondary;
   const subtitle = item.subtitle ? String(item.subtitle) : "";
-  const text = div40().flex().flex_col().gap(t.space3xs).min_w(0).child(textStyle(div40().text_color(titleColor), titleFont).child(markdownInline(ctx, `card${i}-title`, String(item.title ?? ""), { font: titleFont, color: titleColor }))).children(subtitle ? [
-    textStyle(div40().text_color(subtitleColor), subtitleFont).child(markdownInline(ctx, `card${i}-subtitle`, subtitle, { font: subtitleFont, color: subtitleColor }))
+  const text = div44().flex().flex_col().gap(t.space3xs).min_w(0).child(textStyle(div44().text_color(titleColor), titleFont).child(markdownInline(ctx, `card${i}-title`, String(item.title ?? ""), { font: titleFont, color: titleColor }))).children(subtitle ? [
+    textStyle(div44().text_color(subtitleColor), subtitleFont).child(markdownInline(ctx, `card${i}-subtitle`, subtitle, { font: subtitleFont, color: subtitleColor }))
   ] : []);
-  const content = div40().flex().flex_col().items_start().justify_start().gap(t.spaceM).w_full().children(optional(top)).child(text);
+  const content = div44().flex().flex_col().items_start().justify_start().gap(t.spaceM).w_full().children(optional(top)).child(text);
   const el = GButton3.new(ctx.id(`card${i}`)).selected(selected).disabled(disabled).on_click(onToggle).flex().flex_row().items_start().justify_start().flex_1().w_full().p(t.spaceSM).border_1().rounded(t.radius2xl).child(content);
   const styled = selected ? el.border_color(t.borderInteractiveSelected).bg(t.sunk) : el.border_color(t.borderInteractive).bg(TRANSPARENT).when(!disabled, (b) => b.hover((s) => s.border_color(t.borderInteractiveEmphasis)));
   return disabled ? styled.opacity(0.5).cursor_not_allowed() : styled.cursor_pointer();
@@ -9318,18 +11664,18 @@ var OptionCards = {
     const selection = selectionField(ctx, "OptionCards", { name: String(props.name), type: props.type, rules: props.rules, defaultValue: props.defaultValue }, "single");
     const items = (Array.isArray(props.items) ? props.items : []).flatMap((item) => e24(item) ? [item.props ?? {}] : []).filter((p) => p.value);
     const size = ctx.local({ width: 0 }, "size");
-    const rows = cardRows(items.length, size.width);
-    return div40().id(ctx.id("size")).flex().flex_col().gap(t.spaceM).w_full().on_size_change((s, cx) => {
+    const rows = cardRows2(items.length, size.width);
+    return div44().id(ctx.id("size")).flex().flex_col().gap(t.spaceM).w_full().on_size_change((s, cx) => {
       if (size.width !== s.width) {
         size.width = s.width;
         cx.notify();
       }
-    }).children(rows.map((row) => div40().flex().flex_row().gap(t.spaceM).w_full().children(row.map((index) => {
+    }).children(rows.map((row) => div44().flex().flex_row().gap(t.spaceM).w_full().children(row.map((index) => {
       const item = items[index];
       const i = index;
       const selected = selection.selected.includes(String(item.value));
       const disabled = selection.disabled || item.disabled === true;
-      return div40().flex().flex_col().flex_1().min_w(0).child(card(ctx, item, i, selected, disabled, () => selection.toggle(String(item.value))));
+      return div44().flex().flex_col().flex_1().min_w(0).child(card(ctx, item, i, selected, disabled, () => selection.toggle(String(item.value))));
     }))));
   }
 };
@@ -9344,7 +11690,7 @@ import {
   SliderThumb,
   SliderTrack
 } from "gpui-base";
-import { div as div41 } from "gpui-kit";
+import { div as div45 } from "gpui-kit";
 
 // src/components/slider-values.ts
 function formatNumber(num) {
@@ -9627,13 +11973,13 @@ function sliderBlock(o) {
   }
   const errors = valueErrors(value, min, max);
   const hasError = !streaming && !discrete && (isRange ? Boolean(errors.min || errors.max) : Boolean(errors.min));
-  const errorMessage = (text) => textStyle(div41().flex().flex_row().items_center().gap(t.space2xs).whitespace_nowrap().pr(t.space2xs).text_color(t.textDangerPrimary), typography(t, "label", "small")).children(optional(ctx.icon("AlertCircle", { size: 14 }))).child(text);
-  const separator = () => div41().w(8).h(2).flex_none().bg(t.textNeutralSecondary);
+  const errorMessage = (text) => textStyle(div45().flex().flex_row().items_center().gap(t.space2xs).whitespace_nowrap().pr(t.space2xs).text_color(t.textDangerPrimary), typography(t, "label", "small")).children(optional(ctx.icon("AlertCircle", { size: 14 }))).child(text);
+  const separator = () => div45().w(8).h(2).flex_none().bg(t.textNeutralSecondary);
   const valueInput = (i, error, width) => {
     const frame = (el) => textStyle(el.w(width).h(36).border_1().rounded(t.radiusM).py(t.spaceXs - 1).px(t.spaceS).text_right().whitespace_nowrap().overflow_hidden().bg(t.highlightSubtle).border_color(error ? t.borderDangerEmphasis : t.borderInteractive).text_color(t.textNeutralPrimary), typography(t, "body", "default"));
     const state = inputs?.inputs[i];
     if (!state)
-      return frame(div41()).child(String(value[i] ?? (i === 0 ? min : max)));
+      return frame(div45()).child(String(value[i] ?? (i === 0 ? min : max)));
     return frame(GInput3.new(state)).focus((s) => s.border_color(error ? t.borderDangerEmphasis : t.borderInteractiveEmphasis));
   };
   const optionsFor = (keep) => {
@@ -9650,7 +11996,7 @@ function sliderBlock(o) {
   };
   let controls = null;
   if (!streaming) {
-    const column = () => div41().flex().flex_col().items_end().gap(t.spaceXs).relative();
+    const column = () => div45().flex().flex_col().items_end().gap(t.spaceXs).relative();
     if (discrete) {
       const [low, high] = value;
       const pick = (part, current, items, width, change) => selectControl({
@@ -9662,16 +12008,16 @@ function sliderBlock(o) {
         height: 36,
         onChange: (v, cx) => setValueAndCommit(ui, change(Number(v)), cx)
       });
-      controls = isRange ? column().child(div41().flex().flex_row().items_center().gap(t.spaceXs).child(pick("low", low, optionsFor((o) => o < (high ?? max)), 80, (n) => [n, high ?? max].sort((a, b) => a - b))).child(separator()).child(pick("high", high, optionsFor((o) => o > (low ?? min)), 80, (n) => [low ?? min, n].sort((a, b) => a - b)))) : column().child(pick("single", low, optionsFor(() => true), 100, (n) => [n]));
+      controls = isRange ? column().child(div45().flex().flex_row().items_center().gap(t.spaceXs).child(pick("low", low, optionsFor((o) => o < (high ?? max)), 80, (n) => [n, high ?? max].sort((a, b) => a - b))).child(separator()).child(pick("high", high, optionsFor((o) => o > (low ?? min)), 80, (n) => [low ?? min, n].sort((a, b) => a - b)))) : column().child(pick("single", low, optionsFor(() => true), 100, (n) => [n]));
     } else if (isRange) {
       const error = errors.min || errors.max;
-      controls = column().child(div41().flex().flex_row().items_center().gap(t.spaceXs).child(valueInput(0, errors.min, 64)).child(separator()).child(valueInput(1, errors.max, 64))).when(!!error, (el) => el.child(errorMessage(error)));
+      controls = column().child(div45().flex().flex_row().items_center().gap(t.spaceXs).child(valueInput(0, errors.min, 64)).child(separator()).child(valueInput(1, errors.max, 64))).when(!!error, (el) => el.child(errorMessage(error)));
     } else {
       controls = column().child(valueInput(0, errors.min, 80)).when(!!errors.min, (el) => el.child(errorMessage(errors.min)));
     }
   }
-  const header = div41().flex().flex_row().justify_between().when(hasError, (el) => el.items_start().mb(t.spaceS)).when(!hasError, (el) => el.items_center().mb(t.spaceS + t.spaceXs)).child(textStyle(div41().pt(t.spaceXs).text_color(t.textNeutralPrimary), typography(t, "label", "default")).child(o.label)).children(optional(controls));
-  return div41().id(ctx.id()).flex().flex_col().w_full().child(header).child(div41().flex().flex_row().items_center().child(slider(ctx, ui, native, { variant: streaming ? "continuous" : o.variant, min, max, step, streaming, shownValue })));
+  const header = div45().flex().flex_row().justify_between().when(hasError, (el) => el.items_start().mb(t.spaceS)).when(!hasError, (el) => el.items_center().mb(t.spaceS + t.spaceXs)).child(textStyle(div45().pt(t.spaceXs).text_color(t.textNeutralPrimary), typography(t, "label", "default")).child(o.label)).children(optional(controls));
+  return div45().id(ctx.id()).flex().flex_col().w_full().child(header).child(div45().flex().flex_row().items_center().child(slider(ctx, ui, native, { variant: streaming ? "continuous" : o.variant, min, max, step, streaming, shownValue })));
 }
 function slider(ctx, ui, native, v) {
   const t = ctx.t;
@@ -9685,34 +12031,34 @@ function slider(ctx, ui, native, v) {
   const fillLeft = isRange ? 10 + share(low) * track - 10 : 0;
   const fillRight = 10 + share(high) * track + 8;
   const fillHidden = !isRange && high === min;
-  const fill = dim(div41().absolute().top(0).left(fillLeft).w(Math.max(0, fillRight - fillLeft)).h(10).rounded(t.radiusS).bg(fillHidden || track === 0 || !(span > 0) ? "#00000000" : t.interactiveAccentDefault));
-  const dotLayer = v.variant === "discrete" && track > 0 ? dots(min, max, v.step, v.shownValue).map((d) => dim(div41().absolute().top(3).left(10 + d.position / 100 * track - 2).size(4).rounded(t.radiusFull).bg(d.active ? t.foreground : t.textNeutralTertiary))) : [];
+  const fill = dim(div45().absolute().top(0).left(fillLeft).w(Math.max(0, fillRight - fillLeft)).h(10).rounded(t.radiusS).bg(fillHidden || track === 0 || !(span > 0) ? "#00000000" : t.interactiveAccentDefault));
+  const dotLayer = v.variant === "discrete" && track > 0 ? dots(min, max, v.step, v.shownValue).map((d) => dim(div45().absolute().top(3).left(10 + d.position / 100 * track - 2).size(4).rounded(t.radiusFull).bg(d.active ? t.foreground : t.textNeutralTertiary))) : [];
   const startPress = () => {
     ui.dragging = true;
     ui.dragStart = [...ui.value];
   };
   const thumb = (i) => {
     const state = native.slider;
-    const handle = shadow(div41().size(20).rounded(t.radiusS).overflow_hidden().flex().items_center().justify_center().bg(t.foreground).hover((s) => s.bg(over(t.sunk, t.foreground))).on_mouse_down("left", startPress).on_hover((hovered, cx) => {
+    const handle = shadow(div45().size(20).rounded(t.radiusS).overflow_hidden().flex().items_center().justify_center().bg(t.foreground).hover((s) => s.bg(over(t.sunk, t.foreground))).on_mouse_down("left", startPress).on_hover((hovered, cx) => {
       const next = hovered ? i : ui.hover === i ? -1 : ui.hover;
       if (next !== ui.hover) {
         ui.hover = next;
         cx.notify();
       }
-    }), t.shadowS, t.foreground).child(div41().size(6).rounded(t.radius3xs).bg(t.interactiveAccentDefault));
-    const bubble = shadow(textStyle(div41().p(t.space2xs).rounded(t.radiusS).border_1().border_color(t.borderInteractive).bg(t.foreground).text_color(t.textNeutralPrimary).whitespace_nowrap(), typography(t, "label", "small")), t.shadowS, t.foreground).child(formatNumber(v.shownValue[i]));
-    const el = SliderThumb.new(state).id(ctx.id(`thumb${i}`)).size(22).ml(-11).rounded(t.radiusS + 1).border_1().border_color(t.borderDefault).flex().items_center().justify_center().child(handle).when(!v.streaming && (ui.hover === i || ui.dragging && ui.dragThumb === i), (e) => e.child(div41().absolute().top(-35).left(-1).w(22).flex().flex_row().justify_center().child(bubble)));
+    }), t.shadowS, t.foreground).child(div45().size(6).rounded(t.radius3xs).bg(t.interactiveAccentDefault));
+    const bubble = shadow(textStyle(div45().p(t.space2xs).rounded(t.radiusS).border_1().border_color(t.borderInteractive).bg(t.foreground).text_color(t.textNeutralPrimary).whitespace_nowrap(), typography(t, "label", "small")), t.shadowS, t.foreground).child(formatNumber(v.shownValue[i]));
+    const el = SliderThumb.new(state).id(ctx.id(`thumb${i}`)).size(22).ml(-11).rounded(t.radiusS + 1).border_1().border_color(t.borderDefault).flex().items_center().justify_center().child(handle).when(!v.streaming && (ui.hover === i || ui.dragging && ui.dragThumb === i), (e) => e.child(div45().absolute().top(-35).left(-1).w(22).flex().flex_row().justify_center().child(bubble)));
     return isRange && i === 0 ? el.start(true) : el;
   };
-  const travel = native ? dim(GSlider.new(native.slider).flex().flex_row().items_center().w_full().h(20).min_w(100).child(SliderTrack.new(native.slider).flex().flex_row().items_center().w_full().h(20).child(SliderIndicator.new(native.slider).relative().flex_1().h(22).child(thumb(0)).when(isRange, (e) => e.child(thumb(1)))))) : div41().w_full().h(20);
-  const container = div41().relative().flex().flex_row().items_center().w_full().h(10).px(10).bg(t.sunk).rounded(t.radiusS).on_mouse_down("left", startPress).on_size_change((size, cx) => {
+  const travel = native ? dim(GSlider.new(native.slider).flex().flex_row().items_center().w_full().h(20).min_w(100).child(SliderTrack.new(native.slider).flex().flex_row().items_center().w_full().h(20).child(SliderIndicator.new(native.slider).relative().flex_1().h(22).child(thumb(0)).when(isRange, (e) => e.child(thumb(1)))))) : div45().w_full().h(20);
+  const container = div45().relative().flex().flex_row().items_center().w_full().h(10).px(10).bg(t.sunk).rounded(t.radiusS).on_mouse_down("left", startPress).on_size_change((size, cx) => {
     if (Math.abs(size.width - ui.trackWidth) > 0.5) {
       ui.trackWidth = size.width;
       cx.notify();
     }
-  }).child(fill).children(dotLayer).child(travel).when(v.streaming, (e) => e.child(div41().absolute().inset_0().on_mouse_down("left", (_e, cx) => cx.stop_propagation())));
-  const labels = textStyle(div41().flex().flex_row().justify_between().mt(t.spaceS).px(t.space2xs).text_color(t.textNeutralSecondary), typography(t, "label", "small")).child(formatNumber(min)).child(formatNumber(max));
-  return div41().flex().flex_row().items_center().gap(t.spaceS).w_full().child(div41().w_full().child(container).child(labels));
+  }).child(fill).children(dotLayer).child(travel).when(v.streaming, (e) => e.child(div45().absolute().inset_0().on_mouse_down("left", (_e, cx) => cx.stop_propagation())));
+  const labels = textStyle(div45().flex().flex_row().justify_between().mt(t.spaceS).px(t.space2xs).text_color(t.textNeutralSecondary), typography(t, "label", "small")).child(formatNumber(min)).child(formatNumber(max));
+  return div45().flex().flex_row().items_center().gap(t.spaceS).w_full().child(div45().w_full().child(container).child(labels));
 }
 var Slider = {
   render(props, ctx) {
@@ -9832,25 +12178,134 @@ var components = {
   OptionCard,
   Button,
   Buttons,
-  IconButton
+  IconButton,
+  Diagram: view(Diagram),
+  Node: DiagramPart,
+  Entity: DiagramPart,
+  Field: DiagramPart,
+  Group: DiagramPart,
+  Edge: DiagramPart,
+  DiagramStep: DiagramPart,
+  Sequence: view(Sequence2),
+  Participant: DiagramPart,
+  Message: DiagramPart,
+  Block: DiagramPart,
+  Timeline: view(Timeline2),
+  Task: TimelinePart
 };
 // opengpui-shared:openui-genui
-var m63 = globalThis[Symbol.for("opengpui shared ef234433d9c1b860")]["openui-genui"];
-var e056 = m63["openuiAdditionalRules"];
-var e1105 = m63["openuiChatAdditionalRules"];
-var e256 = m63["openuiChatComponentGroups"];
-var e329 = m63["openuiChatExamples"];
-var e421 = m63["openuiChatLibrary"];
-var e519 = m63["openuiChatPromptOptions"];
-var e613 = m63["openuiComponentGroups"];
-var e711 = m63["openuiExamples"];
-var e811 = m63["openuiLibrary"];
-var e910 = m63["openuiPromptOptions"];
+var m64 = globalThis[Symbol.for("opengpui shared 160c5dd588f20b26")]["openui-genui"];
+var e057 = m64["openuiAdditionalRules"];
+var e1107 = m64["openuiChatAdditionalRules"];
+var e259 = m64["openuiChatComponentGroups"];
+var e330 = m64["openuiChatExamples"];
+var e425 = m64["openuiChatLibrary"];
+var e520 = m64["openuiChatPromptOptions"];
+var e615 = m64["openuiComponentGroups"];
+var e713 = m64["openuiExamples"];
+var e813 = m64["openuiLibrary"];
+var e911 = m64["openuiPromptOptions"];
+
+// src/diagram/components.ts
+var Node = e15({
+  name: "Node",
+  props: e258.object({
+    id: e258.string(),
+    label: e258.string(),
+    kind: e258.enum(NODE_KINDS).optional(),
+    sub: e258.string().optional(),
+    action: e4().optional()
+  }),
+  description: "A box in a Diagram. id: short, unique in its Diagram. kind picks the icon (default process); start and end are pills. sub: a smaller second line. action replaces what a click sends.",
+  component: null
+});
+var Field = e15({
+  name: "Field",
+  props: e258.object({ name: e258.string(), type: e258.string().optional(), key: e258.enum(FIELD_KEYS).optional() }),
+  description: "A row of an Entity: a column, attribute or method (`save()`). type shows on the right; key marks a primary (pk) or foreign (fk) key.",
+  component: null
+});
+var Entity = e15({
+  name: "Entity",
+  props: e258.object({
+    id: e258.string(),
+    label: e258.string(),
+    fields: e258.array(Field.ref),
+    sub: e258.string().optional(),
+    action: e4().optional()
+  }),
+  description: "A box drawn as a card of fields (a table, a class), going wherever a Node goes and sharing its ids. Edges attach to the whole card; put cardinality in the edge label.",
+  component: null
+});
+var Group = e15({
+  name: "Group",
+  props: e258.object({ id: e258.string(), label: e258.string(), nodes: e258.array(e258.union([Node.ref, Entity.ref])) }),
+  description: "A labelled frame around its nodes (a process, a machine, a folder). Groups don't nest; edges connect nodes, not groups.",
+  component: null
+});
+var Edge = e15({
+  name: "Edge",
+  props: e258.object({
+    from: e258.string(),
+    to: e258.string(),
+    label: e258.string().optional(),
+    style: e258.enum(EDGE_STYLES).optional(),
+    head: e258.enum(EDGE_HEADS).optional()
+  }),
+  description: "A line between two node ids of its Diagram, ending at to. style: solid (default) or dashed. head: arrow (default), none, triangle (hollow: inherits) or diamond (filled: composition). Its id is from>to; one edge per pair (merge the labels).",
+  component: null
+});
+var Diagram2 = e15({
+  name: "Diagram",
+  props: e258.object({
+    nodes: e258.array(e258.union([Node.ref, Entity.ref, Group.ref])),
+    edges: e258.array(Edge.ref),
+    steps: e258.array(DiagramStep.ref).optional(),
+    direction: e258.enum(["down", "right"]).optional()
+  }),
+  description: "Boxes and the edges between them, laid out automatically (architecture, flowchart, state machine, dependencies, ER or class diagram), with optional numbered steps that light up their part. direction: down (default) or right (gets wide fast).",
+  component: null
+});
+var COMPONENTS = [Diagram2, Node, Entity, Field, Group, Edge, DiagramStep, Sequence, Participant, Message, Block, Timeline, Task];
+var VIEWS = [Diagram2, Sequence, Timeline];
+var SLOTS = ["TabItem.content", "AccordionItem.content", "Card.children"];
+var NOTES = [
+  "Write each Diagram as its own statement, and its nodes, edges and steps lists each as their own: `d = Diagram(dNodes, dEdges, dSteps)`.",
+  "Ids are short and unique within one Diagram (nodes, entities and groups share them); two Diagrams may reuse an id.",
+  "An edge points the way the diagram reads (cause to effect, caller to callee, one step to the next); the layout places its target after its source.",
+  "At most about 20 nodes per Diagram: several Diagrams beat one big one.",
+  "When you rewrite a Diagram, keep its nodes and edges in the same order: the layout depends on it.",
+  'Clicking a box sends you `Tell me more about <label>` with context {diagram: "<statement id>", node: "<id>"}; a step\'s ask button sends `Tell me more about step <n>: <title>` with {diagram, step, highlight}. A box\'s or step\'s own action replaces it.',
+  ...SEQUENCE_NOTES,
+  ...TIMELINE_NOTES
+];
+function withDiagrams(source) {
+  const { library } = source;
+  const schema = library.toJSONSchema().$defs ?? {};
+  const has = (slot) => {
+    const [parent, prop] = slot.split(".");
+    const def = schema[parent];
+    return !!def?.properties?.[prop];
+  };
+  const slots = SLOTS.filter(has);
+  const values = COMPONENTS.filter((c) => !VIEWS.includes(c));
+  const views = VIEWS.map((component) => slots.length ? { component, slots } : component);
+  const extended = library.extend({ components: { add: [...values, ...views] } });
+  const extendedLibrary = e9({
+    root: extended.root,
+    id: extended.id,
+    components: Object.values(extended.components),
+    functions: Object.values(extended.functions),
+    actions: Object.values(extended.actions),
+    componentGroups: [...extended.componentGroups ?? [], { name: "Diagrams", components: COMPONENTS.map((c) => c.name), notes: NOTES }]
+  });
+  return { library: extendedLibrary, promptOptions: source.promptOptions };
+}
 
 // src/library.ts
 var libraries = {
-  openui: { library: e811, promptOptions: e910 },
-  chat: { library: e421, promptOptions: e519 }
+  openui: withDiagrams({ library: e813, promptOptions: e911 }),
+  chat: withDiagrams({ library: e425, promptOptions: e520 })
 };
 function subsetLibrary(source, names) {
   const keep = new Set(names);
@@ -10201,6 +12656,27 @@ function toToolProvider(input) {
     }
   };
 }
+function diagramErrors(root) {
+  const errors = [];
+  const seen = new Set;
+  const walk = (value) => {
+    if (Array.isArray(value))
+      value.forEach(walk);
+    else if (e24(value) && !seen.has(value)) {
+      seen.add(value);
+      if (value.typeName === "Diagram")
+        errors.push(...validateDiagram(diagramModel(value.props, false), value.statementId));
+      else if (value.typeName === "Sequence")
+        errors.push(...validateSequence(sequenceModel(value.props, false), value.statementId));
+      else if (value.typeName === "Timeline")
+        errors.push(...validateTimeline(timelineModel(value.props, false), value.statementId));
+      else
+        Object.values(value.props).forEach(walk);
+    }
+  };
+  walk(root);
+  return errors;
+}
 
 class FormValidation {
   onChange;
@@ -10454,7 +12930,7 @@ class Session {
     if (this.result?.meta.errors.length) {
       errors.push(...e17(this.result.meta.errors, this.schema, Object.keys(this.library.components)));
     }
-    errors.push(...this.runtimeErrors, ...this.renderErrors);
+    errors.push(...this.runtimeErrors, ...diagramErrors(this.root), ...this.renderErrors);
     this.renderErrors = [];
     errors.push(...this.queryManager.getSnapshot().__openui_errors ?? []);
     this.errors = errors;
@@ -10839,6 +13315,89 @@ function herdrImages(base) {
   return (src) => (shared ??= new ImageCache).load(src, base);
 }
 
+// herdr/src/layout.ts
+import { exists as exists3, mkdir as mkdir3, readFile as readFile2, unlink as unlink2, writeFile as writeFile3 } from "fs/promises";
+import { appHome as appHome3, exec as exec2 } from "herdr";
+import { join as join4 } from "path";
+var CACHE2 = "opengpui/layout";
+var KEEP_DAYS = 30;
+var PARTIAL_MINUTES = 60;
+var running2 = new Map;
+var pruned = null;
+function herdrLayout(cli) {
+  const launcher = cli ?? join4(appHome3(), "mods", "opengpui", "cli", "opengpui");
+  return (graph) => {
+    const key = layoutKey(graph);
+    let job = running2.get(key);
+    if (!job) {
+      job = layout(launcher, key, graph).finally(() => running2.delete(key));
+      running2.set(key, job);
+    }
+    return job;
+  };
+}
+async function layout(launcher, key, graph) {
+  const dir = join4(appHome3(), CACHE2);
+  const output = join4(dir, `${key}.json`);
+  const cached = await read(output);
+  if (cached)
+    return cached;
+  await mkdir3(dir, { recursive: true });
+  await (pruned ??= prune(dir));
+  const input = join4(dir, `${key}.in.json`);
+  try {
+    for (let attempt = 1;; attempt++) {
+      await writeFile3(input, JSON.stringify(graph));
+      const r = await exec2(launcher, ["layout", input, output]).catch((e) => {
+        throw new Error(`can't run ${launcher}: ${e instanceof Error ? e.message : e}`);
+      });
+      const done = await read(output);
+      if (done)
+        return done;
+      if (attempt === 2)
+        throw new Error(r.stderr.trim() || `${launcher} layout exited with ${r.code}`);
+    }
+  } finally {
+    await unlink2(input).catch(() => {});
+  }
+}
+async function read(path) {
+  if (!await exists3(path))
+    return null;
+  try {
+    return JSON.parse(await readFile2(path, "utf8"));
+  } catch {
+    await unlink2(path).catch(() => {});
+    return null;
+  }
+}
+async function prune(dir) {
+  await exec2("find", [
+    dir,
+    "-maxdepth",
+    "1",
+    "-type",
+    "f",
+    "(",
+    "(",
+    "-name",
+    "*.in.json",
+    "-o",
+    "-name",
+    "*.tmp",
+    ")",
+    "-mmin",
+    `+${PARTIAL_MINUTES}`,
+    "-o",
+    "-name",
+    "*.json",
+    "-mtime",
+    `+${KEEP_DAYS}`,
+    ")",
+    "-delete"
+  ]).catch(() => null);
+}
+
 // herdr/src/theme.ts
 import { fonts, settings, theme } from "herdr";
 var isHex = (v) => typeof v === "string" && v.startsWith("#");
@@ -10938,7 +13497,7 @@ function makeTokens(look, mode, installed, h) {
 }
 
 // herdr/src/main.ts
-var expand = (path) => path.startsWith("~/") ? join4(home2(), path.slice(2)) : path;
+var expand = (path) => path.startsWith("~/") ? join5(home2(), path.slice(2)) : path;
 function plainFormState(state) {
   const unwrap = (v) => v && typeof v === "object" && !Array.isArray(v) ? "value" in v && "componentType" in v ? v.value : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, unwrap(x)])) : v;
   return Object.fromEntries(Object.entries(state ?? {}).map(([k, v]) => [k, unwrap(v)]));
@@ -10964,8 +13523,8 @@ class OpenGpui extends View2 {
   init(_props, cx) {
     this.p = props() ?? {};
     this.srcPath = this.p.src ? expand(this.p.src) : null;
-    this.eventsPath = this.p.events ? expand(this.p.events) : eventsPath(appHome3(), this.srcPath);
-    this.statusPath = statusPath(appHome3(), this.eventsPath);
+    this.eventsPath = this.p.events ? expand(this.p.events) : eventsPath(appHome4(), this.srcPath);
+    this.statusPath = statusPath(appHome4(), this.eventsPath);
     let source;
     try {
       source = selectLibrary(this.p.library, Object.keys(components), this.p.components);
@@ -10984,7 +13543,8 @@ class OpenGpui extends View2 {
       components,
       tokens: herdrTokens(this.p.look ?? "herdr"),
       icons: herdrIcons,
-      images: herdrImages(this.srcPath ? dirname(this.srcPath) : null)
+      images: herdrImages(this.srcPath ? dirname(this.srcPath) : null),
+      layout: herdrLayout(this.p.cli ? expand(this.p.cli) : undefined)
     });
     this.surface.onIdle = (idle) => this.reportIdle(idle);
     if (!this.srcPath) {
@@ -11046,7 +13606,7 @@ class OpenGpui extends View2 {
     return Object.fromEntries(Object.entries(specs).map(([name, spec]) => [
       name,
       async (args) => {
-        const r = await exec2(expand(spec.command), [...spec.args ?? [], JSON.stringify(args)], {
+        const r = await exec3(expand(spec.command), [...spec.args ?? [], JSON.stringify(args)], {
           cwd: spec.cwd ? expand(spec.cwd) : undefined
         });
         if (r.code !== 0)
@@ -11066,9 +13626,9 @@ class OpenGpui extends View2 {
           const lines = this.pendingEvents.splice(0);
           const path = this.eventsPath;
           try {
-            await mkdir3(dirname(path), { recursive: true });
+            await mkdir4(dirname(path), { recursive: true });
             const current = await readTextFile(path) ?? "";
-            await writeFile3(path, `${current}${lines.map((l) => `${l}
+            await writeFile4(path, `${current}${lines.map((l) => `${l}
 `).join("")}`);
             this.writeError = null;
           } catch (e) {
@@ -11080,8 +13640,8 @@ class OpenGpui extends View2 {
           const text = this.pendingStatus;
           this.pendingStatus = null;
           try {
-            await mkdir3(dirname(this.statusPath), { recursive: true });
-            await writeFile3(this.statusPath, text);
+            await mkdir4(dirname(this.statusPath), { recursive: true });
+            await writeFile4(this.statusPath, text);
           } catch {}
         }
         await cx.sleep(WRITE_TICK_MS);
@@ -11099,7 +13659,7 @@ class OpenGpui extends View2 {
       const url = String(event.params?.url ?? "");
       if (/^https?:\/\//.test(url)) {
         const opener = herdrWindow()?.platform === "linux" ? "xdg-open" : herdrWindow()?.platform === "windows" ? "explorer" : "open";
-        exec2(opener, [url]).catch(() => {});
+        exec3(opener, [url]).catch(() => {});
       }
     }
     const plain = plainFormState(event.formState);
@@ -11128,7 +13688,7 @@ class OpenGpui extends View2 {
     const errors = this.session.errors;
     const content = this.surface.renderContent();
     const pad = t.spaceL;
-    const body = textStyle(div42().id("opengpui-body").flex().flex_col().flex_1().min_h(0).overflow_y_scrollbar().p(pad).text_color(t.textNeutralPrimary).on_size_change((size, cx) => {
+    const body = textStyle(div46().id("opengpui-body").flex().flex_col().flex_1().min_h(0).overflow_y_scrollbar().p(pad).text_color(t.textNeutralPrimary).on_size_change((size, cx) => {
       const height = Math.max(0, size.height - 2 * pad);
       if (this.viewportHeight !== height) {
         this.viewportHeight = height;
@@ -11137,7 +13697,7 @@ class OpenGpui extends View2 {
       }
     }), typography(t, "body", "default"));
     const label = (el) => textStyle(el, typography(t, "label", "small"));
-    return div42().id("opengpui-root").relative().flex().flex_col().size_full().bg(t.background).child(label(h_flex8().h(30).px(t.spaceM).gap(t.spaceS).items_center().border_b_1().border_color(t.borderDefault).text_color(t.textNeutralSecondary)).child(div42().flex_1().truncate().child(this.p.title ?? (this.srcPath ? this.srcPath.split("/").pop() ?? this.srcPath : "opengpui"))).when(this.session.blocked && this.loaded, (el) => el.child(div42().text_color(t.textInfoPrimary).child("streaming…"))).when(this.session.isQueryLoading, (el) => el.child(div42().child("loading data…"))).when(this.setupError != null, (el) => el.child(div42().text_color(t.textDangerPrimary).truncate().child(this.setupError ?? ""))).when(this.writeError != null, (el) => el.child(div42().text_color(t.textDangerPrimary).truncate().child(this.writeError ?? ""))).when(errors.length > 0, (el) => el.child(div42().text_color(t.textDangerPrimary).child(`${errors.length} error${errors.length > 1 ? "s" : ""}`)))).child(div42().flex().flex_col().flex_1().min_h(0).on_mouse_down("left", (e) => this.surface.notePane(e)).on_mouse_move((e) => this.surface.notePane(e)).child(content.length === 0 ? body.child(div42().text_color(t.textNeutralSecondary).child(this.loadError ?? (this.loaded ? "Nothing to show yet" : "Loading…"))) : body.children(content))).when(errors.length > 0, (el) => el.child(label(v_flex10().id("opengpui-errors").max_h(120).overflow_y_scrollbar().px(t.spaceM).py(t.spaceXs).gap(t.space3xs).border_t_1().border_color(t.borderDefault).text_color(t.textDangerPrimary)).children(errors.map((e) => `${e.code}${e.component ? ` (${e.component})` : ""}: ${e.message}`)))).children(this.surface.renderOverlays().map((o) => div42().absolute().top(0).left(0).size_full().child(o)));
+    return div46().id("opengpui-root").relative().flex().flex_col().size_full().bg(t.background).child(label(h_flex8().h(30).px(t.spaceM).gap(t.spaceS).items_center().border_b_1().border_color(t.borderDefault).text_color(t.textNeutralSecondary)).child(div46().flex_1().truncate().child(this.p.title ?? (this.srcPath ? this.srcPath.split("/").pop() ?? this.srcPath : "opengpui"))).when(this.session.blocked && this.loaded, (el) => el.child(div46().text_color(t.textInfoPrimary).child("streaming…"))).when(this.session.isQueryLoading, (el) => el.child(div46().child("loading data…"))).when(this.setupError != null, (el) => el.child(div46().text_color(t.textDangerPrimary).truncate().child(this.setupError ?? ""))).when(this.writeError != null, (el) => el.child(div46().text_color(t.textDangerPrimary).truncate().child(this.writeError ?? ""))).when(errors.length > 0, (el) => el.child(div46().text_color(t.textDangerPrimary).child(`${errors.length} error${errors.length > 1 ? "s" : ""}`)))).child(div46().flex().flex_col().flex_1().min_h(0).on_mouse_down("left", (e) => this.surface.notePane(e)).on_mouse_move((e) => this.surface.notePane(e)).child(content.length === 0 ? body.child(div46().text_color(t.textNeutralSecondary).child(this.loadError ?? (this.loaded ? "Nothing to show yet" : "Loading…"))) : body.children(content))).when(errors.length > 0, (el) => el.child(label(v_flex10().id("opengpui-errors").max_h(120).overflow_y_scrollbar().px(t.spaceM).py(t.spaceXs).gap(t.space3xs).border_t_1().border_color(t.borderDefault).text_color(t.textDangerPrimary)).children(errors.map((e) => `${e.code}${e.component ? ` (${e.component})` : ""}: ${e.message}`)))).children(this.surface.renderOverlays().map((o) => div46().absolute().top(0).left(0).size_full().child(o)));
   }
   async close(_cx) {
     this.surface.close();
