@@ -17,6 +17,7 @@ import { appHome, exec, hc, home, props, readTextFile, theme, watchFolder, windo
 import { basename, dirname, join } from "path";
 import {
   components,
+  isStreamingResponse,
   libraries,
   Session,
   subsetLibrary,
@@ -58,9 +59,6 @@ function plainFormState(state: Record<string, unknown> | undefined): Record<stri
       : v;
   return Object.fromEntries(Object.entries(state ?? {}).map(([k, v]) => [k, unwrap(v)]));
 }
-
-/** A Response is "streaming" while it is framed with markers and has no end line yet. */
-const isStreaming = (text: string) => /^\]\]>openui:content/m.test(text) && !/^\]\]>openui:end\s*$/m.test(text);
 
 /** How often the writer loop looks for event lines and a new status to write. */
 const WRITE_TICK_MS = 50;
@@ -142,7 +140,7 @@ export default class OpenGpui extends View {
           if (text != null && text !== last) {
             last = text;
             this.loaded = true;
-            this.session.setResponse(text, isStreaming(text));
+            this.session.setResponse(text, isStreamingResponse(text));
           }
         } catch (e) {
           this.loadError = `Can't read ${path}: ${e}`;

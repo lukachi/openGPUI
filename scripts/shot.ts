@@ -8,13 +8,23 @@
 //     --width <px>          viewport, logical px; shots are 2x (default 1280)
 //     --height <px>         (default 820)
 //     --steps <steps.json>  input to run after the first shot, the same for every file:
-//                             [{ "click": "id" | [x, y] }, { "scroll": [x, y, dy] },
-//                              { "hover": "id" | [x, y] }, { "key": "cmd-a" },
-//                              { "type": "text" }, { "shot": "name" }]
+//                             { "click" | "hover" | "down" | "move" | "up": "id" | [x, y] }
+//                             { "drag": [x1, y1, x2, y2] }      button held over ten moves
+//                             { "scroll": [x, y, dy] | [x, y, dy, dx] }   dy > 0 reads further down
+//                             { "key": "cmd-a" }  { "type": "text" }
+//                             { "resize": [width, height] }     as a pane resize
+//                             { "wait": ms }                    simulated time, 16 ms frames
+//                             { "clipboard": true }             prints the clipboard's text
+//                             { "response": "file" }            the file's new text, as when an agent
+//                                                               rewrites it (relative to the steps file);
+//                                                               framed without its end line = streaming
+//                             { "shot": "name" }
+//                           Every step but shot/wait/clipboard runs until settled, or with
+//                           "settle": ms on it for exactly that long (to catch a short state).
 //                           ids are the gpui-base controls the harness observes
 //                           (Accordion triggers, Buttons, Inputs, Tabs, …: --spec
 //                           lists them with their bounds); aim at a script div
-//                           with a point. dy > 0 scrolls down.
+//                           with a point.
 //     --out <dir>           default tmp/shots: <file>-<mode>.png, <file>-<mode>-<name>.png
 //     --spec                also write <file>-<mode>.spec.txt: the element description after
 //                           the last step, and the ids a step can name, with their bounds
@@ -49,13 +59,22 @@ function flag(name: string): boolean {
 }
 
 type Target = string | [number, number];
-type Step =
+type Step = (
   | { click: Target }
-  | { scroll: [number, number, number] }
   | { hover: Target }
+  | { down: Target }
+  | { move: Target }
+  | { up: Target }
+  | { drag: [number, number, number, number] }
+  | { scroll: [number, number, number] | [number, number, number, number] }
   | { key: string }
   | { type: string }
-  | { shot: string };
+  | { resize: [number, number] }
+  | { wait: number }
+  | { clipboard: true }
+  | { response: string }
+  | { shot: string }
+) & { settle?: number };
 
 const modes = (option("--mode") ?? "light").split(",");
 const library = option("--library") ?? "openui";
@@ -79,7 +98,11 @@ if (
   console.error("                          [--steps steps.json] [--out dir] [--spec] [--jobs 4] [--quiet 2500] [--json]");
   process.exit(2);
 }
-const steps: Step[] = stepsPath ? JSON.parse(readFileSync(stepsPath, "utf8")) : [];
+const steps: Step[] = stepsPath
+  ? (JSON.parse(readFileSync(stepsPath, "utf8")) as Step[]).map((s) =>
+      "response" in s ? { ...s, response: resolve(dirname(resolve(stepsPath)), s.response) } : s,
+    )
+  : [];
 // Files that share a name are told apart by their folder's name: modal/form.oui → modal-form.
 const names = files.map((f) => basename(f).replace(/\.[^.]*$/, ""));
 const stems = files.map((f, i) => (names.indexOf(names[i]!) === names.lastIndexOf(names[i]!) ? names[i]! : `${basename(dirname(f))}-${names[i]}`));
@@ -167,10 +190,10 @@ if (asJson) {
   for (const l of lines.filter((l) => l.type === "step")) console.log(`step   ${rel(l.src)} ${l.mode}: ${l.step} (${l.ms} ms${l.timedOut ? ", NOT SETTLED" : ""})`);
   // A warning repeats once per render that triggers it: each distinct line once per file and mode.
   const seen = new Set<string>();
-  for (const l of lines.filter((l) => ["action", "errors", "error", "log", "fatal", "message", "stderr"].includes(l.type))) {
+  for (const l of lines.filter((l) => ["action", "clipboard", "errors", "error", "log", "fatal", "message", "stderr"].includes(l.type))) {
     const { type, src, mode, ...rest } = l;
     const text = `${type.padEnd(6)} ${src ? `${rel(src)} ${mode}: ` : ""}${JSON.stringify(rest)}`;
-    if (type === "action" || !seen.has(text)) console.log(text);
+    if (type === "action" || type === "clipboard" || !seen.has(text)) console.log(text);
     seen.add(text);
   }
   console.log(`${items.length} file×mode in ${Date.now() - began} ms (build ${built} ms, ${processes} processes)`);

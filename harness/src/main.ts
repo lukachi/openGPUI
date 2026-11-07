@@ -2,12 +2,15 @@
 // the way the Herdr mod draws a pane's content area, with OpenUI's own look,
 // and nothing from Herdr. The harness hands over the file and its options
 // through the "oui-harness" host module and reads actions and errors back as
-// JSON lines.
+// JSON lines. A "response" step hands over a new text for the file, as Herdr's
+// file watch does when an agent rewrites it; a framed text without its end
+// line is streaming, as in Herdr.
 import type { ActionEvent, OpenUIError } from "@openuidev/lang-core";
 import { div, View, type Context } from "gpui-kit";
-import { clock, emit, fonts, job } from "oui-harness";
+import { clock, emit, fonts, job, response } from "oui-harness";
 import {
   components,
+  isStreamingResponse,
   libraries,
   openuiFonts,
   resolveTokens,
@@ -49,9 +52,23 @@ export default class Harness extends View {
       icons: (file) => `icons/${file}.svg`,
       images: harnessImages(j.base, j.home, j.scratch),
     });
-    this.session.setResponse(j.text);
+    this.session.setResponse(j.text, isStreamingResponse(j.text));
     this.session.update();
+    if (j.follow) this.follow(cx);
     this.surface.attach(cx);
+  }
+
+  /** The text a "response" step handed over, looked for every 50 ms as Herdr's file watch would report it. */
+  private follow(cx: Context): void {
+    cx.spawn(async (cx) => {
+      for (;;) {
+        await cx.sleep(50);
+        const text = response();
+        if (text == null) continue;
+        this.session.setResponse(text, isStreamingResponse(text));
+        cx.notify();
+      }
+    });
   }
 
   private onAction(event: ActionEvent): void {

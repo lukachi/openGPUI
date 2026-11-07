@@ -64,6 +64,10 @@ export interface ResponseBundle {
   scriptRevision?: string;
 }
 
+/** A file's text is still streaming while it is framed with markers and has no end line yet. */
+export const isStreamingResponse = (text: string): boolean =>
+  /^\]\]>openui:content/m.test(text) && !/^\]\]>openui:end\s*$/m.test(text);
+
 export function parseResponseBundle(response: string | null, streaming: boolean): ResponseBundle {
   const text = response ?? "";
   const line = CONTENT_LINE.exec(text);

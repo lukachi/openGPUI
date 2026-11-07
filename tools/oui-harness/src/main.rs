@@ -82,7 +82,17 @@ struct Item {
     library: String,
     /// Where to write the element description of the settled view.
     spec: Option<PathBuf>,
-    steps: Vec<Step>,
+    steps: Vec<StepEntry>,
+}
+
+/// A step, and how long to run after it: by default until settled; with
+/// `"settle": ms`, exactly that much simulated time in 16 ms frames, so a
+/// shot can catch a state that lasts less than a settle (a 1 s "copied" check).
+#[derive(Deserialize, Debug)]
+struct StepEntry {
+    #[serde(flatten)]
+    step: Step,
+    settle: Option<u64>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -90,13 +100,30 @@ struct Item {
 enum Step {
     /// An element id GPUI Kit observes, or a window point.
     Click(Target),
-    /// Wheel at a point: [x, y, dy], dy in px (positive scrolls content up).
-    Scroll((f32, f32, f32)),
+    /// Wheel at a point: [x, y, dy] or [x, y, dy, dx], in px (dy > 0 reads further
+    /// down, dx > 0 further right).
+    Scroll(Vec<f32>),
     Hover(Target),
+    /// Left button down at a target, moves while it is held, and up: a drag in
+    /// parts (press on the backdrop, release in the dialog).
+    Down(Target),
+    Move(Target),
+    Up(Target),
+    /// A drag from [x1, y1] to [x2, y2] in ten moves.
+    Drag((f32, f32, f32, f32)),
     /// A GPUI keystroke: "enter", "cmd-a", "shift-tab".
     Key(String),
     /// Text for the focused element, one character at a time.
     Type(String),
+    /// The window's new content size [width, height], as a pane resize.
+    Resize((f32, f32)),
+    /// Simulated ms to run, in 16 ms frames.
+    Wait(u64),
+    /// Prints the clipboard's text as a "clipboard" line (`{"clipboard": true}`).
+    Clipboard(serde::de::IgnoredAny),
+    /// A new text for the file (path), as when an agent rewrites it: framed
+    /// without its end line, it is streaming.
+    Response(PathBuf),
     /// Writes a PNG of the settled frame.
     Shot(PathBuf),
 }
@@ -157,9 +184,11 @@ fn run() -> Result<()> {
         let base = src.parent().unwrap_or(Path::new("/")).to_path_buf();
         let text = std::fs::read_to_string(&src)?;
         let label = src.display().to_string();
+        let follow = item.steps.iter().any(|s| matches!(s.step, Step::Response(_)));
         CURRENT.with_borrow_mut(|current| {
             current.src = label.clone();
             current.mode = item.mode.clone();
+            current.response = None;
             current.job = Some(HostValue::Object(vec![
                 ("text".into(), HostValue::Str(text)),
                 ("base".into(), HostValue::Str(base.display().to_string())),
@@ -167,12 +196,17 @@ fn run() -> Result<()> {
                 ("scratch".into(), HostValue::Str(job.scratch.display().to_string())),
                 ("mode".into(), HostValue::Str(item.mode.clone())),
                 ("library".into(), HostValue::Str(item.library.clone())),
+                ("follow".into(), HostValue::Bool(follow)),
             ]));
         });
+        // Herdr grants every mod the clipboard (herdr-app src/mods.rs); here it is
+        // the test platform's own, never the person's.
         gpui_shell::set_capabilities(
             Capabilities::new()
                 .read_roots([app.clone(), base.clone(), PathBuf::from(&home)])
-                .write_roots([job.scratch.clone()]),
+                .write_roots([job.scratch.clone()])
+                .clipboard_read(true)
+                .clipboard_write(true),
         );
 
         // A runtime per file: one VM keeps every load of the 2.7 MB script, and
@@ -207,8 +241,9 @@ fn run() -> Result<()> {
             "renders": first.renders, "timedOut": first.timed_out,
         }));
 
-        for step in &item.steps {
+        for entry in &item.steps {
             let wall = Instant::now();
+            let step = &entry.step;
             match step {
                 Step::Shot(path) => {
                     let image = cx.capture_screenshot(window)?;
@@ -217,6 +252,21 @@ fn run() -> Result<()> {
                     }
                     image.save(path).with_context(|| format!("writing {}", path.display()))?;
                     emit(json!({ "type": "shot", "src": label, "mode": item.mode, "path": path, "ms": ms(wall.elapsed()) }));
+                    continue;
+                }
+                Step::Wait(time) => {
+                    advance(&mut cx, window, *time)?;
+                    emit(json!({ "type": "step", "src": label, "mode": item.mode, "step": format!("{step:?}"), "ms": ms(wall.elapsed()) }));
+                    continue;
+                }
+                Step::Clipboard(_) => {
+                    let text = cx.update(|cx| cx.read_from_clipboard().and_then(|c| c.text()));
+                    emit(json!({ "type": "clipboard", "src": label, "mode": item.mode, "text": text }));
+                    continue;
+                }
+                Step::Response(path) => {
+                    let text = std::fs::read_to_string(path).with_context(|| format!("no file {}", path.display()))?;
+                    CURRENT.with_borrow_mut(|current| current.response = Some(text));
                 }
                 step => {
                     let outcome = cx.update_window(window, |_, window, cx| perform(step, window, cx))?;
@@ -224,13 +274,18 @@ fn run() -> Result<()> {
                         emit(json!({ "type": "error", "src": label, "mode": item.mode, "step": format!("{step:?}"), "message": error }));
                         continue;
                     }
-                    let settled = settle(&mut cx, &runtime, window, &job)?;
-                    emit(json!({
-                        "type": "step", "src": label, "mode": item.mode, "step": format!("{step:?}"),
-                        "ms": ms(wall.elapsed()), "simulatedMs": ms(settled.simulated), "timedOut": settled.timed_out,
-                    }));
                 }
             }
+            if let Some(time) = entry.settle {
+                advance(&mut cx, window, time)?;
+                emit(json!({ "type": "step", "src": label, "mode": item.mode, "step": format!("{step:?}"), "ms": ms(wall.elapsed()) }));
+                continue;
+            }
+            let settled = settle(&mut cx, &runtime, window, &job)?;
+            emit(json!({
+                "type": "step", "src": label, "mode": item.mode, "step": format!("{step:?}"),
+                "ms": ms(wall.elapsed()), "simulatedMs": ms(settled.simulated), "timedOut": settled.timed_out,
+            }));
         }
 
         if let Some(path) = &item.spec {
@@ -296,6 +351,10 @@ struct Current {
     src: String,
     mode: String,
     job: Option<HostValue>,
+    /// The text the last "response" step handed over, until the script takes it.
+    response: Option<String>,
+    /// The left button is down (a "down" step without its "up" yet).
+    pressed: bool,
 }
 
 thread_local! {
@@ -309,6 +368,9 @@ fn host_module(families: Vec<String>, executor: gpui::BackgroundExecutor) -> Hos
     let start = executor.now();
     HostModule::new("oui-harness")
         .function("job", |_| Ok(CURRENT.with_borrow(|current| current.job.clone().unwrap_or(HostValue::Null))))
+        .function("response", |_| {
+            Ok(CURRENT.with_borrow_mut(|current| current.response.take().map_or(HostValue::Null, HostValue::Str)))
+        })
         .function("fonts", move |_| Ok(HostValue::Array(families.iter().cloned().map(HostValue::Str).collect())))
         .function("clock", move |_| Ok(HostValue::Number((executor.now() - start).as_secs_f64() * 1000.)))
         .function("emit", |arguments| {
@@ -382,33 +444,83 @@ fn settle(cx: &mut HeadlessAppContext, runtime: &Rc<ShellRuntime>, window: AnyWi
     }
 }
 
+/// Runs `time` ms of simulated time in 16 ms frames, drawing each, whether or
+/// not the view settles meanwhile.
+fn advance(cx: &mut HeadlessAppContext, window: AnyWindowHandle, time: u64) -> Result<()> {
+    let mut left = time;
+    loop {
+        cx.run_until_parked();
+        cx.update_window(window, |_, window, cx| window.draw(cx).clear(cx))?;
+        cx.run_until_parked();
+        if left == 0 {
+            return Ok(());
+        }
+        let frame = left.min(16);
+        cx.advance_clock(Duration::from_millis(frame));
+        left -= frame;
+    }
+}
+
 fn perform(step: &Step, window: &mut Window, cx: &mut App) -> Result<(), String> {
     match step {
         Step::Click(target) => {
             let position = locate(window, target, cx)?;
             pointer(window, MouseMoveEvent { position, pressed_button: None, modifiers: Default::default() }.to_platform_input(), cx);
-            pointer(
-                window,
-                MouseDownEvent { button: MouseButton::Left, position, modifiers: Default::default(), click_count: 1, first_mouse: false }
-                    .to_platform_input(),
-                cx,
-            );
-            pointer(
-                window,
-                MouseUpEvent { button: MouseButton::Left, position, modifiers: Default::default(), click_count: 1 }.to_platform_input(),
-                cx,
-            );
+            button(window, position, true, cx);
+            button(window, position, false, cx);
         }
         Step::Hover(target) => {
             let position = locate(window, target, cx)?;
             pointer(window, MouseMoveEvent { position, pressed_button: None, modifiers: Default::default() }.to_platform_input(), cx);
         }
-        Step::Scroll((x, y, dy)) => {
-            let position = point(px(*x), px(*y));
+        Step::Down(target) => {
+            let position = locate(window, target, cx)?;
             pointer(window, MouseMoveEvent { position, pressed_button: None, modifiers: Default::default() }.to_platform_input(), cx);
+            button(window, position, true, cx);
+        }
+        Step::Move(target) => {
+            let position = locate(window, target, cx)?;
+            let pressed_button = CURRENT.with_borrow(|c| c.pressed).then_some(MouseButton::Left);
+            pointer(window, MouseMoveEvent { position, pressed_button, modifiers: Default::default() }.to_platform_input(), cx);
+        }
+        Step::Up(target) => {
+            let position = locate(window, target, cx)?;
+            let pressed_button = CURRENT.with_borrow(|c| c.pressed).then_some(MouseButton::Left);
+            pointer(window, MouseMoveEvent { position, pressed_button, modifiers: Default::default() }.to_platform_input(), cx);
+            button(window, position, false, cx);
+        }
+        Step::Drag((x1, y1, x2, y2)) => {
+            let from = point(px(*x1), px(*y1));
+            pointer(window, MouseMoveEvent { position: from, pressed_button: None, modifiers: Default::default() }.to_platform_input(), cx);
+            button(window, from, true, cx);
+            for i in 1..=10 {
+                let t = i as f32 / 10.;
+                let position = point(px(x1 + (x2 - x1) * t), px(y1 + (y2 - y1) * t));
+                let event = MouseMoveEvent { position, pressed_button: Some(MouseButton::Left), modifiers: Default::default() };
+                pointer(window, event.to_platform_input(), cx);
+            }
+            button(window, point(px(*x2), px(*y2)), false, cx);
+        }
+        Step::Scroll(values) => {
+            let [x, y, dy, rest @ ..] = values.as_slice() else {
+                return Err("scroll takes [x, y, dy] or [x, y, dy, dx]".into());
+            };
+            let dx = match rest {
+                [] => 0.,
+                [dx] => *dx,
+                _ => return Err("scroll takes [x, y, dy] or [x, y, dy, dx]".into()),
+            };
+            let position = point(px(*x), px(*y));
+            let pressed_button = CURRENT.with_borrow(|c| c.pressed).then_some(MouseButton::Left);
+            pointer(window, MouseMoveEvent { position, pressed_button, modifiers: Default::default() }.to_platform_input(), cx);
             // A wheel's delta moves content the other way: dy > 0 reads further down.
-            let delta = ScrollDelta::Pixels(point(px(0.), px(-*dy)));
+            let delta = ScrollDelta::Pixels(point(px(-dx), px(-*dy)));
             pointer(window, ScrollWheelEvent { position, delta, ..Default::default() }.to_platform_input(), cx);
+        }
+        Step::Resize((width, height)) => {
+            window.resize(size(px(*width), px(*height)));
+            window.bounds_changed(cx);
+            render_frame(window, cx);
         }
         Step::Key(key) => {
             let keystroke = Keystroke::parse(key).map_err(|e| format!("not a keystroke: {key}: {e}"))?;
@@ -425,7 +537,9 @@ fn perform(step: &Step, window: &mut Window, cx: &mut App) -> Result<(), String>
                 render_frame(window, cx);
             }
         }
-        Step::Shot(_) => unreachable!("shots are taken outside the window update"),
+        Step::Shot(_) | Step::Wait(_) | Step::Clipboard(_) | Step::Response(_) => {
+            unreachable!("run outside the window update")
+        }
     }
     Ok(())
 }
@@ -443,6 +557,18 @@ fn press(window: &mut Window, keystroke: Keystroke, cx: &mut App) {
         keystroke
     };
     window.dispatch_event(KeyUpEvent { keystroke }.to_platform_input(), cx);
+}
+
+/// The left button down or up at a point; "move" steps carry it while it is down.
+fn button(window: &mut Window, position: Point<Pixels>, down: bool, cx: &mut App) {
+    CURRENT.with_borrow_mut(|c| c.pressed = down);
+    let event = if down {
+        MouseDownEvent { button: MouseButton::Left, position, modifiers: Default::default(), click_count: 1, first_mouse: false }
+            .to_platform_input()
+    } else {
+        MouseUpEvent { button: MouseButton::Left, position, modifiers: Default::default(), click_count: 1 }.to_platform_input()
+    };
+    pointer(window, event, cx);
 }
 
 fn render_frame(window: &mut Window, cx: &mut App) {

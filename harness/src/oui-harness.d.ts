@@ -10,9 +10,13 @@ declare module "oui-harness" {
     scratch: string;
     mode: "light" | "dark";
     library: "openui" | "chat";
+    /** The steps hand over new texts (a "response" step): look for them with `response()`. */
+    follow: boolean;
   }
   /** What to draw in the view being created. */
   export function job(): Job;
+  /** The text the last "response" step handed over, once; null when there is none. */
+  export function response(): string | null;
   /** Font families the harness registered or found. */
   export function fonts(): string[];
   /** How far the harness's simulated clock has run, in ms. */

@@ -45,7 +45,7 @@ export {
   type TextStyle,
   type Tokens,
 } from "./render/tokens.ts";
-export { parseResponseBundle, type ResponseBundle } from "./runtime/response.ts";
+export { isStreamingResponse, parseResponseBundle, type ResponseBundle } from "./runtime/response.ts";
 export {
   FormValidation,
   Session,

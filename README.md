@@ -54,9 +54,13 @@ this checkout and draws each file offscreen, with the real core on the gpui-shel
 Herdr embeds, and writes `tmp/shots/<file>-<mode>.png` (2x) once the view has settled. No
 window appears and nothing takes focus, so it runs beside the person's work and in
 parallel (`--jobs`, default 4: 122 files in both modes, 244 shots, take about 30 s).
-`--steps` runs input after the first shot (click an id or a point, wheel, hover, key,
-type) and `{ "shot": "name" }` saves `<file>-<mode>-<name>.png`; the actions the session
-sends and every error and runtime warning are printed. `--spec` writes the element
+`--steps` runs input after the first shot: click, hover, press, move and release an id or
+a point, drag, wheel (both axes), keys, typing, a window resize, simulated time, the
+clipboard's text, and a new text for the file (framed without its end line, it streams, as
+when an agent writes it); `{ "shot": "name" }` saves `<file>-<mode>-<name>.png` (the list
+is in `scripts/shot.ts`). Each step runs until settled, or `"settle": ms` long to catch a
+short state. Gpui-base's own animations draw their end state (reduced motion). The actions
+the session sends and every error and runtime warning are printed. `--spec` writes the element
 description and the ids a step can name. The drawing comes from `tools/oui-harness`, a
 Rust host on GPUI's headless app context (simulated clock, Metal offscreen renderer)
 pinned to the herdr-app tag of the installed Herdr; it refuses to run when Herdr's
