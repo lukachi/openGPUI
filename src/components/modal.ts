@@ -50,11 +50,12 @@ export const Modal: Component = {
   render(props, ctx) {
     const field = ctx.field<unknown>("open", props.open);
     const isOpen = field.value === true || field.value === "true";
-    const local = ctx.local({ shown: false, pressed: false });
+    const local = ctx.local({ shown: false, pressed: false, closeHover: false });
     // Like upstream's portal, the modal takes no place in the flow.
     if (!isOpen) {
       local.shown = false;
       local.pressed = false;
+      local.closeHover = false;
       return null;
     }
     // handleOpenChange(false): only closing writes the field.
@@ -88,8 +89,14 @@ export const Modal: Component = {
         .h(CLOSE_BOX)
         .rounded(CLOSE_RADIUS)
         .cursor_pointer()
-        .text_color(t.textNeutralSecondary)
-        .hover((s) => s.text_color(t.textNeutralPrimary))
+        // `.openui-modal-close:hover { color: text-neutral-primary }`. A `hover` style reaches only the
+        // element itself, not the icon inside it (which takes the text color), so the color follows state.
+        .text_color(local.closeHover ? t.textNeutralPrimary : t.textNeutralSecondary)
+        .on_hover((hovered, cx) => {
+          if (local.closeHover === hovered) return;
+          local.closeHover = hovered;
+          cx.notify();
+        })
         .on_click((_e, cx) => {
           cx.stop_propagation();
           close();

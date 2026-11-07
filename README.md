@@ -397,8 +397,9 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 - **Lists and sections:** no transforms, so ListItem's indicator doesn't scale on hover
   (the fills and colors change). A clickable ListItem takes Tab and shows its hover
   look while focused, but no keys, as upstream's `role="button"` div. SectionBlock's
-  open chevron is lucide's ChevronDown (gpui can't rotate) and its trigger has no
-  arrow-key roving. OptionCards' `@container` queries read the field's measured
+  open chevron is lucide's ChevronDown (gpui can't rotate) and its trigger takes Tab and
+  Enter/Space through a focusable div inside gpui-base's click-only trigger, with no
+  focus ring and no arrow-key roving. OptionCards' `@container` queries read the field's measured
   width, so a new response draws once in the wide layout; cards have no focus ring
   or transitions. EntityList's right-aligned text pushes each wrapped line right.
 - **Charts:** gpui has no SVG and no text measurement. Geometry is painted with gpui
