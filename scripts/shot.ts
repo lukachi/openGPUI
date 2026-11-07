@@ -11,7 +11,10 @@
 //                             { "click" | "hover" | "down" | "move" | "up": "id" | [x, y] }
 //                             { "drag": [x1, y1, x2, y2] }      button held over ten moves
 //                             { "scroll": [x, y, dy] | [x, y, dy, dx] }   dy > 0 reads further down
-//                             { "key": "cmd-a" }  { "type": "text" }
+//                             { "key": "cmd-a" }  { "type": "text" }   keys go to the focused element;
+//                                                               "tab" / "shift-tab" move focus from where a
+//                                                               click left it (click a focusable first:
+//                                                               with nothing focused a Tab reaches nothing)
 //                             { "resize": [width, height] }     as a pane resize
 //                             { "wait": ms }                    simulated time, 16 ms frames
 //                             { "clipboard": true }             prints the clipboard's text

@@ -21,6 +21,7 @@ import { isElementNode, type ElementNode } from "@openuidev/lang-core";
 import { getRowConfiguration } from "openui-card-layout-utils";
 import { type RenderContext } from "../../render/surface.ts";
 import { shadow, type ShadowPreset, type Tokens } from "../../render/tokens.ts";
+import { keyClick } from "../buttons.ts";
 import { Tag } from "../content.ts";
 
 /** `@container (max-width: 48rem)` and `(max-width: 30rem)`. */
@@ -184,13 +185,30 @@ export function cardBlock(ctx: RenderContext, o: CardBlockOptions): Element {
 
 /**
  * What makes a card a `role="button"`: pointer, `tabIndex=0`, Enter and Space (cardKeyDownHandler).
- * A focused element's `on_click` already fires for Enter and Space, so there is no key handler: with one
- * each press sent the card's action twice.
+ * A focused card's own `on_click` already fires for Enter and Space, so it has no handler for its own
+ * keys: with one each press sent the card's action twice. upstream's handler is on the card's `onKeyDown`,
+ * which a keydown from a focusable inside the card (a footer Button) bubbles to: it runs the card's action
+ * and `preventDefault`s, so the inner `<button>` never clicks. The same here for a key that comes from
+ * inside: the card runs its action and raises `keyClick.suppressed` until the key comes up, which makes the
+ * inner Button skip its own click (scripts cannot `prevent_default`; see buttons.ts). Focus stays on the Button.
  */
 export function pressable(ctx: RenderContext, el: Element, index: number, onActivate: () => void): Element {
   const id = ctx.id(`card-${index}`);
   const focus = ctx.retained<FocusHandle, null>(id, { kind: "card-focus", meta: null, create: (_entry, cx) => cx.focus_handle() });
-  const box = el.id(id).cursor_pointer().tab_index(0);
+  const box = el
+    .id(id)
+    .cursor_pointer()
+    .tab_index(0)
+    .on_key_down((e, cx) => {
+      if (e.key !== "enter" && e.key !== "space" && e.key !== " ") return;
+      if (!focus || focus.is_focused()) return;
+      cx.stop_propagation();
+      keyClick.suppressed = true;
+      onActivate();
+    })
+    .on_key_up(() => {
+      keyClick.suppressed = false;
+    });
   return (focus ? box.track_focus(focus) : box).on_click((_e, cx) => {
     cx.stop_propagation();
     onActivate();

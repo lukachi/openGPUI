@@ -48,6 +48,7 @@ import { markdownInline } from "../markdown/render.ts";
 import { fitImage } from "../render/images.ts";
 import { optional, type Component, type Props, type RenderContext } from "../render/surface.ts";
 import { textStyle, typography, type Tokens } from "../render/tokens.ts";
+import { keyTrigger } from "./disclosure.ts";
 import { freshSectionOpenState, syncSectionOpen, toggleSection, type SectionOpenState } from "./lists-state.ts";
 
 // gpui-base types AccordionHeader as a constructor; the documented call is `AccordionHeader.new(trigger)`.
@@ -396,20 +397,8 @@ function sectionTrigger(ctx: RenderContext, t: Tokens, id: string, text: string,
         // `-content-text`: heading small, grows, centered vertically.
         .child(textStyle(div().flex().flex_1().items_center().justify_start().text_color(t.textNeutralPrimary), typography(t, "heading", "small")).child(text)),
     );
-  // `-trigger` is a Radix `<button>`: Tab reaches it and Enter/Space press it. gpui-base's unstyled
-  // AccordionTrigger is a click handler that base keeps out of keyboard focus (`tab_index` does nothing on
-  // it), so a focusable div inside it, over the whole trigger, is the tab stop (a click focuses it) and takes
-  // the key press, which gpui does not turn into a click on a div.
-  const focusable = div()
-    .id(`${id}:key`)
-    .w_full()
-    .tab_index(0)
-    .on_key_down((e, cx) => {
-      if (e.key !== "enter" && e.key !== "space" && e.key !== " ") return;
-      cx.stop_propagation();
-      toggle(cx);
-    })
-    .child(wrapper);
+  // `-trigger` is a Radix `<button>`: a tab stop that Enter and Space press (see keyTrigger).
+  const focusable = keyTrigger(id, toggle).child(wrapper);
   // `-trigger`: padding m 0 xs 0, full width, space-between, primary, pointer.
   return AccordionTrigger.new(id)
     .flex()

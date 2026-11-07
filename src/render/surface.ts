@@ -501,8 +501,8 @@ export class Surface {
   /**
    * A view the pump created or notified that may still draw: until it draws, or until the
    * host has drawn a frame since. A view on screen draws in the same frame as the host, so
-   * one that didn't is not on screen (a closed Accordion item's content, which its parent
-   * mounts but doesn't place) and must not hold idle. Or one asked to redraw at the next resume.
+   * one that didn't is not on screen (one its parent builds but doesn't place) and must not hold idle. Or one
+   * asked to redraw at the next resume.
    */
   private awaitingDraw(): boolean {
     for (const rec of this.liveRecords()) if (rec.dirty || (rec.waitFrom !== null && this.host.frame <= rec.waitFrom)) return true;

@@ -505,7 +505,7 @@ fn settle(cx: &mut HeadlessAppContext, runtime: &Rc<ShellRuntime>, window: AnyWi
     loop {
         let before = runtime.read_metrics().script_renders();
         cx.run_until_parked();
-        cx.update_window(window, |_, window, cx| window.draw(cx).clear(cx))?;
+        cx.update_window(window, |_, window, cx| draw_frames(window, cx))?;
         cx.run_until_parked();
         let now = executor.now();
         if runtime.read_metrics().script_renders() != before {
@@ -530,7 +530,7 @@ fn advance(cx: &mut HeadlessAppContext, window: AnyWindowHandle, time: u64) -> R
     let mut left = time;
     loop {
         cx.run_until_parked();
-        cx.update_window(window, |_, window, cx| window.draw(cx).clear(cx))?;
+        cx.update_window(window, |_, window, cx| draw_frames(window, cx))?;
         cx.run_until_parked();
         if left == 0 {
             return Ok(());
@@ -653,6 +653,22 @@ fn button(window: &mut Window, position: Point<Pixels>, down: bool, cx: &mut App
 
 fn render_frame(window: &mut Window, cx: &mut App) {
     window.refresh();
+    draw_frames(window, cx);
+}
+
+/// Draws a frame, then delivers the callbacks it queued for the next one
+/// (`on_next_frame`, `request_animation_frame`: gpui-base's `Popup` shows its
+/// content a frame after it first measures its trigger) and draws again, as the
+/// platform's frame loop does in Herdr; the test platform has none. A callback
+/// that asks again every frame (a continuous animation) is cut after a few
+/// frames, so one call stays bounded.
+fn draw_frames(window: &mut Window, cx: &mut App) {
+    for _ in 0..8 {
+        window.draw(cx).clear(cx);
+        if window.simulate_next_frame(cx) == 0 {
+            return;
+        }
+    }
     window.draw(cx).clear(cx);
 }
 

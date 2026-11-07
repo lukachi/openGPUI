@@ -6,9 +6,11 @@
 //   IconButton  components/IconButton/{IconButton.tsx,iconButton.scss}; genui-lib/IconButton is in misc.ts
 //
 // A secondary button's fill is transparent, so it draws without its shadow-m (gpui would
-// show the shadow through the fill: tokens.ts shadow(), README "Shadows").
+// show the shadow through the fill: tokens.ts shadow(), README "Shadows"). Both are tab stops that
+// Enter and Space press, as `<button>`; upstream's scss has no focus rule, so the browser's own
+// outline shows there and none is drawn here (gpui scripts have no `focus-visible` style).
 import { ACTION_STEPS } from "@openuidev/lang-core";
-import { div, type Color, type Context, type Element } from "gpui-kit";
+import { div, type Color, type Context, type Element, type FocusHandle } from "gpui-kit";
 import { optional, type Component, type RenderContext } from "../render/surface.ts";
 import { over, shadow, textStyle, TRANSPARENT, typography, type ShadowPreset, type Tokens } from "../render/tokens.ts";
 
@@ -107,12 +109,43 @@ function look(t: Tokens, variant: ButtonVariant, destructive: boolean): Look {
   }
 }
 
-function paint(el: Element, l: Look, disabled: boolean, onClick: ((cx: Context) => void) | undefined, bubble = false): Element {
+/**
+ * What a `<button>` is besides its look: a tab stop (`tab_index(0)` on a tracked focus handle, which a
+ * press also takes) whose Enter and Space press it (gpui turns both into a click on a focused
+ * element, so there is no key handler: with one each press would act twice, as cards/layout.ts
+ * `pressable` found). A disabled button (and a streaming Button) is neither: `<button disabled>`.
+ * The handle is retained state, so the first frame has no tab stop.
+ */
+function focusHandle(ctx: RenderContext, id: string): FocusHandle | null {
+  return ctx.retained<FocusHandle, null>(`${id}:focus`, { kind: "button-focus", meta: null, create: (_entry, cx) => cx.focus_handle() });
+}
+
+/**
+ * Enter/Space pressed on a Button inside a clickable card: upstream's card `onKeyDown`
+ * (cardKeyDownHandler) runs the card's action and `preventDefault`s, which cancels the `<button>`'s own
+ * click, so the card's action runs and the Button's does not. gpui's keyboard click fires on the key-up
+ * after the key-down, and scripts cannot `prevent_default`, so the card's handler (cards/layout.ts
+ * `pressable`) raises this flag on the key-down; the Button's click on that key-up takes it down and does
+ * nothing (its key-up listener runs before the card's, which lowers it too if no Button took it).
+ */
+export const keyClick = { suppressed: false };
+
+function paint(
+  el: Element,
+  l: Look,
+  disabled: boolean,
+  onClick: ((cx: Context) => void) | undefined,
+  bubble = false,
+  focus: FocusHandle | null = null,
+): Element {
   if (disabled) {
-    return el
+    const out = el
       .bg(l.disabledBg ?? l.bg)
       .text_color(l.disabledFg ?? l.fg)
       .border_color(l.disabledBorder ?? l.border);
+    // A focused button that turns disabled keeps the keyboard, as in a browser: the next Tab or Shift-Tab
+    // starts from its place. It is no tab stop and a click does not focus it once the keyboard has left.
+    return focus?.is_focused() ? out.track_focus(focus) : out;
   }
   let out = shadow(el.bg(l.bg).text_color(l.fg).border_color(l.border), l.shadow, l.bg).cursor_pointer();
   out = out.hover((s) => {
@@ -125,7 +158,13 @@ function paint(el: Element, l: Look, disabled: boolean, onClick: ((cx: Context) 
     return l.activeBorder ? a.border_color(l.activeBorder) : a;
   });
   if (!onClick) return out;
+  if (focus) out = out.tab_index(0).track_focus(focus);
   return out.on_click((_e, cx) => {
+    // A clickable card's key handler already ran the card's action for this Enter/Space (see keyClick).
+    if (keyClick.suppressed) {
+      keyClick.suppressed = false;
+      return;
+    }
     if (!bubble) cx.stop_propagation();
     onClick(cx);
   });
@@ -166,7 +205,8 @@ export function button(ctx: RenderContext, o: ButtonOptions): Element {
   }
   const textSize = typography(t, "label", o.size === "small" || o.size === "extra-small" ? "small" : "default").size;
   const icon = o.iconLeft ? ctx.icon(o.iconLeft, { size: textSize }) : null;
-  return paint(el, look(t, o.variant ?? "primary", !!o.destructive), !!o.disabled, o.onClick, o.bubble)
+  const focus = focusHandle(ctx, o.id);
+  return paint(el, look(t, o.variant ?? "primary", !!o.destructive), !!o.disabled, o.onClick, o.bubble, focus)
     .children(optional(icon))
     .child(o.label);
 }
@@ -224,7 +264,8 @@ export function iconButton(
         disabledBg: l.disabledBg && over(l.disabledBg, s),
       }
     : l;
-  return paint(el, onSurface, !!o.disabled, o.onClick, o.bubble).children(
+  const focus = focusHandle(ctx, o.id);
+  return paint(el, onSurface, !!o.disabled, o.onClick, o.bubble, focus).children(
     optional(ctx.icon(o.icon, { category: o.category, size: o.iconSize ?? size.icon })),
   );
 }

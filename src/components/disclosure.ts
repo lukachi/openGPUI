@@ -28,6 +28,9 @@
 //   ChevronUp, which is the same drawing, and it flips without the 300ms turn.
 //   The item announces itself as open until its panel is gone, so the expanded
 //   state a screen reader hears lags the click by 300ms.
+//   Triggers take Tab and Enter/Space (keyTrigger: gpui-base's trigger is click-only) with no
+//   focus ring, as upstream's scss draws none. An item's content views are built only while it
+//   is open or sliding shut, as Radix mounts it.
 // - Per-node UI state (the chosen tab, the open item, a nested Tabs' choice)
 //   lives in `ctx.local`, which is never cleared. Radix unmounts an inactive
 //   TabsContent and a closed AccordionContent, so upstream resets a Tabs or
@@ -51,6 +54,25 @@ const accordionHeader = (trigger: Element): Element => (AccordionHeader as unkno
 const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+
+/**
+ * A Radix trigger is a `<button>`: Tab reaches it and Enter/Space press it. gpui-base's unstyled
+ * AccordionTrigger is a click handler that base keeps out of keyboard focus (`tab_index` does nothing on
+ * it), so a focusable div inside it, over the whole trigger, is the tab stop (a click focuses it) and takes
+ * the key press (a div's `on_click` would also hear the pointer press the trigger's `on_change` takes). No
+ * focus ring: upstream's scss draws none either.
+ */
+export function keyTrigger(id: string, toggle: (cx: Context) => void): Element {
+  return div()
+    .id(`${id}:key`)
+    .w_full()
+    .tab_index(0)
+    .on_key_down((e, cx) => {
+      if (e.key !== "enter" && e.key !== "space" && e.key !== " ") return;
+      cx.stop_propagation();
+      toggle(cx);
+    });
+}
 
 /** TabItem, AccordionItem and StepsItem are drawn by their parent; alone they render nothing (`component: () => null`). */
 export const TabItem: Component = {
@@ -358,9 +380,17 @@ export const Accordion: Component = {
           .on_change((_open, cx) => toggle(cx)),
         typography(t, "body", "default"),
       )
-        .child(div().min_w(0).text_color(t.textNeutralPrimary).child(String(item.props.trigger ?? "")))
-        .children(optional(ctx.icon(open ? "ChevronUp" : "ChevronDown", { size: 16 })));
+        .child(
+          keyTrigger(ctx.id(`trigger-${i}`), toggle)
+            .flex()
+            .flex_row()
+            .items_center()
+            .justify_between()
+            .child(div().min_w(0).text_color(t.textNeutralPrimary).child(String(item.props.trigger ?? "")))
+            .children(optional(ctx.icon(open ? "ChevronUp" : "ChevronDown", { size: 16 }))),
+        );
 
+      // Radix mounts no content while an item is shut, so its views are not built either (`mounted`: open, or sliding shut).
       // Only an open or close slides (Radix runs slideDown/slideUp on the data-state flip); a settled panel follows its content at once.
       const sliding = local.sliding[value] === true;
       const measured = local.heights[value];
@@ -389,7 +419,7 @@ export const Accordion: Component = {
                 }
               }),
             typography(t, "body", "default"),
-          ).children(ctx.children(asArray(item.props.content), `item-${value}`)),
+          ).children(mounted ? ctx.children(asArray(item.props.content), `item-${value}`) : []),
         );
 
       // .openui-accordion-item: overflow hidden, border-bottom 1px border-default; the last one's is transparent (clear).

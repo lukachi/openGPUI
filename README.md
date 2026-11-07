@@ -158,7 +158,16 @@ a point, drag, wheel (both axes), keys, typing, a window resize, simulated time,
 clipboard's text, and a new text for the file (framed without its end line, it streams, as
 when an agent writes it); `{ "shot": "name" }` saves `<file>-<mode>-<name>.png` (the list
 is in `scripts/shot.ts`). Each step runs until settled, or `"settle": ms` long to catch a
-short state. Gpui-base's own animations draw their end state (reduced motion). The actions
+short state. Gpui-base's own animations draw their end state (reduced motion). Keys go to
+the focused element, and `tab` / `shift-tab` move focus as in Herdr, from where a click
+left it: a click on a focusable element (a Button, a card, an Accordion trigger, an input)
+focuses it, so click one first. In a fresh window, or after a click on bare page (the
+shell root blurs it), nothing is focused, the shell root's Tab binding is not on the
+key's path, and a Tab reaches nothing. The harness has no platform frame loop, so after
+each frame it draws it delivers the callbacks that frame queued for the next one
+(`request_animation_frame`; gpui-base's `Popup`, as a chart tooltip uses it, shows its
+content a frame after it first measures its trigger), as Herdr's does: one pointer move
+into a chart item shows the tooltip. The actions
 the session sends and every error and runtime warning are printed; a file whose surface
 still reports itself busy when it settles (the idle Herdr's status file reports) is marked
 NOT IDLE, as is a step after which it does (`harness/checks/idle-loop.oui` with its
@@ -183,7 +192,7 @@ replies, `--look herdr`, the pane chrome): it installs this checkout as its own 
 (`opengpui-<folder>`) in a background Herdr window of the checkout's own, shows each file
 in a new tab, saves a screenshot to `tmp/preview/` once the tab reports itself idle
 (`opengpui/status/<name>.json`: nothing left to parse, highlight, load or draw on screen;
-a view gpui never draws, such as a closed Accordion item's content, doesn't hold it) and stays
+a view gpui never draws, one its parent builds but doesn't place, doesn't hold it) and stays
 so for 300 ms (a build that reports nothing: once the window has stopped changing),
 and closes the tab. Checkouts never wait for each other.
 
@@ -343,6 +352,17 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   focus, keyboard and disabled state; the indicators are drawn from upstream's sizes
   (the checkmark is a path without round caps). There is no focus ring and no
   `overflow-wrap: anywhere`: a word longer than its row isn't broken.
+- **Buttons:** Button and IconButton are tab stops that Enter and Space press, as the
+  `<button>` upstream renders (a disabled one, and a Button while its response streams,
+  is neither). The browser's own focus outline is all upstream shows (its scss has no
+  focus rule) and gpui scripts have no `focus-visible` style, so there is no ring; the
+  focus handle is retained state, so a button is a tab stop from its second frame. A focused
+  button that turns disabled keeps the keyboard (the next Tab starts from its place); one
+  that unmounts (a carousel or tab-list arrow at its end) leaves nothing focused, as the
+  README's other "nothing focused" gap. Enter/Space on a Button inside a clickable card runs
+  the card's action and not the Button's, as upstream's `cardKeyDownHandler` (which
+  `preventDefault`s the key) does; a script cannot `prevent_default`, so the card raises a flag the
+  Button's keyboard click reads (`keyClick` in `buttons.ts`). Mouse clicks run both, as upstream.
 - **Overlays:** a page-level `position: fixed` portal (Modal, the gallery's modal) is
   a surface overlay that the host stacks over its own area: in Herdr the pane, not
   the whole window, so a click outside the pane (Herdr's sidebar) is Herdr's and leaves
@@ -406,6 +426,9 @@ sources under `.upstream/openui/packages/react-ui/src/`:
 - **Tabs, Accordion, Carousel:** tab lists and carousels scroll by an offset they
   own (wheel, trackpad, chevrons/arrows), with no scrollbar, as upstream hides it.
   Tab triggers are gpui-base's native `Tab`, which hears no keys: no arrow-key roving.
+  Accordion triggers take Tab and Enter/Space through a focusable div inside gpui-base's
+  click-only trigger (no focus ring, no arrow-key roving), and an item's content is built
+  only while it is open or sliding shut, as Radix mounts it.
   gpui can't rotate, so the accordion chevron flips instead of turning; only opening
   and closing slide. The carousel's edge fade (`mask-image`) isn't drawn and its
   narrow-window card width needs the window width, which render can't read. A chosen
