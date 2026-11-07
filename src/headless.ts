@@ -1,7 +1,7 @@
 // The parts of opengpui that need no gpui: libraries and prompts, the session
 // runtime, response parsing, design tokens. Built to dist/opengpui-headless.js for Bun/Node
 // tools (prompt generation, checks) and for the tests.
-export { libraries, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
+export { libraries, selectLibrary, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
 export * as dateLogic from "./components/date-logic.ts";
 export * as editableTableModel from "./components/editable-table-model.ts";
 export { MarkdownParse, markdownCuts, parseMarkdown, plainParagraph, runPipeline, type MarkdownProfile } from "./markdown/parse.ts";

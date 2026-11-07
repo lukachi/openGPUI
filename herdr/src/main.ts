@@ -1,31 +1,24 @@
 // opengpui for Herdr: a pane or tab that shows an OpenUI Lang file and sends
-// what the person does back to the agent that wrote it.
+// what the person does back to the agent that wrote it. `opengpui show` opens it;
+// the agent contract (props, events, replies) is in README.md, "Agent contract".
 //
 // props (from pane.split / tab.new):
-//   src      the .oui file to show (absolute, or ~/…). Re-read whenever it changes.
-//   reply    terminal address to `hc send` actions and errors to (an agent's $HC_TERMINAL_ID)
-//   events   JSONL file (under the Herdr home) that every action and error is appended to
-//   tools    JSON file of Query/Mutation tools: { "name": { "command": "…", "args": ["…"], "cwd": "…" } }
-//   library  "openui" (default) or "chat"
-//   title    header text
-//   look     "herdr" (default) or "openui": whose colors to draw with
+//   src         the .oui file to show (absolute, or ~/…). Re-read whenever it changes.
+//   reply       terminal address to `hc send` actions and errors to (an agent's $HC_TERMINAL_ID)
+//   events      JSONL file every action and error is appended to (default: contract.ts's eventsPath)
+//   tools       JSON file of Query/Mutation tools: { "name": { "command": "…", "args": ["…"], "cwd": "…" } }
+//   library     "openui" (default) or "chat"
+//   components  only these components of the library (its root always stays)
+//   title       header text
+//   look        "herdr" (default) or "openui": whose colors to draw with
 import type { ActionEvent, OpenUIError } from "@openuidev/lang-core";
 import { h_flex, v_flex } from "gpui-base";
 import { div, View, type Context } from "gpui-kit";
 import { mkdir, writeFile } from "fs/promises";
 import { appHome, exec, hc, home, props, readTextFile, theme, watchFolder, window as herdrWindow } from "herdr";
-import { basename, dirname, join } from "path";
-import {
-  components,
-  isStreamingResponse,
-  libraries,
-  Session,
-  subsetLibrary,
-  Surface,
-  textStyle,
-  typography,
-  type LibraryName,
-} from "../../src/index.ts";
+import { dirname, join } from "path";
+import { components, isStreamingResponse, selectLibrary, Session, Surface, textStyle, typography, type LibraryName } from "../../src/index.ts";
+import { eventsPath, replyText, statusPath, type PaneEvent } from "./contract.ts";
 import { DEMO } from "./demo.ts";
 import { herdrImages } from "./images.ts";
 import { herdrTokens, type Look } from "./theme.ts";
@@ -36,11 +29,13 @@ interface SurfaceProps {
   events?: string;
   tools?: string;
   library?: LibraryName;
+  components?: string[];
   title?: string;
   /** "herdr" (default): OpenUI's tokens in the Herdr theme's colors; "openui": OpenUI's own theme. */
   look?: Look;
 }
 
+/** A tools-file entry. `description`, `inputSchema` and `outputSchema` are for `opengpui prompt --tools`; the pane runs `command`. */
 interface ToolSpec {
   command: string;
   args?: string[];
@@ -70,6 +65,8 @@ export default class OpenGpui extends View {
   private srcPath: string | null = null;
   private loaded = false;
   private loadError: string | null = null;
+  /** Bad props (library, components) or an unloadable tools file: shown in the header for as long as the pane lives. */
+  private setupError: string | null = null;
   private eventsPath = "";
   /** Event lines waiting for the writer loop. */
   private pendingEvents: string[] = [];
@@ -86,11 +83,16 @@ export default class OpenGpui extends View {
   init(_props: unknown, cx: Context): void {
     this.p = (props() ?? {}) as SurfaceProps;
     this.srcPath = this.p.src ? expand(this.p.src) : null;
-    const name = (this.srcPath ?? "demo").split("/").pop()!.replace(/\.[^.]*$/, "").replace(/[^\w.-]+/g, "_");
-    this.eventsPath = this.p.events ? expand(this.p.events) : join(appHome(), "opengpui", "events", `${name}.jsonl`);
-    this.statusPath = join(appHome(), "opengpui", "status", `${basename(this.eventsPath).replace(/\.jsonl$/, "")}.json`);
+    this.eventsPath = this.p.events ? expand(this.p.events) : eventsPath(appHome(), this.srcPath);
+    this.statusPath = statusPath(appHome(), this.eventsPath);
 
-    const source = subsetLibrary(libraries[this.p.library ?? "openui"] ?? libraries.openui, Object.keys(components));
+    let source;
+    try {
+      source = selectLibrary(this.p.library, Object.keys(components), this.p.components);
+    } catch (e) {
+      this.setupError = String(e instanceof Error ? e.message : e);
+      source = selectLibrary(undefined, Object.keys(components));
+    }
     this.session = new Session({
       library: source.library,
       tools: this.tools,
@@ -118,12 +120,13 @@ export default class OpenGpui extends View {
     this.startWriter(cx);
     if (this.p.tools) {
       const toolsPath = expand(this.p.tools);
-      cx.spawn(async () => {
+      cx.spawn(async (cx) => {
         try {
           Object.assign(this.tools, await this.loadTools(toolsPath));
           this.session.queryManager.invalidate();
         } catch (e) {
-          this.loadError = `Can't load tools from ${toolsPath}: ${e}`;
+          this.setupError = `Can't load tools from ${toolsPath}: ${e}`;
+          cx.notify();
         }
       });
     }
@@ -220,17 +223,14 @@ export default class OpenGpui extends View {
     });
   }
 
-  private record(entry: Record<string, unknown>): void {
-    this.pendingEvents.push(JSON.stringify({ at: new Date().toISOString(), src: this.srcPath, ...entry }));
-  }
-
-  private send(message: string): void {
-    if (!this.p.reply) return;
-    void hc(["send", this.p.reply, message]).catch((e) => console.log(`[opengpui] hc send failed: ${e}`));
+  /** Appends `event` to the events file and, but for open_url (the pane opens the link itself), sends it to the agent. */
+  private emit(event: PaneEvent): void {
+    this.pendingEvents.push(JSON.stringify(event));
+    if (event.type === "open_url" || !this.p.reply) return;
+    void hc(["send", this.p.reply, replyText(event)]).catch((e) => console.log(`[opengpui] hc send failed: ${e}`));
   }
 
   private onAction(event: ActionEvent): void {
-    const formState = plainFormState(event.formState);
     if (event.type === "open_url") {
       const url = String(event.params?.url ?? "");
       if (/^https?:\/\//.test(url)) {
@@ -238,21 +238,26 @@ export default class OpenGpui extends View {
         void exec(opener, [url]).catch(() => {});
       }
     }
-    this.record({ type: event.type, message: event.humanFriendlyMessage, params: event.params, formName: event.formName, formState });
-    if (event.type !== "open_url") {
-      const detail = JSON.stringify({ params: event.params, form: event.formName, state: formState });
-      this.send(`[opengpui ${this.srcPath ?? "demo"}] ${event.type}: ${event.humanFriendlyMessage || "(no message)"} ${detail}`);
-    }
+    const plain = plainFormState(event.formState);
+    this.emit({
+      at: new Date().toISOString(),
+      src: this.srcPath,
+      type: event.type,
+      message: event.humanFriendlyMessage ?? "",
+      params: event.params ?? {},
+      // The session falls back to the whole store for a form nobody has typed into yet; the contract is the form alone.
+      ...(event.formName ? { formName: event.formName, formState: { [event.formName]: plain[event.formName] ?? {} } } : { formState: plain }),
+    });
   }
 
-  private onErrors(errors: OpenUIError[]): void {
+  /** Reports errors once they change; warnings (the no-root fallback still draws) are not errors to the agent, as in `check`. */
+  private onErrors(all: OpenUIError[]): void {
+    const errors = all.filter((e) => e.severity !== "warning");
     const key = JSON.stringify(errors);
     if (key === this.lastErrorReport) return;
     this.lastErrorReport = key;
     if (!errors.length) return;
-    this.record({ type: "errors", errors });
-    const lines = errors.map((e) => `${e.code}${e.component ? ` (${e.component})` : ""}: ${e.message}${e.hint ? ` Hint: ${e.hint}` : ""}`);
-    this.send(`[opengpui ${this.srcPath ?? "demo"}] errors in your OpenUI file:\n${lines.join("\n")}`);
+    this.emit({ at: new Date().toISOString(), src: this.srcPath, type: "errors", errors: errors as unknown as Record<string, unknown>[] });
   }
 
   render(_cx: Context) {
@@ -294,9 +299,10 @@ export default class OpenGpui extends View {
       .bg(t.background)
       .child(
         label(h_flex().h(30).px(t.spaceM).gap(t.spaceS).items_center().border_b_1().border_color(t.borderDefault).text_color(t.textNeutralSecondary))
-          .child(div().flex_1().truncate().child(this.p.title ?? this.srcPath ?? "opengpui"))
+          .child(div().flex_1().truncate().child(this.p.title ?? (this.srcPath ? (this.srcPath.split("/").pop() ?? this.srcPath) : "opengpui")))
           .when(this.session.blocked && this.loaded, (el) => el.child(div().text_color(t.textInfoPrimary).child("streaming…")))
           .when(this.session.isQueryLoading, (el) => el.child(div().child("loading data…")))
+          .when(this.setupError != null, (el) => el.child(div().text_color(t.textDangerPrimary).truncate().child(this.setupError ?? "")))
           .when(this.writeError != null, (el) => el.child(div().text_color(t.textDangerPrimary).truncate().child(this.writeError ?? "")))
           .when(errors.length > 0, (el) => el.child(div().text_color(t.textDangerPrimary).child(`${errors.length} error${errors.length > 1 ? "s" : ""}`))),
       )

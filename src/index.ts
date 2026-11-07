@@ -13,7 +13,7 @@
 export { components } from "./components/index.ts";
 export { button, iconButton, type ButtonOptions, type ButtonSize, type ButtonVariant } from "./components/buttons.ts";
 export { flexBox } from "./components/layout.ts";
-export { libraries, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
+export { libraries, selectLibrary, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
 export {
   optional,
   RenderContext,

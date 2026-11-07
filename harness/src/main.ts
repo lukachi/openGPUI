@@ -8,18 +8,7 @@
 import type { ActionEvent, OpenUIError } from "@openuidev/lang-core";
 import { div, View, type Context } from "gpui-kit";
 import { clock, emit, fonts, job, response } from "oui-harness";
-import {
-  components,
-  isStreamingResponse,
-  libraries,
-  openuiFonts,
-  resolveTokens,
-  Session,
-  subsetLibrary,
-  Surface,
-  textStyle,
-  typography,
-} from "../../src/index.ts";
+import { components, isStreamingResponse, openuiFonts, resolveTokens, selectLibrary, Session, Surface, textStyle, typography } from "../../src/index.ts";
 import { harnessImages } from "./images.ts";
 
 // The harness runs time on a simulated clock: sleeps and timers return at once
@@ -39,7 +28,7 @@ export default class Harness extends View {
   init(_props: unknown, cx: Context): void {
     const j = job();
     const installed = new Set(fonts());
-    const source = subsetLibrary(libraries[j.library] ?? libraries.openui, Object.keys(components));
+    const source = selectLibrary(j.library, Object.keys(components));
     this.session = new Session({
       library: source.library,
       tools: this.tools(j.tools, cx),

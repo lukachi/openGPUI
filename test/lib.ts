@@ -9,6 +9,7 @@ export const {
   Session,
   libraries,
   subsetLibrary,
+  selectLibrary,
   resolveTokens,
   toHex,
   cssColor,
