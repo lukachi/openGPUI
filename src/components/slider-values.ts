@@ -136,3 +136,17 @@ export function hasMinStepBetween(value: number[], step: number): boolean {
   // A hair of tolerance: 0.3 - 0.2 is 0.09999999999999998, which is one 0.1 step.
   return value[1]! - value[0]! >= step - 1e-9 * step;
 }
+
+/**
+ * A range move that left the thumbs closer than a step (the native thumbs stop at each other, so a
+ * pointer that outruns the last event gets them level): the native values with the thumb that moved
+ * held a step from the other, or null when no single thumb moved or there is no room for the step.
+ */
+export function holdApart(raw: number[], before: number[], step: number, span: number): number[] | null {
+  if (raw.length < 2 || before.length < 2) return null;
+  const lowMoved = raw[0] !== before[0];
+  const highMoved = raw[1] !== before[1];
+  if (lowMoved === highMoved) return null;
+  const held = lowMoved ? [raw[1]! - step, raw[1]!] : [raw[0]!, raw[0]! + step];
+  return held[0]! >= 0 && held[1]! <= span ? held : null;
+}

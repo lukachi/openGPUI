@@ -117,6 +117,18 @@ export type OverlayContent = { el: Element; focus?: FocusHandle | null } | null;
 /** An overlay's drawing (RenderContext.overlay). */
 export type OverlayDraw = (o: RenderContext) => OverlayContent;
 
+/** The host's visible content box, in window coordinates. */
+export interface PaneBox {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+interface Point2 {
+  x: number;
+  y: number;
+}
+
 /** The validation registry of the enclosing form, as a render uses it: its reads and registrations belong to the view. */
 export interface FormAccess {
   getFieldError(name: string): string | undefined;
@@ -280,6 +292,25 @@ export class Surface {
     if (this.viewportHeight === height) return;
     this.viewportHeight = height;
     this.wake();
+  }
+
+  /**
+   * The host's visible content box in window coordinates, learned from a pointer event on the host's
+   * non-scrolling content wrapper (`notePane`), for overlays that must stay inside it (a calendar that
+   * flips above its field, a chart tooltip); null until the pointer has been over it.
+   * @internal
+   */
+  pane: PaneBox | null = null;
+
+  /** A pointer event on the host's content wrapper (a move or a press): its box is `bounds` at `position - local_position`. */
+  notePane(e: { position: Point2; local_position?: Point2; bounds?: { width: number; height: number } }): void {
+    if (!e.bounds || !e.local_position) return;
+    const left = e.position.x - e.local_position.x;
+    const top = e.position.y - e.local_position.y;
+    const right = left + e.bounds.width;
+    const bottom = top + e.bounds.height;
+    const p = this.pane;
+    if (!p || p.left !== left || p.top !== top || p.right !== right || p.bottom !== bottom) this.pane = { left, top, right, bottom };
   }
 
   /**
@@ -893,6 +924,14 @@ export class RenderContext {
   get viewportHeight(): number | null {
     const surface = this.surface;
     return this.track(() => surface.viewportHeight, surface.viewportHeight);
+  }
+
+  /**
+   * The host's visible content box in window coordinates (Surface.notePane), or null before the pointer
+   * has been over it. Not tracked: read it when deciding something at the time (where an overlay opens).
+   */
+  get pane(): PaneBox | null {
+    return this.surface.pane;
   }
 
   /**

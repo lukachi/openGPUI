@@ -358,7 +358,7 @@ export const Accordion: Component = {
           .on_change((_open, cx) => toggle(cx)),
         typography(t, "body", "default"),
       )
-        .child(div().flex().flex_row().items_center().gap(t.spaceXs).text_color(t.textNeutralPrimary).child(String(item.props.trigger ?? "")))
+        .child(div().min_w(0).text_color(t.textNeutralPrimary).child(String(item.props.trigger ?? "")))
         .children(optional(ctx.icon(open ? "ChevronUp" : "ChevronDown", { size: 16 })));
 
       // Only an open or close slides (Radix runs slideDown/slideUp on the data-state flip); a settled panel follows its content at once.

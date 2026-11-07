@@ -233,7 +233,8 @@ const PADDING = 8;
 /**
  * The hover tooltip for `payload` at the pointer in `hover`, in the local
  * coordinates of a `relative()` parent. Placed `right-start` (default) or
- * `top` with offset 20, flipped when the panel would leave the window, then
+ * `top` with offset 20, flipped when the panel would leave the pane (the window where the
+ * host never told its box), then
  * shifted 8px clear of its edges (Floating UI's offset/flip/shift). A new hover
  * session lands the panel; within one it springs.
  */
@@ -245,18 +246,20 @@ export function chartTooltip(
 ): Element {
   const size = ctx.local({ w: 0, h: 0 }, "tooltip-size");
   const view = window.viewport_size();
+  // Floating UI keeps the tooltip inside the viewport, which is the pane when the host knows its box.
+  const box = ctx.pane ?? { left: 0, top: 0, right: view.width, bottom: view.height };
   let dx: number;
   let dy: number;
   if (placement === "top") {
     dx = -size.w / 2;
     dy = -OFFSET - size.h;
-    if (hover.wy + dy < PADDING) dy = OFFSET; // flip below
-    dx = clamp(hover.wx + dx, PADDING, view.width - PADDING - size.w) - hover.wx;
+    if (hover.wy + dy < box.top + PADDING) dy = OFFSET; // flip below
+    dx = clamp(hover.wx + dx, box.left + PADDING, box.right - PADDING - size.w) - hover.wx;
   } else {
     dx = OFFSET;
     dy = 0;
-    if (hover.wx + dx + size.w > view.width - PADDING) dx = -OFFSET - size.w; // flip left
-    dy = clamp(hover.wy, PADDING, view.height - PADDING - size.h) - hover.wy;
+    if (hover.wx + dx + size.w > box.right - PADDING) dx = -OFFSET - size.w; // flip left
+    dy = clamp(hover.wy, box.top + PADDING, box.bottom - PADDING - size.h) - hover.wy;
   }
   const panel = tooltipPanel(ctx, payload)
     .on_size_change((s, cx) => {

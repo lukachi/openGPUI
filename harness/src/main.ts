@@ -146,7 +146,18 @@ export default class Harness extends View {
       .flex_col()
       .size_full()
       .bg(t.background)
-      .child(body.children(this.surface.renderContent()))
+      .child(
+        // The body scrolls, and the box its events carry is its whole content, so overlays learn the
+        // pane's visible box (Surface.notePane) from this wrapper, which does not scroll.
+        div()
+          .flex()
+          .flex_col()
+          .flex_1()
+          .min_h(0)
+          .on_mouse_down("left", (e) => this.surface.notePane(e))
+          .on_mouse_move((e) => this.surface.notePane(e))
+          .child(body.children(this.surface.renderContent())),
+      )
       .children(this.surface.renderOverlays().map((o) => div().absolute().top(0).left(0).size_full().child(o)));
   }
 

@@ -44,6 +44,12 @@
 // - Radix rules kept: minStepsBetweenThumbs 1 (a move that brings the thumbs
 //   closer than a step is pushed back), `onValueCommit` at the end of a drag
 //   only when the value changed, and keyboard steps commit at once.
+// - The native thumbs stop at each other, where Radix lets a dragged thumb pass the other and
+//   swap places (it sorts the values and follows the pointer's thumb). A thumb the pointer
+//   outruns is held one step from the other instead of staying where the last event left it.
+// - The value bubble also stays on the thumb being dragged while the pointer is down (Radix
+//   shows it for `:focus`, which a press gives the thumb). A thumb takes its own presses, so
+//   the handle reports the start of a drag as well as the track.
 import { parseStructuredRules, type ParsedRule } from "@openuidev/lang-core";
 import {
   Input as GInput,
@@ -66,6 +72,7 @@ import {
   formatNumber,
   fromNative,
   hasMinStepBetween,
+  holdApart,
   stepCount,
   toNative,
   typedNumber,
@@ -103,6 +110,8 @@ interface Ui {
   /** A pointer press on the slider is in progress, and the value it began at. */
   dragging: boolean;
   dragStart: number[] | null;
+  /** Index of the thumb the drag last moved: it keeps its value bubble while the pointer is down. */
+  dragThumb: number;
   /** What each input was last given or reported. */
   texts: string[];
   focused: boolean[];
@@ -114,6 +123,10 @@ interface Ui {
   timer: Task | null;
   /** `onValueCommitRef.current`: the latest commit, for the timer and the flush. */
   commit: (value: number[]) => void;
+  /** Set the value inputs to the current value now (a native change is not a store write, so no render follows at once). */
+  pushTexts: () => void;
+  /** Redraw this slider's view (RenderContext.waker): a native change is not a store write, so nothing else would. */
+  wake: () => void;
 }
 
 const sameNumbers = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);
@@ -123,10 +136,12 @@ const toArray = (v: number | [number, number]): number[] => (typeof v === "numbe
 /** The debounced commit: restarts on every call, fires 200ms after the last. */
 function setValueAndCommit(ui: Ui, value: number[], cx: Context): void {
   ui.value = value;
+  ui.pushTexts();
   ui.pending = value;
   ui.timer?.cancel();
   ui.timer = cx.timer.after(COMMIT_DELAY_MS, () => flush(ui));
   cx.notify();
+  ui.wake();
 }
 
 /** Set the native slider from here; its `change` echo is not a drag (it arrives inside the call, or matches `pushed`). */
@@ -183,6 +198,7 @@ function sliderBlock(o: SliderBlock): Element {
       pushing: false,
       dragging: false,
       dragStart: null,
+      dragThumb: -1,
       texts: [],
       focused: [false, false],
       hover: -1,
@@ -190,10 +206,13 @@ function sliderBlock(o: SliderBlock): Element {
       pending: null,
       timer: null,
       commit: o.onCommit,
+      wake: () => {},
+      pushTexts: () => {},
     },
     "slider",
   );
   ui.commit = o.onCommit;
+  ui.wake = ctx.waker();
   ui.min = min;
   ui.max = max;
   // useEffect(() => setValue(defaultValue ?? [min]), [defaultValue, min])
@@ -219,13 +238,22 @@ function sliderBlock(o: SliderBlock): Element {
           slider.on("change", (v, cx) => {
             // What we set ourselves (a typed value) echoes back: not a drag.
             if (ui.pushing) return;
-            const raw = toArray(v);
+            let raw = toArray(v);
             if (sameNumbers(raw, ui.pushed)) return;
-            const next = fromNative(raw, min, max, step).sort((a, b) => a - b);
-            // Radix minStepsBetweenThumbs={1}: a move that brings the thumbs closer than a step is refused.
+            if (ui.dragging) ui.dragThumb = raw.findIndex((n, i) => n !== ui.pushed[i]);
+            let next = fromNative(raw, min, max, step).sort((a, b) => a - b);
+            // Radix minStepsBetweenThumbs={1}: a move that brings the thumbs closer than a step is refused,
+            // which for a pointer that arrives in one jump leaves the thumb wherever the last event was.
+            // The native thumbs stop at each other, so the moved thumb is held one step short instead.
             if (!hasMinStepBetween(next, step)) {
-              pushNative(ui, slider, ui.pushed);
-              return;
+              const held = holdApart(raw, ui.pushed, step, max - min);
+              if (!held || sameNumbers(held, ui.pushed)) {
+                pushNative(ui, slider, ui.pushed);
+                return;
+              }
+              raw = held;
+              next = fromNative(raw, min, max, step).sort((a, b) => a - b);
+              pushNative(ui, slider, raw);
             }
             ui.pushed = raw;
             ui.nativeValue = next;
@@ -234,12 +262,15 @@ function sliderBlock(o: SliderBlock): Element {
             if (!ui.dragging) ui.commit(next);
           });
           // Radix handleSlideEnd: commit when the drag ended on another value than it started.
-          slider.on("release", (v) => {
+          slider.on("release", (v, cx) => {
             const before = ui.dragStart;
             ui.dragging = false;
             ui.dragStart = null;
+            ui.dragThumb = -1;
             const next = fromNative(toArray(v), min, max, step).sort((a, b) => a - b);
             if (before && String(next) !== String(before)) ui.commit(next);
+            cx.notify();
+            ui.wake();
           });
           return {
             slider,
@@ -287,6 +318,14 @@ function sliderBlock(o: SliderBlock): Element {
           };
         },
       });
+  // A drag moves the value inputs in the same frame as the fill, not a pump tick later.
+  ui.pushTexts = () =>
+    inputs?.inputs.forEach((input, i) => {
+      const text = String(ui.value[i]);
+      if (ui.focused[i] || ui.texts[i] === text) return;
+      ui.texts[i] = text;
+      input.set_value(text);
+    });
 
   // Typed or chosen values move the thumb; the inputs follow the value unless being typed in.
   const texts = value.map((v) => String(v));
@@ -461,6 +500,13 @@ function slider(ctx: RenderContext, ui: Ui, native: Native | null, v: SliderView
         )
       : [];
 
+  // Radix valuesBeforeSlideStart: a release commits only if the value changed since this press. A press
+  // on the track reaches the container; the thumb takes its own presses, so its handle reports them too.
+  const startPress = () => {
+    ui.dragging = true;
+    ui.dragStart = [...ui.value];
+  };
+
   const thumb = (i: number): Element => {
     const state = native!.slider;
     // The handle: 20px, radius s, a 1px border-default outline outside it, shadow-s, an accent dot.
@@ -475,6 +521,7 @@ function slider(ctx: RenderContext, ui: Ui, native: Native | null, v: SliderView
         .bg(t.foreground)
         // .openui-slider-thumb-inner turns sunk on hover over the outer thumb's foreground: opaque, the shadow stays.
         .hover((s) => s.bg(over(t.sunk, t.foreground)))
+        .on_mouse_down("left", startPress)
         // Thumbs may not deliver hover themselves; the plain handle inside does.
         .on_hover((hovered, cx) => {
           const next = hovered ? i : ui.hover === i ? -1 : ui.hover;
@@ -506,7 +553,7 @@ function slider(ctx: RenderContext, ui: Ui, native: Native | null, v: SliderView
       .items_center()
       .justify_center()
       .child(handle)
-      .when(!v.streaming && ui.hover === i, (e) =>
+      .when(!v.streaming && (ui.hover === i || (ui.dragging && ui.dragThumb === i)), (e) =>
         e.child(div().absolute().top(-35).left(-1).w(22).flex().flex_row().justify_center().child(bubble)),
       );
     return isRange && i === 0 ? el.start(true) : el;
@@ -551,11 +598,7 @@ function slider(ctx: RenderContext, ui: Ui, native: Native | null, v: SliderView
     .px(10)
     .bg(t.sunk)
     .rounded(t.radiusS)
-    .on_mouse_down("left", () => {
-      // Radix valuesBeforeSlideStart: a release commits only if the value changed since this press.
-      ui.dragging = true;
-      ui.dragStart = [...ui.value];
-    })
+    .on_mouse_down("left", startPress)
     .on_size_change((size, cx) => {
       if (Math.abs(size.width - ui.trackWidth) > 0.5) {
         ui.trackWidth = size.width;

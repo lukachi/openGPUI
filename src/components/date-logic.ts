@@ -75,6 +75,15 @@ export function hasSelectedDate(mode: CalendarMode, date: Date | undefined, rang
   return mode === "single" ? !!date : !!(range && range.from && range.to);
 }
 
+/**
+ * What a rule sees. lang-core's `isEmpty` counts any object without own keys as empty, and a Date has
+ * none, so upstream's `required` fails for every picked single day. The rules read the ISO string
+ * instead; the stored value, and so the form state, stays the Date. An invalid Date reads as empty.
+ */
+export function forValidation(value: unknown): unknown {
+  return value instanceof Date ? (Number.isNaN(value.getTime()) ? undefined : value.toISOString()) : value;
+}
+
 // ── Selection (react-day-picker's useSingle / useRange with DatePicker's props) ──
 
 /** useSingle.select: picking the selected day again clears it. */
@@ -131,6 +140,13 @@ export function initialMonth(today: Date, startMonth: Date, endMonth: Date): Dat
   const props = dayPickerProps(today, startMonth, endMonth);
   const [navStart, navEnd] = getNavMonths(props, dateLib);
   return getInitialMonth(props, navStart, navEnd, dateLib);
+}
+
+/** How many week rows DayPicker draws for `month`: weeks start on Sunday and there are no fixed weeks, so 4 to 6. */
+export function weeksInMonth(month: Date): number {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
+  const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  return Math.ceil((first + days) / 7);
 }
 
 /** useCalendar.goToMonth: a month, clamped to the navigable range. */

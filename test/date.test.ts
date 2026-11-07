@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { parseStructuredRules, validate } from "@openuidev/lang-core";
 import { dateLogic } from "./lib.ts";
 
 const {
@@ -19,6 +20,8 @@ const {
   selectSingle,
   withMonth,
   withYear,
+  forValidation,
+  weeksInMonth,
 } = dateLogic;
 
 const d = (y: number, m: number, day: number) => new Date(y, m - 1, day);
@@ -164,5 +167,29 @@ describe("keyboard", () => {
     expect(iso(model.focusTarget(d(2026, 11, 20), "single")?.date)).toBe("2026-11-20"); // selected outranks today
     const other = buildCalendar(d(2026, 11, 6), d(2026, 3, 1), DATE_PICKER_START_MONTH, DATE_PICKER_END_MONTH);
     expect(iso(other.focusTarget(d(2026, 3, 14), "single")?.date)).toBe("2026-03-14");
+  });
+});
+
+describe("required on a picked day", () => {
+  const required = parseStructuredRules({ required: true });
+  test("a Date is empty to lang-core, its ISO string is a value", () => {
+    const picked = d(2026, 11, 20);
+    expect(validate(picked, required)).toBeDefined(); // upstream's bug: a Date has no own keys
+    expect(validate(forValidation(picked), required)).toBeUndefined();
+  });
+  test("an invalid Date and a missing value stay empty; ranges and strings pass through", () => {
+    expect(validate(forValidation(new Date(NaN)), required)).toBeDefined();
+    expect(validate(forValidation(undefined), required)).toBeDefined();
+    const range = { from: d(2026, 11, 1), to: d(2026, 11, 9) };
+    expect(forValidation(range)).toBe(range);
+    expect(forValidation("2026-11-20T00:00:00.000Z")).toBe("2026-11-20T00:00:00.000Z");
+  });
+});
+
+describe("weeksInMonth", () => {
+  test("4 to 6 rows, Sunday first, no fixed weeks", () => {
+    expect(weeksInMonth(d(2026, 2, 1))).toBe(4); // Feb 2026 starts on a Sunday
+    expect(weeksInMonth(d(2026, 11, 1))).toBe(5);
+    expect(weeksInMonth(d(2025, 3, 1))).toBe(6); // Mar 2025 starts on a Saturday
   });
 });
