@@ -301,9 +301,20 @@ export default class OpenGpui extends View {
           .when(errors.length > 0, (el) => el.child(div().text_color(t.textDangerPrimary).child(`${errors.length} error${errors.length > 1 ? "s" : ""}`))),
       )
       .child(
-        content.length === 0
-          ? body.child(div().text_color(t.textNeutralSecondary).child(this.loadError ?? (this.loaded ? "Nothing to show yet" : "Loading…")))
-          : body.children(content),
+        // The body scrolls, and the box its events carry is its whole content, so overlays learn the
+        // pane's visible box (Surface.notePane) from this wrapper, which does not scroll.
+        div()
+          .flex()
+          .flex_col()
+          .flex_1()
+          .min_h(0)
+          .on_mouse_down("left", (e) => this.surface.notePane(e))
+          .on_mouse_move((e) => this.surface.notePane(e))
+          .child(
+            content.length === 0
+              ? body.child(div().text_color(t.textNeutralSecondary).child(this.loadError ?? (this.loaded ? "Nothing to show yet" : "Loading…")))
+              : body.children(content),
+          ),
       )
       .when(errors.length > 0, (el) =>
         el.child(

@@ -5,6 +5,7 @@ import {
   formatNumber,
   fromNative,
   hasMinStepBetween,
+  holdApart,
   MAX_STEPS,
   stepCount,
   toNative,
@@ -135,5 +136,17 @@ describe("hasMinStepBetween", () => {
     expect(hasMinStepBetween([10, 10], 1)).toBe(false);
     expect(hasMinStepBetween([0.2, 0.3], 0.1)).toBe(true);
     expect(hasMinStepBetween([7], 1)).toBe(true);
+  });
+});
+
+describe("holdApart", () => {
+  test("a thumb that outran the other is held one step from it", () => {
+    expect(holdApart([360, 360], [120, 360], 5, 500)).toEqual([355, 360]);
+    expect(holdApart([120, 120], [120, 360], 5, 500)).toEqual([120, 125]);
+  });
+  test("nothing to hold when no single thumb moved or there is no room", () => {
+    expect(holdApart([120, 360], [120, 360], 5, 500)).toBeNull();
+    expect(holdApart([200, 300], [100, 400], 5, 500)).toBeNull();
+    expect(holdApart([3, 3], [0, 3], 5, 500)).toBeNull();
   });
 });

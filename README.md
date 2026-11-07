@@ -269,22 +269,34 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   narrow-window card width needs the window width, which render can't read. A chosen
   tab or open item survives its parent being hidden, where Radix would reset it.
 - **Date pickers:** gpui-kit's `Popover` hosts the calendar: it also closes on Escape
-  and doesn't flip above the field near the window's bottom; its scale/fade isn't
-  animated. The month and year lists scroll by an offset they own. The grid takes
-  one keyboard focus with a roving focused day (DayPicker's own key map) instead of
-  focusable day buttons. Two deliberate deviations: range ends given as strings are
-  read (upstream crashes on them), and re-picking the selected day clears what the
-  field shows as well as its value (upstream keeps showing the first pick).
-- **Select:** the menu opens below the trigger and never flips above it; its
-  fade/scale and the chevron's turn aren't animated. The pointer row and the
-  keyboard row are separate highlights (Radix moves focus to the row under the
-  pointer), so both can show at once.
+  and flips above the field when the pane's visible area has less room below than the
+  calendar is tall (its measured height, 4 to 6 weeks) and more above, decided again
+  when the height changes, as floating-ui's `flip()` with `autoUpdate` (same pane-box
+  caveats as Select; a first press with no move before it stays below, clamped into the
+  window); its scale/fade isn't animated. The month and year lists scroll by an offset
+  they own. The grid takes one keyboard focus with a roving focused day (DayPicker's own
+  key map) instead of focusable day buttons. Three deliberate deviations: range ends
+  given as strings are read (upstream crashes on them), re-picking the selected day
+  clears what the field shows as well as its value (upstream keeps showing the first
+  pick), and a `required` rule on a single picker reads the Date as its ISO string
+  (lang-core's `isEmpty` counts a Date as empty, so upstream's never validates).
+- **Select:** the menu opens below the trigger, or above it when the pane's visible area
+  has less room below (10px collision padding, as Radix) and more above; it never shifts
+  sideways. The pane's box comes from the pointer having moved over the host's
+  non-scrolling content wrapper (`Surface.notePane`), so a first press with no move before
+  it opens below; the trigger's own box is the one it had when pressed, so a menu opened
+  by keyboard after the page scrolled decides from a stale place. Its fade/scale and the
+  chevron's turn aren't animated. The pointer row and the keyboard row are separate
+  highlights (Radix moves focus to the row under the pointer), so both can show at once.
 - **Slider:** thumbs, drag and keyboard are gpui-base's native `Slider`; the fill and
   dots follow a drag one frame late. `SliderState.new` with some nonzero `min`
   (500…10000) never returns and stops the pump, so the native slider runs on
   `0..max-min` with values shifted back and rounded to the step's decimals as Radix
   does, and it's only made once `max > min` and `step > 0` (props stream in one by
-  one). The value inputs stay left aligned (gpui-base's Input ignores alignment).
+  one). The value inputs stay left aligned (gpui-base's Input ignores alignment). The
+  native thumbs stop at each other, where Radix lets a dragged thumb pass the other and
+  swap: the moved thumb is held one step short. The value bubble stays on the thumb
+  being dragged.
 - **Lists and sections:** no transforms, so ListItem's indicator doesn't scale on hover
   (the fills and colors change). A clickable ListItem takes Tab and shows its hover
   look while focused, but no keys, as upstream's `role="button"` div. SectionBlock's

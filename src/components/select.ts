@@ -11,14 +11,21 @@
 // Where gpui differs from the browser (Radix Select):
 // - The trigger's chevron turns 180deg in 0.2s when open; here it is drawn as
 //   ChevronUp (the same glyph rotated) and swaps at once.
-// - The menu opens through gpui-base's Select root + Popup: below the trigger,
-//   left aligned, never flipped above it. Its entry animation (fade and scale
-//   in 0.18s) is not drawn.
+// - The menu opens through gpui-base's Select root + Popup: below the trigger, left aligned,
+//   or above it (anchor bottom_left) when the pane's visible area has less room below (less
+//   Radix's 10px collision padding) than the menu needs and more above, as Radix's collision
+//   avoidance flips it. The pane's box is learned from the pointer moving over the host's
+//   non-scrolling content wrapper (Surface.notePane), so a first press with no move before
+//   it opens below; the trigger's box is the one it had when pressed, so a menu opened by
+//   keyboard after a scroll decides from a stale place. It never shifts sideways. Its entry
+//   animation (fade and scale in 0.18s) is not drawn.
 // - The menu is a virtual list of 32px rows, so a Slider step of 1 over a wide
 //   range costs the same as ten items. Radix scrolls a viewport whose 4px
 //   padding scrolls with the rows; here the 4px sits inside the menu, so rows
 //   are clipped 4px inside its edge while scrolling. There is no scrollbar,
 //   which matches Radix's hidden one.
+// - The keyboard row is scrolled into view by gpui's `scroll_to_item`, which makes a row
+//   visible with the least scroll (it does not align the row to the top).
 // - The pointer's highlight and the keyboard's are two states (Radix focuses
 //   the row under the pointer): the pointer row shows its hover background,
 //   arrow keys move the keyboard row, and both can show at once.
@@ -39,6 +46,9 @@ const MENU_MAX_HEIGHT = 372;
 
 /** Radix `sideOffset={2}`: the gap between the trigger and the menu. */
 const SIDE_OFFSET = 2;
+
+/** Radix SelectContent `collisionPadding` (CONTENT_MARGIN). */
+const COLLISION_PADDING = 10;
 
 /** Radix typeahead forgets what was typed after one second. */
 const TYPEAHEAD_MS = 1000;
@@ -86,15 +96,19 @@ interface Ui {
   open: boolean;
   /** The keyboard's row. */
   hi: number;
-  /** First row the list last drew, to scroll the keyboard row into view. */
-  start: number;
   triggerWidth: number;
   /** The pointer is over the trigger: a press there is the trigger's own, not "outside". */
   overTrigger: boolean;
   openAtPress: boolean;
+  /** The trigger's box in window coordinates as last pressed. */
+  field: { top: number; bottom: number } | null;
+  /** Which side of the trigger the open menu is on, decided when it opens. */
+  side: "below" | "above" | null;
   search: string;
   searchAt: number;
   scrollTo: number | null;
+  /** A pick closed the list: the next render gives the trigger the keyboard back. */
+  refocus: boolean;
 }
 
 /** Radix `getNextMatch`: the next label starting with `search`, wrapping, or -1. */
@@ -128,7 +142,7 @@ export function selectControl(o: SelectControl): Element {
   const part = o.part ?? "";
   const key = ctx.id(`select${part ? `:${part}` : ""}`);
   const ui = ctx.local<Ui>(
-    { open: false, hi: -1, start: 0, triggerWidth: 0, overTrigger: false, openAtPress: false, search: "", searchAt: 0, scrollTo: null },
+    { open: false, hi: -1, triggerWidth: 0, overTrigger: false, openAtPress: false, search: "", searchAt: 0, scrollTo: null, refocus: false, field: null, side: null },
     `select${part}`,
   );
   const selected = items.findIndex((i) => i.value === o.value);
@@ -209,6 +223,10 @@ export function selectControl(o: SelectControl): Element {
     .hover((s) => s.bg(t.highlight).border_color(t.borderInteractive));
   if (!native) return trigger;
   if (focusList) ctx.after(() => native.list.focus());
+  if (ui.refocus) {
+    ui.refocus = false;
+    ctx.after(() => native.trigger.focus());
+  }
 
   // ── Behavior ──
   const setOpen = (next: boolean, cx: Context) => {
@@ -232,7 +250,10 @@ export function selectControl(o: SelectControl): Element {
     // Radix calls onOpenChange(false) after a pick; a controlled owner hears it.
     if (o.open !== undefined) setOpen(false, cx);
     else ui.open = false;
+    // Radix hands the keyboard back to the trigger. Called inside Enter's confirm, the root moves
+    // focus again once the handler returns and wins, so the trigger also takes it on the next render.
     native.trigger.focus();
+    ui.refocus = true;
     cx.notify();
   };
   /** Radix: a search is running until a second passes without a key. */
@@ -250,10 +271,6 @@ export function selectControl(o: SelectControl): Element {
       current,
     );
   };
-  const reveal = (index: number, visible: number) => {
-    if (index < ui.start) native.scroll.scroll_to_item(index, "top");
-    else if (index >= ui.start + visible) native.scroll.scroll_to_item(index - visible + 1, "top");
-  };
 
   const triggerEl = trigger
     .track_focus(native.trigger)
@@ -267,8 +284,11 @@ export function selectControl(o: SelectControl): Element {
         cx.notify();
       }
     })
-    .on_mouse_down("left", () => {
+    .on_mouse_down("left", (e) => {
       ui.openAtPress = ui.open;
+      if (!e.bounds || !e.local_position) return;
+      const top = e.position.y - e.local_position.y;
+      ui.field = { top, bottom: top + e.bounds.height };
     })
     .on_click((_e, cx) => {
       cx.stop_propagation();
@@ -295,7 +315,18 @@ export function selectControl(o: SelectControl): Element {
   const rows = items.length;
   // `max-height: 372px` bounds the whole menu: its gutters and its 1px ring come out of the list's share.
   const listHeight = Math.min(rows * MENU_ROW_HEIGHT, MENU_MAX_HEIGHT - 2 * menuGutter(t) - 2);
-  const visible = Math.max(1, Math.floor(listHeight / MENU_ROW_HEIGHT));
+  // Radix avoidCollisions: below the trigger unless the pane has less room there than the menu needs
+  // and more above. Decided once per opening, from the trigger's place when pressed and the pane's box.
+  if (!open) ui.side = null;
+  else if (ui.side === null) {
+    ui.side = "below";
+    const pane = ctx.pane;
+    if (pane && ui.field) {
+      // Radix keeps CONTENT_MARGIN (10) between the menu and the viewport's edge (collisionPadding).
+      const below = pane.bottom - ui.field.bottom - COLLISION_PADDING;
+      if (below < listHeight + 2 * menuGutter(t) + 2 + SIDE_OFFSET && ui.field.top - pane.top - COLLISION_PADDING > below) ui.side = "above";
+    }
+  }
   const longest = items.reduce((best, item, i) => (item.label.length > items[best]!.label.length ? i : best), 0);
   const itemText = typography(t, "body", size === "sm" ? "small" : "default");
 
@@ -313,7 +344,6 @@ export function selectControl(o: SelectControl): Element {
       MENU_ROW_HEIGHT,
       (i) => String(i),
       (range) => {
-        ui.start = range.start;
         const out: Element[] = [];
         for (let i = range.start; i < range.end; i++) {
           const item = items[i]!;
@@ -346,7 +376,8 @@ export function selectControl(o: SelectControl): Element {
 
     return menuSurface(t, div().id(`${key}:menu`))
       .min_w(Math.max(o.width ?? 0, ui.triggerWidth))
-      .mt(SIDE_OFFSET)
+      .when(ui.side === "above", (e) => e.mb(SIDE_OFFSET))
+      .when(ui.side !== "above", (e) => e.mt(SIDE_OFFSET))
       .track_focus(native.list)
       .on_mouse_down_out((_e, cx) => {
         // The trigger's own press toggles through its click; anything else is outside.
@@ -356,7 +387,7 @@ export function selectControl(o: SelectControl): Element {
         if (!rows) return;
         const move = (index: number) => {
           ui.hi = Math.max(0, Math.min(rows - 1, index));
-          reveal(ui.hi, visible);
+          native.scroll.scroll_to_item(ui.hi); // gpui scrolls the least that brings the row fully into view
           cx.stop_propagation();
           cx.notify();
         };
@@ -391,7 +422,7 @@ export function selectControl(o: SelectControl): Element {
     .content_focus_handle(native.list)
     .on_open_change((next, cx) => setOpen(next, cx))
     .on_confirm((_e, cx) => choose(ui.hi, cx))
-    .child(Popup.new(`${key}:popup`, triggerEl).anchor(MENU_ANCHOR).when(open, (el) => el.content(buildMenu())));
+    .child(Popup.new(`${key}:popup`, triggerEl).anchor(ui.side === "above" ? "bottom_left" : MENU_ANCHOR).when(open, (el) => el.content(buildMenu())));
 }
 
 /** genui Select: `name`, `items` (SelectItem records), `placeholder`, `rules`, `value`, `size`. */

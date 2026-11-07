@@ -30,11 +30,20 @@
 //   function`: the picker disappears), which is what a range restored from JSON is.
 //   String and number ends are read as dates here (asDate/asRange in date-logic.ts).
 //
+// - `required` on a single-mode picker: upstream's rules see the picked Date, which lang-core's
+//   `isEmpty` treats as empty (a Date has no own keys), so the error never clears and the form
+//   never submits. Here the rules read the Date's ISO string; the stored value is unchanged.
+//
 // Where gpui differs from the browser:
 // - The calendar opens in gpui-kit's Popover, which also closes on Escape (upstream
-//   has no key handling for the field, which is not focusable) and draws below the
-//   field without floating-ui's flip: near the window's bottom it is only clamped
-//   into the window. The field itself takes no keyboard focus.
+//   has no key handling for the field, which is not focusable). It opens below the field,
+//   or above it (anchor bottom_left) when the pane's visible area has less room below than
+//   the calendar is tall (measured; before that the opening month's 4 to 6 weeks) and more
+//   above, decided again when the height changes, as floating-ui's flip() with autoUpdate
+//   does; it never shifts sideways. The pane's box is learned from the pointer moving over
+//   the host's non-scrolling content wrapper (Surface.notePane), so a first press with no
+//   move before it opens below, where the popover is clamped into the window. The field's
+//   own box is the one it had when pressed. The field itself takes no keyboard focus.
 // - The menu's 0.18s scale/fade-in and the chevron's 0.2s turn are not animated;
 //   the chevron swaps to its upside-down twin.
 // - Only the box shadow preset closest to shadow-s is available.
@@ -54,16 +63,30 @@ import {
   DATE_PICKER_START_MONTH,
   formatDateRange,
   formatSingleDate,
+  forValidation,
   hasSelectedDate,
+  initialMonth,
+  weeksInMonth,
   type CalendarMode,
   type DateRange,
   type DateValue,
 } from "./date-logic.ts";
 
+/** A calendar's height by its number of weeks: padding, caption, weekday row and the borders around the rows. */
+const calendarHeight = (weeks: number) => 120 + 40 * weeks;
+/** floating-ui offset(5) between the field and the menu. */
+const MENU_OFFSET = 5;
+
 interface PickerState {
   open: boolean;
   /** Counts openings: the calendar mounts fresh each time, as upstream's does. */
   epoch: number;
+  /** The field's box in window coordinates as last pressed. */
+  field: { top: number; bottom: number } | null;
+  /** Which side of the field the open calendar is on. */
+  side: "below" | "above" | null;
+  /** The open calendar's measured height, 0 until measured. */
+  height: number;
 }
 
 export interface DatePickerControl {
@@ -93,7 +116,7 @@ export function datePickerControl(ctx: RenderContext, o: DatePickerControl): Ele
   const id = (name: string) => ctx.id(part ? `${name}:${part}` : name);
   const { mode, single, range } = o;
 
-  const state = ctx.local<PickerState>({ open: false, epoch: 0 }, part ? `picker:${part}` : "");
+  const state = ctx.local<PickerState>({ open: false, epoch: 0, field: null, side: null, height: 0 }, part ? `picker:${part}` : "");
   let focusCalendar = false;
   if (o.open !== undefined && o.open !== state.open) {
     // Controlled: opened from outside mounts a fresh calendar, as on_open_change does, and the
@@ -105,10 +128,25 @@ export function datePickerControl(ctx: RenderContext, o: DatePickerControl): Ele
     state.open = o.open;
   }
   // The keyboard's place while the calendar is open; released with the view.
-  const focus = o.inert
-    ? null
-    : ctx.retained<FocusHandle, null>(id("focus"), { kind: "focus", meta: null, create: (_entry, cx) => cx.focus_handle() });
+  const focus = o.inert ? null : ctx.retained<FocusHandle, null>(id("focus"), { kind: "focus", meta: null, create: (_entry, cx) => cx.focus_handle() });
   if (focusCalendar && focus) ctx.after(() => focus.focus());
+
+  // floating-ui flip(): below the field unless the pane has less room there than the calendar is tall
+  // and more above. The height is the measured one (4 to 6 weeks), before that the opening month's, and
+  // it is decided again whenever it changes. The field's place is the one it had when pressed.
+  if (!state.open) {
+    state.side = null;
+    state.height = 0;
+  } else {
+    const pane = ctx.pane;
+    const field = state.field;
+    state.side = "below";
+    if (pane && field) {
+      const height = state.height || calendarHeight(weeksInMonth(initialMonth(new Date(), DATE_PICKER_START_MONTH, DATE_PICKER_END_MONTH)));
+      const below = pane.bottom - field.bottom;
+      if (below < height + MENU_OFFSET && field.top - pane.top > below) state.side = "above";
+    }
+  }
 
   const selected: DateValue = mode === "single" ? single : range;
   const hasValue = hasSelectedDate(mode, single, range);
@@ -134,7 +172,13 @@ export function datePickerControl(ctx: RenderContext, o: DatePickerControl): Ele
         .text_color(hasValue ? t.textNeutralPrimary : t.textNeutralSecondary)
         .cursor_pointer()
         .when(!state.open, (el) => el.hover((s) => s.border_color(t.borderInteractive)))
-        .when(!!o.onFieldHover, (el) => el.on_hover((hovered, cx) => o.onFieldHover!(hovered, cx))),
+        .when(!!o.onFieldHover, (el) => el.on_hover((hovered, cx) => o.onFieldHover!(hovered, cx)))
+        // Where the field sits, for deciding which side of it the calendar opens on.
+        .on_mouse_down("left", (e) => {
+          if (!e.bounds || !e.local_position) return;
+          const top = e.position.y - e.local_position.y;
+          state.field = { top, bottom: top + e.bounds.height };
+        }),
       typography(t, "body", "default"),
     )
       .child(
@@ -153,9 +197,22 @@ export function datePickerControl(ctx: RenderContext, o: DatePickerControl): Ele
   // .openui-date-picker-renderer-floating-menu: foreground, radius 2xl, shadow s, 1px interactive
   // border; floating-ui offset(5) between the field and the menu. Upstream renders the menu only
   // while open (FloatingDatePicker returns null otherwise): so does this.
-  const menu = () => div().pt(5).child(
+  const above = state.side === "above";
+  const menu = () => (above ? div().pb(MENU_OFFSET) : div().pt(MENU_OFFSET)).child(
     shadow(
-      div().bg(t.foreground).border_1().border_color(t.borderInteractive).rounded(t.radius2xl).overflow_hidden(),
+      div()
+        .bg(t.foreground)
+        .border_1()
+        .border_color(t.borderInteractive)
+        .rounded(t.radius2xl)
+        .overflow_hidden()
+        // The measured height drives the flip, as floating-ui's autoUpdate does on month changes.
+        .on_size_change((size, cx) => {
+          if (state.height !== size.height) {
+            state.height = size.height;
+            cx.notify();
+          }
+        }),
       t.shadowS,
     ).child(
       calendarView(ctx, `cal${part}`, {
@@ -187,7 +244,8 @@ export function datePickerControl(ctx: RenderContext, o: DatePickerControl): Ele
       cx.notify();
     })
     .trigger(input)
-    .when(state.open, (el) => el.content(menu()));
+    .when(state.open, (el) => el.content(menu()))
+    .when(above, (el) => el.anchor("bottom_left"));
   return div()
     .w_full()
     .child(focus ? popover.track_focus(focus) : popover);
@@ -203,13 +261,13 @@ export const DatePicker: Component = {
     const rules = parseStructuredRules(props.rules);
     const form = ctx.form;
     if (form && rules.length && !ctx.streaming) {
-      form.registerField(name, rules, () => session.stateField(formName, name, props.value).value);
+      form.registerField(name, rules, () => forValidation(session.stateField(formName, name, props.value).value));
     }
 
     // handleChange: set the value, then validate it when the field has rules.
     const onSelect = (next: DateValue) => {
       field.setValue(next);
-      if (rules.length) form?.validateField(name, next, rules);
+      if (rules.length) form?.validateField(name, forValidation(next), rules);
     };
 
     return datePickerControl(ctx, {

@@ -32,16 +32,16 @@
 //   lives in `ctx.local`, which is never cleared. Radix unmounts an inactive
 //   TabsContent and a closed AccordionContent, so upstream resets a Tabs or
 //   Accordion inside one when it comes back; here it keeps its choice.
-// - Tabs: a hovered inactive tab gets `shadow-s` (the clear variant's hover
-//   keeps the base rule's shadow); gpui paints a shadow under a transparent
-//   element, which a browser clips to the outside, so it may look different.
+// - Tabs: a hovered inactive tab keeps the clear variant's `shadow-s` upstream, which a
+//   browser paints outside the transparent tab only; gpui would paint it under the whole
+//   tab, so it gets none (README "Shadows").
 // - Steps: the title inherits its font like upstream (`typography(title, default)`
 //   names a group the typography map does not have, so the scss emits nothing).
 import { Accordion as BaseAccordion, AccordionHeader, AccordionItem as BaseAccordionItem, AccordionPanel, AccordionTrigger, Tab } from "gpui-base";
 import { div, type Context, type Element, type ScrollWheelEvent } from "gpui-kit";
 import { markdownBlock } from "../markdown/render.ts";
 import { optional, type Component, type Props } from "../render/surface.ts";
-import { shadow, textStyle, TRANSPARENT, typography } from "../render/tokens.ts";
+import { textStyle, TRANSPARENT, typography } from "../render/tokens.ts";
 import { iconButton } from "./buttons.ts";
 import { autoOpen, syncActive, toggled, type AccordionSelection, type SectionNode, type TabsSelection } from "./disclosure-state.ts";
 
@@ -120,8 +120,8 @@ export const Tabs: Component = {
         .cursor_pointer()
         .text_color(active ? t.textNeutralPrimary : t.textNeutralSecondary);
       el = textStyle(el, typography(t, "label", active ? "heavy" : "default"));
-      // The clear variant's hover keeps the base rule's shadow-s; only the active tab resets it.
-      if (!active) el = el.hover((s) => shadow(s.text_color(t.textNeutralPrimary), t.shadowS));
+      // The clear variant's hover keeps the base rule's shadow-s: not drawn (see the header).
+      if (!active) el = el.hover((s) => s.text_color(t.textNeutralPrimary));
       const tab = el
         .on_click((_e, cx) => {
           local.interacted = true;
@@ -357,7 +357,7 @@ export const Accordion: Component = {
           .on_change((_open, cx) => toggle(cx)),
         typography(t, "body", "default"),
       )
-        .child(div().flex().flex_row().items_center().gap(t.spaceXs).text_color(t.textNeutralPrimary).child(String(item.props.trigger ?? "")))
+        .child(div().min_w(0).text_color(t.textNeutralPrimary).child(String(item.props.trigger ?? "")))
         .children(optional(ctx.icon(open ? "ChevronUp" : "ChevronDown", { size: 16 })));
 
       // Only an open or close slides (Radix runs slideDown/slideUp on the data-state flip); a settled panel follows its content at once.
