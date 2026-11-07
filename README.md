@@ -55,6 +55,21 @@ ln -s ~/.config/herdr-app/mods/opengpui/cli/opengpui ~/.local/bin/opengpui
 
 To build from source, see [Development](docs/development.md).
 
+### Updating
+
+When a newer release is out, `opengpui show` and `opengpui --version` say so (they ask GitHub at
+most once a day; `OPENGPUI_NO_UPDATE_CHECK=1` turns that off). Your agent tells you and, if you
+agree, updates by the skill's "Updating" steps. By hand:
+
+```sh
+tmp=$(mktemp -d)
+curl -fL https://github.com/lukachi/openGPUI/releases/download/v<version>/opengpui-v<version>.tar.gz | tar -xz -C "$tmp"
+rm -rf ~/.config/herdr-app/mods/opengpui && mv "$tmp/opengpui" ~/.config/herdr-app/mods/opengpui
+```
+
+Herdr picks the new build up in place; restart it if the release changed the fonts. A copy of the
+skill saved as a file stays old: refresh it with `opengpui skill > <that SKILL.md>`.
+
 ## Try it
 
 From a terminal inside Herdr:

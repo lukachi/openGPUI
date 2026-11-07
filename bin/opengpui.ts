@@ -13,6 +13,7 @@ import { isStreamingResponse, parseResponseBundle } from "../src/runtime/respons
 import { Session } from "../src/runtime/session.ts";
 import SKILL from "../skills/opengpui/SKILL.md" with { type: "text" };
 import { EXAMPLES } from "./examples.ts";
+import { updateNotice } from "./update.ts";
 import { version } from "../package.json";
 
 const USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's actions back
@@ -56,11 +57,14 @@ const usage = (message: string) => new CliError(2, `${message}\n\n${USAGE}`);
 
 const HERDR_HOME = process.env.HERDR_APP_HOME ?? join(homedir(), ".config", "herdr-app");
 
+/** The folder this CLI ships in (`mods/<name>/cli/opengpui.mjs`): the mod an update replaces. */
+const MOD_FOLDER = dirname(dirname(fileURLToPath(import.meta.url)));
+
 /**
- * The mod `show` opens: the folder this CLI ships in (`mods/<name>/cli/opengpui.mjs`), so a copy
- * installed under another name (Herdr renames a mod whose name is taken) opens itself.
+ * The mod `show` opens: that folder's name, so a copy installed under another name (Herdr renames
+ * a mod whose name is taken) opens itself.
  */
-const MOD = basename(dirname(dirname(fileURLToPath(import.meta.url))));
+const MOD = basename(MOD_FOLDER);
 
 /** The launcher next to this CLI (`cli/opengpui`): `show` hands it to the pane, which runs `layout` with it. */
 const LAUNCHER = join(dirname(fileURLToPath(import.meta.url)), "opengpui");
@@ -364,6 +368,8 @@ async function main(): Promise<void> {
       console.log(`showing ${file} (${place === "tab" ? "new tab" : place})`);
       console.log(`events: ${events}`);
       console.log(reply ? `replies: sent to terminal ${reply}` : "replies: none; use opengpui wait");
+      const notice = await updateNotice(HERDR_HOME, version, MOD_FOLDER);
+      if (notice) console.error(notice);
       return;
     }
     case "events": {
@@ -446,10 +452,13 @@ async function main(): Promise<void> {
       renameSync(partial, output);
       return;
     }
-    case "--version":
+    case "--version": {
       noMoreArgs();
       console.log(`opengpui ${version}`);
+      const notice = await updateNotice(HERDR_HOME, version, MOD_FOLDER);
+      if (notice) console.log(notice);
       return;
+    }
     case undefined:
     case "help":
     case "--help":

@@ -13,14 +13,14 @@ next to it with Node.js 18+ or Bun. Link it into PATH; `bun run install-herdr` l
 | Command | Does |
 |---|---|
 | `opengpui prompt [--library L] [--components A,B] [--tools T]` | Prints the OpenUI Lang manual: upstream's `library.prompt()` for the components this build draws, with our preamble (a file in a pane, not a chat answer), `$variables`/`@Set`/`@Reset` taught (the pane runs them), and the Query/Mutation sections plus the tools list only with `--tools`. Upstream's group notes and rules still mention `Query`, `@Run` and `data.rows` in passing without `--tools`; `check` catches a Query the pane can't run. |
-| `opengpui check <file> [--library L] [--components A,B] [--tools T]` | Parses the file as the pane does. Prints `ok: <file>`, or one line per problem: lang-core's errors (`code (component, statement id): message`, `hint:`), the Diagram problems in the same form (`diagram-duplicate-id`, `diagram-unknown-node`, `diagram-duplicate-edge`, `diagram-unknown-highlight`, `diagram-empty`; an unknown id's hint guesses the meant one; see [diagram.md](diagram.md#validation)), `unresolved:`, `orphaned:`, `incomplete:`, `empty:`, `too large:` (over 1 MiB), `streaming:` for a framed file without its end line, and `tool:` for a `Query`/`Mutation` whose tool isn't in `--tools` (or with no `--tools`). `warning` lines (the no-root fallback, `diagram-too-big` over 30 nodes) don't fail. |
-| `opengpui show <file> [--right\|--down\|--tab] [--title T] [--library L] [--components A,B] [--tools T] [--look herdr\|openui] [--no-reply\|--reply <terminal>]` | Opens the pane beside the agent's own terminal (`$HC_TERMINAL_ID`'s pane, else Herdr's focused one; `--tab`: a tab in its space). One pane per file: if an earlier `show` of the file opened one, it is closed first. Starts a new events log (before the pane opens). Replies go to `$HC_TERMINAL_ID` unless `--reply`/`--no-reply`. The header shows `--title`, else the file name. |
+| `opengpui check <file> [--library L] [--components A,B] [--tools T]` | Parses the file as the pane does. Prints `ok: <file>`, or one line per problem: lang-core's errors (`code (component, statement id): message`, `hint:`), the diagram problems in the same form (`diagram-*`, `sequence-*` and `timeline-*` codes; an unknown id's hint guesses the meant one; see [diagram.md](diagram.md#validation)), `unresolved:`, `orphaned:`, `incomplete:`, `empty:`, `too large:` (over 1 MiB), `streaming:` for a framed file without its end line, and `tool:` for a `Query`/`Mutation` whose tool isn't in `--tools` (or with no `--tools`). `warning` lines (the no-root fallback, `diagram-too-big`, `sequence-too-big`, `timeline-too-big`) don't fail. |
+| `opengpui show <file> [--right\|--down\|--tab] [--title T] [--library L] [--components A,B] [--tools T] [--look herdr\|openui] [--no-reply\|--reply <terminal>]` | Opens the pane beside the agent's own terminal (`$HC_TERMINAL_ID`'s pane, else Herdr's focused one; `--tab`: a tab in its space). One pane per file: if an earlier `show` of the file opened one, it is closed first. Starts a new events log (before the pane opens). Replies go to `$HC_TERMINAL_ID` unless `--reply`/`--no-reply`. The header shows `--title`, else the file name. Then the [update notice](#updates) on stderr, if any. |
 | `opengpui wait <file> [--timeout S]` | Prints every event `wait` hasn't printed since `show`, as JSONL, blocking until there is one (default 110 s, under the 2-minute limit common agent shell tools set; `0` no limit). Exit 1 on timeout: run it again, nothing is lost. Events between `show` and `wait` are not lost either. |
 | `opengpui events <file>` | Prints every event since `show`. |
 | `opengpui close <file>` | Closes what `show` opened. |
 | `opengpui skill` | Prints the agent skill (`skills/opengpui/SKILL.md`), for an agent harness to install. |
 | `opengpui examples [name]` | Without a name, lists the worked diagram examples (`skills/opengpui/examples/`), one line each; with one, prints it. An unknown name exits 2. |
-| `opengpui --version` | Prints `opengpui <version>`: the release the CLI and the mod beside it come from. |
+| `opengpui --version` | Prints `opengpui <version>`: the release the CLI and the mod beside it come from; then the [update notice](#updates) on stdout, if any. |
 
 `show` opens the mod the CLI ships in, by its folder name, so a copy installed under another name
 (Herdr renames a mod whose name is taken) opens itself.
@@ -38,6 +38,22 @@ Exit codes:
 | 3 | Herdr failed, with Herdr's words: `herdr-app is not on PATH`, `no Herdr window at …` (not running), `no mod "opengpui" in mods/`, or an answer without the pane/tab id `close` needs |
 
 Messages go to stderr as `opengpui: …`.
+
+### Updates
+
+`show` and `--version` ask GitHub's API for the latest release (`lukachi/openGPUI`) at most once a
+day, waiting at most 1.5 s, and cache the answer in `$HERDR_APP_HOME/opengpui/update-check.json`
+(asked or failed, so an offline machine asks once a day too). A failure is silent.
+`OPENGPUI_NO_UPDATE_CHECK=1` turns it off. When the latest is newer, they print three lines:
+
+```
+opengpui <latest> is out (this is <version>). Tell the person; update only if they agree (`opengpui skill`, "Updating").
+  release: <the release's .tar.gz>
+  mod folder: <the folder this CLI ships in>
+```
+
+Nothing is downloaded or changed: the skill's "Updating" section is how an agent updates, with
+the person's consent.
 
 ### Libraries and subsets
 

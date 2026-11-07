@@ -132,3 +132,29 @@ text). It runs with the person's rights: only define tools you would run yoursel
 Exit codes: 0 ok, 1 `check` found problems or `wait` timed out, 2 bad usage (the
 message says what), 3 Herdr failed: `no Herdr window` means Herdr isn't running,
 `no mod "opengpui"` that the mod isn't installed. Then say so and fall back to text.
+
+## Updating
+
+`show` and `opengpui --version` print `opengpui <new> is out (this is <old>)` with the
+release's tarball and the mod folder when a newer release exists (they ask GitHub at most once
+a day). Tell the person once, with what changed
+(https://github.com/lukachi/openGPUI/releases/latest), and update only if they agree:
+
+```sh
+tmp=$(mktemp -d)
+curl -fL <release tarball> | tar -xz -C "$tmp"     # unpacks to $tmp/opengpui
+herdr-app check "$tmp/opengpui"
+rm -rf <mod folder> && mv "$tmp/opengpui" <mod folder>
+opengpui --version                                  # the new version
+```
+
+- This replaces the person's own copy of this mod, under its current name: it's an update, not
+  adding a gallery mod, so Herdr's "never overwrite, rename" rule doesn't apply. Touch nothing
+  else under the Herdr home.
+- `opengpui` on PATH links into the mod folder, so it is updated too.
+- Herdr reloads the mod in place: open panes pick up the new build. Fonts load only when Herdr
+  starts: if the release changed them, suggest a restart when it suits the person (terminals
+  keep running).
+- If this skill is installed as a file (a project's or your skills folder), refresh it:
+  `opengpui skill > <that SKILL.md>`.
+- `OPENGPUI_NO_UPDATE_CHECK=1` turns the check off.

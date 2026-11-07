@@ -4,11 +4,15 @@ Releases are tagged `v<version>` from `package.json`'s `version`. Each one ships
 on herdr.dev (`gallery/opengpui/`) and as `opengpui-v<version>.tar.gz` on GitHub Releases. The
 [agent contract](docs/agent-contract.md) changes only with a note here.
 
-## Unreleased
+## 0.2.1
 
 - The skill asks agents to write panes to `~/.cache/opengpui/<project>-<topic>.oui`, out of the
   person's repositories, one file per topic, and never to delete them; the person clears that
   folder when they like.
+- Agent contract: `opengpui show` and `opengpui --version` say when a newer release is out (they
+  ask GitHub at most once a day; `OPENGPUI_NO_UPDATE_CHECK=1` turns it off), and the skill's new
+  "Updating" section tells the agent how to update with the person's consent. README and the
+  recipe describe updating by hand.
 
 ## 0.2.0
 

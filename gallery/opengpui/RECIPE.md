@@ -78,9 +78,13 @@ its terminal or printed by `opengpui wait`. It works with any agent that runs in
 
 ## Watch out
 
-- **Tell the person before adding it:** it reaches the network (images by URL, through curl), runs
-  programs (`hc`, `curl`, the agent's tools commands), reads the `.oui` file and local images
-  anywhere under `$HOME`, and writes under `~/.config/herdr-app/opengpui/`.
+- **Tell the person before adding it:** it reaches the network (images by URL, through curl; the
+  CLI asks GitHub's API for the latest release at most once a day, off with
+  `OPENGPUI_NO_UPDATE_CHECK=1`), runs programs (`hc`, `curl`, the agent's tools commands), reads
+  the `.oui` file and local images anywhere under `$HOME`, and writes under
+  `~/.config/herdr-app/opengpui/`.
+- **Updates:** `opengpui show` and `opengpui --version` say when a newer release is out; the
+  skill's "Updating" section replaces this mod's folder with it, once the person agrees.
 - **The CLI goes on PATH:** link it, for example
   `ln -s ~/.config/herdr-app/mods/opengpui/cli/opengpui ~/.local/bin/opengpui`. It needs Node.js
   18+ or Bun.

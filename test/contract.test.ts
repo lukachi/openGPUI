@@ -80,6 +80,13 @@ describe("show and wait", () => {
   const file = join(home, "review.oui");
   writeFileSync(file, 'root = Stack([b])\nb = Button("Go")\n');
   const log = eventsPath(herdrHome, file);
+  // The update check's cache, fresh so no test asks GitHub; the notice test rewrites it.
+  const checked = join(herdrHome, "opengpui", "update-check.json");
+  const lastRelease = (version: string) => {
+    mkdirSync(join(herdrHome, "opengpui"), { recursive: true });
+    writeFileSync(checked, JSON.stringify({ checkedAt: Date.now(), version, url: `https://example.test/opengpui-v${version}.tar.gz` }));
+  };
+  lastRelease("0.0.1");
   const event = (message: string) => `${JSON.stringify({ type: "continue_conversation", message })}\n`;
 
   test("a new showing starts a new log, and replaces the earlier pane", () => {
@@ -106,6 +113,18 @@ describe("show and wait", () => {
     expect(cli("close", file)).toMatchObject({ code: 0 });
     expect(readFileSync(calls, "utf8").trim().split("\n").at(-1)).toBe('do pane.close {"pane":"p1"}');
     expect(cli("close", file)).toMatchObject({ code: 2 });
+  });
+
+  test("show tells the agent about a newer release, and only a newer one", () => {
+    const current = cli("--version").out.trim().split(" ")[1]!;
+    lastRelease(current);
+    expect(cli("show", file, "--no-reply").err).toBe("");
+    lastRelease("999.0.0");
+    const shown = cli("show", file, "--no-reply");
+    expect(shown.code).toBe(0);
+    expect(shown.err).toContain(`opengpui 999.0.0 is out (this is ${current})`);
+    expect(shown.err).toContain("https://example.test/opengpui-v999.0.0.tar.gz");
+    lastRelease("0.0.1");
   });
 });
 
