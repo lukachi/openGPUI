@@ -204,6 +204,15 @@ export function upstreamPlugin(): BunPlugin {
         return { contents: header + source.replace(/\bstructuredClone\(/g, "ogpuiStructuredClone("), loader: "js" };
       });
 
+      // The chart tooltips' number formatter groups thousands with toLocaleString(), which
+      // gpui-shell's engine answers without locale data (no separators).
+      build.onLoad({ filter: /react-ui\/src\/components\/Charts\/shared\/core\/PortalTooltip\/utils\/index\.ts$/ }, (args) => {
+        const source = readFileSync(args.path, "utf8");
+        if (!source.includes(".toLocaleString()")) throw new Error(`unexpected ${args.path}: no toLocaleString() to replace`);
+        const header = `import { ogpuiLocaleNumber } from ${JSON.stringify(join(SHIM, "locale.ts"))};\n`;
+        return { contents: header + source.replace(/\b(\w+)\.toLocaleString\(\)/g, "ogpuiLocaleNumber($1)"), loader: "ts" };
+      });
+
       // gpui-shell freezes the built-in prototypes, so assigning a `constructor`
       // or `toString` an object inherits from them throws (the "override
       // mistake"); d3-color does so at import. Define the own property first;

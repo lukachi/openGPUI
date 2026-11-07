@@ -40,6 +40,9 @@
 //   thumbnail strip scrolls by an offset (gpui-kit can't scroll a div from
 //   code): wheel and trackpad move it, the chevrons step 28% of its width.
 //   Thumbnails are not keyboard focusable (upstream: Tab, then Enter/Space).
+// - Show All and the modal's chevrons sit over a picture and gpui gives the pointer to
+//   everything under it: the gallery tracks the pointer on them (`overShowAll`,
+//   `overControl`) so the picture under neither zooms, lights up nor takes the click.
 import { div, svg, type Context, type Element, type FocusHandle, type ScrollWheelEvent } from "gpui-kit";
 import { fitImage, type ImageState, type ObjectFit } from "../render/images.ts";
 import { optional, type Component, type OverlayContent, type RenderContext } from "../render/surface.ts";
@@ -335,8 +338,11 @@ export const ImageGallery: Component = {
             cx.notify();
           }
         })
-        .on_click((_e, cx) => open(i, cx))
-        .children(optional(picture(states[i]!, cell, "cover", alt, { zoom: local.hovered === i ? 1.05 : 1, transition: 300 })));
+        .on_click((_e, cx) => {
+          if (local.overShowAll) return;
+          open(i, cx);
+        })
+        .children(optional(picture(states[i]!, cell, "cover", alt, { zoom: local.hovered === i && !local.overShowAll ? 1.05 : 1, transition: 300 })));
     });
     // .openui-gallery__show-all-button: bottom/right 5px over the grid.
     const showAll =
@@ -345,6 +351,13 @@ export const ImageGallery: Component = {
             .absolute()
             .bottom(5)
             .right(5)
+            .id(ctx.id("show-all-box"))
+            .on_hover((hovered, cx) => {
+              if (local.overShowAll !== hovered) {
+                local.overShowAll = hovered;
+                cx.notify();
+              }
+            })
             // react-ui's Button never stops the click: it goes on to whatever surrounds the gallery.
             .child(button(ctx, { id: ctx.id("show-all"), label: "Show All", variant: "primary", size: "small", bubble: true, onClick: (cx) => open(local.selected, cx) }))
         : null;
@@ -372,13 +385,20 @@ interface GalleryLocal {
   offset: number;
   smooth: boolean;
   thumbHovered: number;
+  /**
+   * The pointer is on Show All, or on a modal chevron. Each sits over a picture, and gpui gives the pointer
+   * to every element under it (hover and click), where the browser gives it to the button alone (upstream's
+   * are not inside the picture): the picture under it must not zoom, light up or open.
+   */
+  overShowAll: boolean;
+  overControl: { left: boolean; right: boolean };
   /** The overlay's measured size: the modal's viewport. */
   width: number;
   height: number;
   release?(): unknown;
 }
 
-const galleryLocal = (): GalleryLocal => ({ selected: 0, hovered: -1, open: false, offset: 0, smooth: false, thumbHovered: -1, width: 0, height: 0 });
+const galleryLocal = (): GalleryLocal => ({ selected: 0, hovered: -1, open: false, offset: 0, smooth: false, thumbHovered: -1, width: 0, height: 0, overShowAll: false, overControl: { left: false, right: false } });
 
 const THUMB_HEIGHT = 116;
 const THUMB_MIN_WIDTH = 174;
@@ -443,6 +463,8 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
     strip.smooth = smooth;
     cx.notify();
   };
+  // A chevron that has just hidden can't report its pointer leaving: only a shown one counts.
+  const onControl = (strip.overControl.left && offset > 0) || (strip.overControl.right && offset + viewW < contentW - 0.5);
   const thumbs = images.map((_, i) => {
     const active = i === selected;
     return div()
@@ -455,13 +477,14 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
       .border_1()
       .border_color(active ? t.borderInteractiveSelected : TRANSPARENT)
       .overflow_hidden()
-      .opacity(active ? 1 : strip.thumbHovered === i ? 0.8 : 0.6)
+      .opacity(active ? 1 : strip.thumbHovered === i && !onControl ? 0.8 : 0.6)
       .transition("opacity", { duration: 200, easing: "ease-in-out" })
       .on_hover((hovered, cx) => {
         strip.thumbHovered = hovered ? i : strip.thumbHovered === i ? -1 : strip.thumbHovered;
         cx.notify();
       })
       .on_click((_e, cx) => {
+        if (onControl) return;
         local.selected = i;
         cx.notify();
       })
@@ -497,6 +520,14 @@ function galleryModal(ctx: RenderContext, images: GalleryItem[], states: ImageSt
     const show = side === "left" ? offset > 0 : offset + viewW < contentW - 0.5;
     if (!show) return null;
     return div()
+      .id(ctx.id(`modal-control-${side}`))
+      .on_hover((hovered, cx) => {
+        // The chip sits over a thumbnail; the browser's chevrons are siblings of the strip, so the thumbnail isn't hovered.
+        if (strip.overControl[side] !== hovered) {
+          strip.overControl[side] = hovered;
+          cx.notify();
+        }
+      })
       .absolute()
       .top((THUMB_HEIGHT - ICON_BUTTON["extra-small"].box) / 2)
       .when(side === "left", (el) => el.left(24))

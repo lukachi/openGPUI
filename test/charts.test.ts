@@ -3,6 +3,7 @@
 // gpui or upstream imports, so they load from source.
 import { describe, expect, test } from "bun:test";
 import { svgPath, type PathSink } from "../src/components/charts/pathData.ts";
+import { ogpuiLocaleNumber } from "../src/upstream/locale.ts";
 import { fontWidths, probeId, recordChar, recordString, textWidth } from "../src/components/charts/widths.ts";
 
 /** A PathSink that records calls as strings, numbers rounded to 3 places. */
@@ -84,5 +85,12 @@ describe("text widths", () => {
   test("probe ids are distinct for distinct strings", () => {
     expect(probeId("é1")).not.toBe(probeId("\u20c5"));
     expect(probeId("-1.0K")).toBe("_19_1_1a_0K");
+  });
+});
+
+describe("ogpuiLocaleNumber", () => {
+  // gpui-shell's engine has no locale data: chart tooltips need en-US grouping from this.
+  test("groups thousands and keeps up to three fraction digits, as en-US", () => {
+    for (const v of [0, 5, 999, 1000, 4400, 99999.5, 1234.5678, -1234, 0.5]) expect(ogpuiLocaleNumber(v)).toBe(v.toLocaleString("en-US"));
   });
 });

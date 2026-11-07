@@ -303,7 +303,10 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   (gpui paths take no pointer events); the hovered wedge's `brightness` switches at
   once. Scatter draws each dot as two boxes up to 1000 visible dots and as two cached
   paths per dataset beyond that, so overlapping dots then show their rings over each
-  other's fills. Stacked legends scroll by their own offset.
+  other's fills. Stacked legends scroll by their own offset. The hover tooltip is a gpui
+  layer that takes the pointer (upstream's has `pointer-events: none`), so it passes
+  its pointer moves on to the chart under it; its numbers are grouped by a shim for
+  `toLocaleString()`, which gpui-shell's engine answers without separators.
 - **Card blocks:** carousels scroll by an offset the block owns, with no scrollbar and
   no edge fade; container queries read the block's measured width, so a block is drawn
   once in the wide layout before it settles. A clickable card's hover
