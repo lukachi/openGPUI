@@ -1,5 +1,7 @@
 // Show .oui files with this checkout's build in a Herdr window of its own, take a
-// screenshot of each, and close them again.
+// screenshot of each, and close them again. For the Herdr integration only (props,
+// events file, hc replies, --look herdr, pane chrome); to look at UI, use
+// scripts/shot.ts, which draws offscreen without Herdr.
 //
 //   bun scripts/preview.ts <file.oui>... [options]
 //     --look openui|herdr   whose colors to draw with (default openui)
