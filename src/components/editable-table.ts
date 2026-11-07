@@ -47,11 +47,17 @@
 //   the next character replaces it.
 // - The number cell edits plain text (gpui has no `type="number"` input), parsed on save
 //   as upstream (a finite float, else 0).
+// - Tab and Shift-Tab: the shell root binds them to the window's focus traversal, and a key
+//   binding runs before any key handler, so a key handler never hears them. The table binds
+//   the two chords itself, in its own key context, and gets them as actions (onTab).
 // - Enter in an open select menu picks the highlighted option. Upstream, React bubbles
 //   that Enter from the portaled menu to the cell, whose stale handler saves the old value
 //   again and moves down, so the pick is lost.
-// - A url cell's link opens through the system (cx.open_url) with the href upstream's
-//   anchor gets; a bare host such as "example.com" is a relative link in a browser.
+// - Enter in an open calendar moves down and picks nothing, as upstream's cell handler does;
+//   Space picks the focused day (the calendar binds both keys, see calendar.ts).
+// - A url cell's link opens through the system (cx.open_url) only for an absolute http(s)
+//   address, which is all the host opens; any other href upstream's anchor would follow (a
+//   bare host such as "example.com" is a relative link in a browser) does nothing here.
 import { Input as GInput, InputState } from "gpui-base";
 import { div, type Context, type Element, type FocusHandle, type KeyEvent, type ScrollWheelEvent } from "gpui-kit";
 import { safeUrl } from "openui-safe-url";
@@ -85,6 +91,26 @@ const CELL_TYPES: EditableCellType[] = ["text", "number", "date-single", "select
 /** Cells whose editor lives in a popup: a press outside the table must not end their edit. */
 const PORTAL_CELL_TYPES: EditableCellType[] = ["date-single", "select"];
 const TEXT_CELL_TYPES: EditableCellType[] = ["text", "number", "url"];
+/** What `cx.open_url` accepts: an absolute HTTP(S) URL with a host. */
+const OPENABLE_URL = /^https?:\/\/[^\s/?#]+/i;
+
+/**
+ * The shell root binds Tab and Shift-Tab to the window's focus traversal, and a key binding
+ * runs before any key handler: a table hears the two chords only through bindings of its own,
+ * in its own key context, which sit deeper than the root's.
+ */
+const KEY_CONTEXT = "OpenGPUIEditableTable";
+const TAB_ACTION = "opengpui-editable-table-tab";
+const TAB_PREV_ACTION = "opengpui-editable-table-tab-prev";
+let tabKeysBound = false;
+function bindTabKeys(cx: Context): void {
+  if (tabKeysBound) return;
+  cx.bind_keys([
+    { keystroke: "tab", action: TAB_ACTION, context: KEY_CONTEXT },
+    { keystroke: "shift-tab", action: TAB_PREV_ACTION, context: KEY_CONTEXT },
+  ]);
+  tabKeysBound = true;
+}
 
 /** `th` and `td`: height 48px. */
 const ROW_HEIGHT = 48;
@@ -225,6 +251,7 @@ export const EditableTable: Component = {
       kind: "editable-table",
       meta: { onSubmit: (cx) => onSubmit(cx), onBlur: (cx) => onBlur(cx) },
       create(entry, cx) {
+        bindTabKeys(cx);
         const focus = cx.focus_handle();
         const input = InputState.new({});
         input.on("submit", (_e, cx) => entry.meta.onSubmit(cx));
@@ -316,10 +343,8 @@ export const EditableTable: Component = {
       cx.notify();
     }
 
-    // useEditableCellKeyboard, the select and date cells' key interceptors, and the table's Tab.
+    // useEditableCellKeyboard and the select and date cells' key interceptors (Tab is onTab).
     const onKey = (e: KeyEvent, cx: Context) => {
-      const shift = e.modifiers.shift;
-      const sideways = (): NavigateDirection => (shift ? "left" : "right");
       const handled = () => {
         cx.stop_propagation();
         cx.notify();
@@ -329,15 +354,6 @@ export const EditableTable: Component = {
         const type = typeOf(editing.column);
         if (e.key === "escape") {
           finishEdit();
-          return handled();
-        }
-        if (e.key === "tab") {
-          if (TEXT_CELL_TYPES.includes(type)) saveText();
-          else if (type === "select") {
-            update(editing.row, editing.column, rows[editing.row]?.[editing.column] || "");
-            finishEdit();
-          }
-          handleNavigate(sideways());
           return handled();
         }
         if (e.key === "enter") {
@@ -356,19 +372,11 @@ export const EditableTable: Component = {
       }
       if (st.justEnded) return;
       const selected = st.selected;
-      if (!selected) {
-        // The table itself has the keyboard: Tab goes to the first cell, and is the table's either way.
-        if (e.key !== "tab") return;
-        if (rows.length > 0 && columns.length > 0) st.selected = { row: 0, column: columns[0]!.key };
-        return handled();
-      }
+      if (!selected) return;
       switch (e.key) {
         case "enter":
         case "f2":
           handleStartEdit(selected.row, selected.column);
-          return handled();
-        case "tab":
-          handleNavigate(sideways());
           return handled();
         case "up":
         case "down":
@@ -383,6 +391,29 @@ export const EditableTable: Component = {
         handleStartEdit(selected.row, selected.column, text ? char : undefined);
         return handled();
       }
+    };
+    /**
+     * Tab and Shift-Tab, which the host binds to its own focus traversal: a key binding runs before
+     * any key handler, so the table binds the two chords in its own key context and gets them as
+     * actions.
+     */
+    const onTab = (shift: boolean, cx: Context) => {
+      const sideways: NavigateDirection = shift ? "left" : "right";
+      const editing = st.editing;
+      if (editing) {
+        const type = typeOf(editing.column);
+        if (TEXT_CELL_TYPES.includes(type)) saveText();
+        else if (type === "select") {
+          update(editing.row, editing.column, rows[editing.row]?.[editing.column] || "");
+          finishEdit();
+        }
+        handleNavigate(sideways);
+      } else if (!st.selected) {
+        // The table itself has the keyboard: Tab goes to the first cell, and is the table's either way.
+        if (rows.length > 0 && columns.length > 0) st.selected = { row: 0, column: columns[0]!.key };
+      } else handleNavigate(sideways);
+      cx.stop_propagation();
+      cx.notify();
     };
 
     // ── Layout ──
@@ -549,7 +580,15 @@ export const EditableTable: Component = {
             .hover((s) => s.underline())
             .on_click((_e, cx) => {
               cx.stop_propagation();
-              if (safeHref) cx.open_url(safeHref);
+              // cx.open_url throws unless the host accepts the URL (absolute http(s) with a host);
+              // the regex skips the call for what plainly fails, the catch covers the rest ("https://a b").
+              if (safeHref && OPENABLE_URL.test(safeHref)) {
+                try {
+                  cx.open_url(safeHref);
+                } catch {
+                  // not an address the host opens: nothing happens, as for any other href
+                }
+              }
             })
             .child(raw);
           if (safeHref) link = link.cursor_pointer();
@@ -628,6 +667,10 @@ export const EditableTable: Component = {
               onFieldHover(hovered) {
                 if (hovered) st.overField = part;
                 else if (st.overField === part) st.overField = null;
+              },
+              onEnter() {
+                // handleKeyDownWithPicker: Enter in the open picker selects the cell below, picking nothing.
+                handleNavigate("down");
               },
               onSelect(next) {
                 // handleDateChange: auto-save on date selection.
@@ -725,7 +768,15 @@ export const EditableTable: Component = {
           scrollTo(st.offset - dx, false, cx);
         }),
       );
-    if (native) wrapper = wrapper.track_focus(native.focus).tab_index(0).on_key_down(onKey);
+    if (native) {
+      wrapper = wrapper
+        .track_focus(native.focus)
+        .tab_index(0)
+        .key_context(KEY_CONTEXT)
+        .on_action(TAB_ACTION, (_e, cx) => onTab(false, cx))
+        .on_action(TAB_PREV_ACTION, (_e, cx) => onTab(true, cx))
+        .on_key_down(onKey);
+    }
 
     const table = wrapper
       // thead th background, drawn once under the grid so the top corners stay round.

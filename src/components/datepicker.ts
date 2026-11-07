@@ -86,6 +86,8 @@ export interface DatePickerControl {
   onFieldHover?(hovered: boolean, cx: Context): void;
   /** Draw the field alone: no native state and no popover (EditableTable's cells that aren't selected). */
   inert?: boolean;
+  /** Enter on the calendar's focused day, instead of picking it (EditableTable's cell moves down). */
+  onEnter?(cx: Context): void;
 }
 
 /** components/DatePicker: the floating field and, while open, the calendar under it. */
@@ -174,6 +176,7 @@ export function datePickerControl(ctx: RenderContext, o: DatePickerControl): Ele
         framed: false,
         epoch: state.epoch,
         focus,
+        onEnter: o.onEnter,
       }),
     ),
   );

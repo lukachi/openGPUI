@@ -5,6 +5,9 @@
 // gpui hands every wheel event to both the list and the page around it (neither stops
 // propagation), so a box around the list stops it unless the list's last layout built
 // its 1px end row on the side the wheel goes: the page scrolls on only at the list's ends.
+// gpui-shell's `list` splices all its items whenever their count changes, which throws the
+// scroll back to the top: a block that grows (a streaming response) restarts at its top with
+// each chunk, and nothing in a script can scroll the list back.
 import { div, list, type Element } from "gpui-kit";
 import { Scrollbar } from "gpui-base";
 import type { RenderContext } from "../render/surface.ts";

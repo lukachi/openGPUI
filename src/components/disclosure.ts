@@ -459,6 +459,7 @@ export const Steps: Component = {
       const content = div()
         .flex()
         .flex_col()
+        .min_w_0()
         .gap(t.space3xs)
         .pt(t.space2xs)
         .mb(last ? 0 : t.spaceL)

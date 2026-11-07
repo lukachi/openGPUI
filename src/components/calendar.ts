@@ -50,6 +50,26 @@ import {
   type DateValue,
 } from "./date-logic.ts";
 
+/**
+ * Popover binds Enter and Space to its own toggle, and a key binding runs before any key
+ * handler: the grid hears the two keys only through bindings of its own, in its own key
+ * context, which sit deeper than the popover's.
+ */
+const KEY_CONTEXT = "OpenGPUICalendar";
+const ENTER_ACTION = "opengpui-calendar-enter";
+const SPACE_ACTION = "opengpui-calendar-space";
+let pickKeysBound = false;
+function bindPickKeys(ctx: RenderContext): void {
+  if (pickKeysBound) return;
+  pickKeysBound = true;
+  ctx.after((cx) =>
+    cx.bind_keys([
+      { keystroke: "enter", action: ENTER_ACTION, context: KEY_CONTEXT },
+      { keystroke: "space", action: SPACE_ACTION, context: KEY_CONTEXT },
+    ]),
+  );
+}
+
 /** --openui-calendar-day-size: space-2xl + space-2xs. */
 const DAY_SIZE = 40;
 /** The caption row: two select triggers, 34px tall (label 20 + padding 12 + border 2). */
@@ -92,6 +112,8 @@ export interface CalendarOptions {
   epoch: number;
   /** What the keyboard goes to while the calendar is open; null until the owner has one. */
   focus: FocusHandle | null;
+  /** The host's own answer to Enter on the focused day, instead of picking it (EditableTable moves down). */
+  onEnter?(cx: Context): void;
 }
 
 const fresh = (epoch: number): CalState => ({
@@ -446,10 +468,28 @@ export function calendarView(ctx: RenderContext, part: string, o: CalendarOption
     .when(state.open !== null, (el) => el.child(catcher).child(state.open === "month" ? monthList() : yearList()));
 
   if (o.focus) {
-    panel = panel.track_focus(o.focus).on_key_down((e, cx) => {
-      state.ring = true;
-      const move = keyMove(e.key, e.modifiers.shift);
-      if (move) {
+    panel = panel
+      .track_focus(o.focus)
+      .key_context(KEY_CONTEXT)
+      .on_action(ENTER_ACTION, (_e, cx) => {
+        if (!focusedDay) return cx.propagate();
+        cx.stop_propagation();
+        state.ring = true;
+        if (o.onEnter) o.onEnter(cx);
+        else pick(focusedDay.date, cx);
+        cx.notify();
+      })
+      .on_action(SPACE_ACTION, (_e, cx) => {
+        if (!focusedDay) return cx.propagate();
+        cx.stop_propagation();
+        state.ring = true;
+        pick(focusedDay.date, cx);
+        cx.notify();
+      })
+      .on_key_down((e, cx) => {
+        state.ring = true;
+        const move = keyMove(e.key, e.modifiers.shift);
+        if (!move) return;
         cx.stop_propagation();
         if (!focusedDay) {
           // The grid's keyboard entry: DayPicker's focus target (the selected day, else today).
@@ -462,14 +502,8 @@ export function calendarView(ctx: RenderContext, part: string, o: CalendarOption
           }
         }
         cx.notify();
-        return;
-      }
-      if ((e.key === "enter" || e.key === "space") && focusedDay) {
-        cx.stop_propagation();
-        pick(focusedDay.date, cx);
-        cx.notify();
-      }
-    });
+      });
+    bindPickKeys(ctx);
   }
 
   // .openui-calendar-root's border and radius; inside DatePicker's menu they are overridden to none.

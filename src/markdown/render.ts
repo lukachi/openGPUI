@@ -490,7 +490,15 @@ class Markdown {
         }
       })
       .on_click((_e, cx) => {
-        if (link.href && !link.href.startsWith("#")) cx.open_url(link.href);
+        // cx.open_url throws unless the host accepts the URL (absolute http(s) with a host): a
+        // relative link, mailto: or "http://" does nothing, as in a row.
+        if (WEB.test(link.href)) {
+          try {
+            cx.open_url(link.href);
+          } catch {
+            // not an address the host opens
+          }
+        }
       });
   }
 
