@@ -182,21 +182,19 @@ export function cardBlock(ctx: RenderContext, o: CardBlockOptions): Element {
 
 // ── Cards ──
 
-/** What makes a card a `role="button"`: pointer, `tabIndex=0`, Enter and Space (cardKeyDownHandler). */
+/**
+ * What makes a card a `role="button"`: pointer, `tabIndex=0`, Enter and Space (cardKeyDownHandler).
+ * A focused element's `on_click` already fires for Enter and Space, so there is no key handler: with one
+ * each press sent the card's action twice.
+ */
 export function pressable(ctx: RenderContext, el: Element, index: number, onActivate: () => void): Element {
   const id = ctx.id(`card-${index}`);
   const focus = ctx.retained<FocusHandle, null>(id, { kind: "card-focus", meta: null, create: (_entry, cx) => cx.focus_handle() });
   const box = el.id(id).cursor_pointer().tab_index(0);
-  return (focus ? box.track_focus(focus) : box)
-    .on_click((_e, cx) => {
-      cx.stop_propagation();
-      onActivate();
-    })
-    .on_key_down((e, cx) => {
-      if (e.key !== "enter" && e.key !== "space") return;
-      cx.stop_propagation();
-      onActivate();
-    });
+  return (focus ? box.track_focus(focus) : box).on_click((_e, cx) => {
+    cx.stop_propagation();
+    onActivate();
+  });
 }
 
 /** A clickable card's resting shadow under its `fill`, reset on hover (`&:hover { box-shadow: none }`). */

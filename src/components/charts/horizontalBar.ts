@@ -17,7 +17,9 @@
 // (gpui-kit cannot scroll a div from code): wheel and trackpad move it, the
 // chevrons step it row by row with a 300ms ease-in-out slide (upstream's
 // smooth `scrollTo`), and there is no scrollbar, as upstream hides it. At
-// either end the wheel passes on to the page, as a browser chains it.
+// either end the wheel passes on to the page, as a browser chains it. A hovered
+// row's dimming is one box around the row's bar and internal line (upstream sets
+// `opacity` on each path), so the line's contrast on a dimmed bar differs slightly.
 import { scaleLinear } from "d3-scale";
 import { h_flex, v_flex } from "gpui-base";
 import { div, PathBuilder, type Context, type Element, type ScrollWheelEvent } from "gpui-kit";
@@ -216,9 +218,18 @@ export const HorizontalBarChart: Component = {
             .text_ellipsis()
             .child(String(row[m.catKey])),
         );
-        // Hover dims the other rows' bars and lines to 0.4.
+        // Hover dims the other rows' bars and lines to 0.4. The opacity goes on a box around the
+        // painted layers: a path element ignores its own.
         const opacity = hovered === null || hovered === i ? 1 : 0.4;
-        inner.push(...(layout.rows[i] ?? []).map((p) => layer(p).opacity(opacity)));
+        inner.push(
+          div()
+            .absolute()
+            .top(0)
+            .left(0)
+            .size_full()
+            .opacity(opacity)
+            .children((layout.rows[i] ?? []).map(layer)),
+        );
       });
     }
 
@@ -243,6 +254,13 @@ export const HorizontalBarChart: Component = {
           const next = Math.min(Math.max(0, offset - e.delta.y), maxOffset);
           if (next === offset) return; // at an end: the page scrolls
           cx.stop_propagation();
+          // The rows move under a resting pointer: re-hit them (a browser does after a scroll).
+          if (layout && hover.index !== null) {
+            const my = hover.y + next;
+            const found = layout.offsets.findIndex((top) => my >= top && my < top + layout.groupHeight);
+            hover.index = found < 0 ? null : found;
+            if (found >= 0) hover.last = found;
+          }
           scrollTo(next, false, cx);
         }),
       hover,

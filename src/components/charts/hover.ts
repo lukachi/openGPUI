@@ -31,12 +31,20 @@ export interface HoverState {
   /** Pointer in window coordinates (the tooltip's flip). */
   wx: number;
   wy: number;
-  /** Counts hovers: a follower drawn under a new session id lands instead of gliding. */
+  /** Counts hovers: a follower drawn under a new id lands instead of gliding. */
   session: number;
+  /** The hovered element's origin in window coordinates, from its last pointer move. */
+  ox: number;
+  oy: number;
+  /**
+   * The hover handler as the tooltip hears it: the tooltip panel is a gpui layer that takes the
+   * pointer, where upstream's has `pointer-events: none`, so it hands its moves to the chart.
+   */
+  relay: ((e: MouseMoveEvent, cx: Context) => void) | null;
 }
 
 export function hoverState(ctx: RenderContext, part = "hover"): HoverState {
-  return ctx.local<HoverState>({ index: null, last: 0, x: 0, y: 0, wx: 0, wy: 0, session: 0 }, part);
+  return ctx.local<HoverState>({ index: null, last: 0, x: 0, y: 0, wx: 0, wy: 0, session: 0, ox: 0, oy: 0, relay: null }, part);
 }
 
 /**
@@ -54,20 +62,27 @@ export function withHover<E extends Element>(
   origin: { x: number; y: number } = { x: 0, y: 0 },
   followPointer = true,
 ): E {
+  const move = (lx: number, ly: number, wx: number, wy: number, cx: Context) => {
+    const index = find(lx, ly);
+    const x = origin.x + lx;
+    const y = origin.y + ly;
+    if (index === state.index && (index === null || !followPointer || (x === state.x && y === state.y))) return;
+    if (state.index === null && index !== null) state.session++;
+    state.index = index;
+    if (index !== null) state.last = index;
+    state.x = x;
+    state.y = y;
+    state.wx = wx;
+    state.wy = wy;
+    cx.notify();
+  };
+  // The origin is known once a move has come, and the tooltip only exists after one.
+  state.relay = (r, rcx) => move(r.position.x - state.ox, r.position.y - state.oy, r.position.x, r.position.y, rcx);
   return el
     .on_mouse_move((e: MouseMoveEvent, cx: Context) => {
-      const index = find(e.local_position.x, e.local_position.y);
-      const x = origin.x + e.local_position.x;
-      const y = origin.y + e.local_position.y;
-      if (index === state.index && (index === null || !followPointer || (x === state.x && y === state.y))) return;
-      if (state.index === null && index !== null) state.session++;
-      state.index = index;
-      if (index !== null) state.last = index;
-      state.x = x;
-      state.y = y;
-      state.wx = e.position.x;
-      state.wy = e.position.y;
-      cx.notify();
+      state.ox = e.position.x - e.local_position.x;
+      state.oy = e.position.y - e.local_position.y;
+      move(e.local_position.x, e.local_position.y, e.position.x, e.position.y, cx);
     })
     .on_hover((hovered: boolean, cx: Context) => {
       if (hovered || state.index === null) return;

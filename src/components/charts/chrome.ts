@@ -8,7 +8,9 @@
 // way Floating UI places it: `right-start` (or `top`) with offset 20, flipped
 // to the other side when it would cross the window edge, shifted to keep 8px
 // clear. Its soft follow is a native spring on that position (TOOLTIP_SPRING),
-// and it appears without the 120ms fade.
+// and it appears without the 120ms fade. The panel takes the pointer (upstream's has
+// `pointer-events: none`): it hands its pointer moves to the chart under it (hover.ts
+// `relay`); a wheel turned over it does not reach the chart, only the page.
 import { h_flex, Popup, v_flex } from "gpui-base";
 import { div, type Color, type Context, type Element } from "gpui-kit";
 import { tooltipNumberFormatter } from "openui-charts/shared/core/PortalTooltip/utils";
@@ -256,12 +258,15 @@ export function chartTooltip(
     if (hover.wx + dx + size.w > view.width - PADDING) dx = -OFFSET - size.w; // flip left
     dy = clamp(hover.wy, PADDING, view.height - PADDING - size.h) - hover.wy;
   }
-  const panel = tooltipPanel(ctx, payload).on_size_change((s, cx) => {
-    if (s.width === size.w && s.height === size.h) return;
-    size.w = s.width;
-    size.h = s.height;
-    cx.notify();
-  });
+  const panel = tooltipPanel(ctx, payload)
+    .on_size_change((s, cx) => {
+      if (s.width === size.w && s.height === size.h) return;
+      size.w = s.width;
+      size.h = s.height;
+      cx.notify();
+    })
+    // The panel takes the pointer; upstream's has `pointer-events: none`: the chart under it hears the move.
+    .on_mouse_move((e, cx) => hover.relay?.(e, cx));
   return div()
     .id(ctx.id(`tooltip-pos-${hover.session}`))
     .absolute()
