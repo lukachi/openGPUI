@@ -52,6 +52,17 @@ bun run install-herdr  # copy the mod into ~/.config/herdr-app/mods/opengpui, li
 in a new tab, saves a screenshot to `tmp/preview/` once the window has stopped changing,
 and closes the tab. Checkouts never wait for each other.
 
+`bun scripts/poke.ts click|hover|drag|scroll|key|type …` gives that preview window
+pointer and keyboard input (open it with `--keep`): a small macOS helper,
+`tools/oui-poke` built into `~/Applications/OuiPoke.app`, posts events straight to the
+preview window's process, so the person's pointer, focus and own Herdr window are
+untouched; it refuses any process that isn't a preview window. It needs Accessibility
+once (System Settings → Privacy & Security → Accessibility) and is signed with an
+"Apple Development" identity (`OUI_POKE_IDENTITY`) so the grant survives rebuilds.
+Clicks, drags (a Slider), the wheel, keys and typing reach gpui; hover is sent as a
+drag event, because gpui takes plain mouse moves only from the real pointer.
+Coordinates are window points (`--px` takes pixels of a `herdr-app shot`).
+
 `bun scripts/reference.ts setup` checks out OpenUI at the pin into `.reference/`
 (gitignored) with react-ui's dependencies from upstream's lockfile, a headless Chromium
 and the pinned InterVariable. `bun scripts/reference.ts serve` serves a page that draws

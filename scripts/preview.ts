@@ -199,12 +199,18 @@ async function ensureWindow(mode: string): Promise<void> {
 }
 
 async function startWindow(): Promise<void> {
-  // A fresh home opens with the welcome over everything; mark it seen, as finishing
-  // it would.
+  // A fresh home opens with the welcome and "What's new" over everything; mark both
+  // seen, as finishing them would.
   const sharedPath = join(home, "shared.json");
   const shared = existsSync(sharedPath) ? JSON.parse(readFileSync(sharedPath, "utf8")) : {};
   if (shared["frame.welcomed"] !== "finished") {
     writeFileSync(sharedPath, JSON.stringify({ ...shared, "frame.welcomed": "finished" }, null, 2) + "\n");
+  }
+  const notesPath = join(home, "update-notes.json");
+  if (!existsSync(notesPath)) {
+    const plist = readFileSync("/Applications/Herdr.app/Contents/Info.plist", "utf8");
+    const version = plist.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/)?.[1];
+    if (version) writeFileSync(notesPath, JSON.stringify({ last_run: version, presented: [version] }) + "\n");
   }
   // -n: a second instance beside the person's; -g: in the background, without focus.
   // HC_SESSION gives it its own herdr-core, so its spaces and tabs never show up in
