@@ -345,7 +345,8 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   `overflow-wrap: anywhere`: a word longer than its row isn't broken.
 - **Overlays:** a page-level `position: fixed` portal (Modal, the gallery's modal) is
   a surface overlay that the host stacks over its own area: in Herdr the pane, not
-  the whole window. Percent sizes (`90vw`, `85vh`) are of the pane. An overlay opened
+  the whole window, so a click outside the pane (Herdr's sidebar) is Herdr's and leaves
+  a Modal open. Percent sizes (`90vw`, `85vh`) are of the pane. An overlay opened
   inside another stacks above it, and the keyboard goes to the topmost one and back
   when it closes. Hover styles under an overlay still react (gpui gives scripts no
   occluding hitbox). An overlay is a view of its own; a host mounts the views
