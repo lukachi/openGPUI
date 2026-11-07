@@ -3,7 +3,8 @@
 //   herdr/mods/opengpui/main.js    the Herdr mod: opengpui's own code, loaded once per tab
 //   herdr/mods/opengpui/shared.js  the packages it imports, loaded once per Herdr engine (bundleSplit)
 //   herdr/mods/opengpui/fonts/     the Inter cuts it ships (bun scripts/sync.ts)
-//   herdr/mods/opengpui/cli/opengpui.mjs  the agent CLI, for Node 18+ or Bun (cli/opengpui runs it)
+//   herdr/mods/opengpui/cli/opengpui.mjs  the agent CLI, for Node 18+ or Bun (cli/opengpui runs it);
+//                                         the only build with elkjs (`opengpui layout`, src/diagram/elk.ts)
 //   tools/harness/app/{main,shared}.js  the headless harness's script (tools/harness), split the same way
 // lucide icons travel inside shared.js as data (src/render/lucide.ts).
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
@@ -243,4 +244,9 @@ const sizes = {
   "herdr/mods/opengpui/cli/opengpui.mjs": await bundle("bin/opengpui.ts", "herdr/mods/opengpui/cli/opengpui.mjs", { target: "node", plugins: [hostStubs] }),
 };
 for (const [file, size] of Object.entries(sizes)) console.log(`${file} ${(size / 1024).toFixed(0)} KiB`);
+// elkjs is about 3 MB that a pane must never load: diagrams are laid out by the CLI (docs/diagram.md).
+for (const file of Object.keys(sizes)) {
+  if (file.endsWith("/cli/opengpui.mjs")) continue;
+  if ((await Bun.file(join(root, file)).text()).includes("org.eclipse.elk")) throw new Error(`${file} contains elkjs: only the CLI may import src/diagram/elk.ts`);
+}
 copyAssets();

@@ -57,20 +57,24 @@ its terminal or printed by `opengpui wait`. It works with any agent that runs in
     loaded once per Herdr window and kept on `globalThis` under the build's hash. The first time a
     pane draws an icon, it writes that icon's SVG to `~/.config/herdr-app/opengpui/icons/`
     (`svg()` draws only files).
-  - `fonts/`: static Inter cuts (and Inter's license). `licenses/`: openGPUI's, OpenUI's and
-    lucide's licenses.
+  - `fonts/`: static Inter cuts (and Inter's license). `licenses/`: openGPUI's, OpenUI's,
+    lucide's and elkjs's licenses.
   - `cli/opengpui`: the agent's CLI, a launcher that runs `cli/opengpui.mjs` with Node.js 18+ or
     Bun. Commands: `prompt` (the OpenUI Lang manual), `check`, `show`, `wait`, `events`, `close`,
-    `skill` (the agent skill).
+    `skill` (the agent skill), and the internal `layout` the pane runs to lay diagrams out (ELK,
+    bundled into `opengpui.mjs` only).
 - **Props** (set by `opengpui show` through `pane.split` / `tab.new`): `src` (the file), `reply`
   (terminal to `hc send` events to), `events` (log path), `tools` (Query/Mutation tools file),
-  `library`, `components`, `title`, `look`.
+  `library`, `components`, `title`, `look`, `cli` (the `opengpui` launcher `show` ran from; the
+  pane falls back to `~/.config/herdr-app/mods/opengpui/cli/opengpui`).
 - **herdr functions:** `props`, `appHome`, `home`, `readTextFile`, `watchFolder`, `theme`,
   `settings`, `fonts`, `window`, `exec`, `hc`.
 - **Programs it runs:** `hc send` (replies); `curl` (remote images, http(s) only, into
   `~/.config/herdr-app/opengpui/images/`, at most 256 MiB); `open` / `xdg-open` (links the person
-  clicks); `realpath`, `wc`, `find` (local image checks and cache cleanup); and the commands of a
-  tools file the agent passes with `--tools`.
+  clicks); `realpath`, `wc`, `find` (local image checks and cache cleanup); `cli/opengpui layout`
+  through Node.js or Bun (each new diagram's layout, cached in
+  `~/.config/herdr-app/opengpui/layout/`); and the commands of a tools file the agent passes with
+  `--tools`.
 
 ## Watch out
 

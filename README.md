@@ -20,6 +20,10 @@ It needs no browser and no web server, and the agent's own harness stays as it i
   libraries: layout, text and markdown, tables, charts, forms, buttons, cards. They are ported
   from `@openuidev/react-ui` to native [gpui-kit](https://gpui-kit.com) elements and look and
   behave like upstream.
+- **Diagrams.** The agent draws what's easier to see than to read: architecture, flowcharts,
+  state machines, data models, sequence diagrams, roadmaps. The pane lays them out
+  automatically, with numbered steps that light up the part they talk about. Click a box and
+  the agent tells you more.
 - **Answers come back.** Button clicks arrive as JSON events, with the form's values, in the
   agent's terminal (`hc send`) or through `opengpui wait`.
 - **Streaming.** The pane redraws as the agent writes the file and holds the inputs until it is
@@ -94,6 +98,7 @@ React. Only the drawing is new.
 
 - [Agent contract](docs/agent-contract.md): CLI commands, exit codes, events, the file format,
   tools. For skill authors and integrators.
+- [Diagrams](docs/diagram.md): the diagram components, how they are laid out and drawn.
 - [Where gpui differs from the browser](docs/gpui-differences.md): what the native renderer
   can't match, per component.
 - [Development](docs/development.md): building, the headless harness, the Herdr mod, porting a
@@ -109,6 +114,8 @@ MIT, see [`LICENSE`](LICENSE).
 - [Inter](https://github.com/rsms/inter) (SIL OFL 1.1): the mod ships modified cuts
   (`licenses/inter.txt`).
 - [lucide](https://lucide.dev) (ISC): icons (`licenses/lucide.txt`).
+- [Eclipse Layout Kernel](https://github.com/kieler/elkjs) (elkjs, EPL-2.0): lays out Diagrams,
+  inside the mod's CLI (`licenses/elkjs.txt`).
 - [gpui-kit](https://gpui-kit.com) and [Herdr](https://herdr.dev): the native toolkit and the
   host.
 

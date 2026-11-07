@@ -1,0 +1,9 @@
+root = Stack([header, classes])
+header = CardHeader("Notification classes", "A class diagram: Entity for classes, Field for members, Edge heads for relations.")
+classes = Diagram(classNodes, classEdges)
+classNodes = [notifier, email, push, queue]
+notifier = Entity("notifier", "Notifier", [Field("send(msg)", "Promise<void>"), Field("name", "string")], "interface")
+email = Entity("email", "EmailNotifier", [Field("smtp", "SmtpClient"), Field("send(msg)", "Promise<void>")])
+push = Entity("push", "PushNotifier", [Field("tokens", "string[]"), Field("send(msg)", "Promise<void>")])
+queue = Entity("queue", "NotificationQueue", [Field("notifiers", "Notifier[]"), Field("enqueue(msg)", "void"), Field("flush()", "Promise<void>")])
+classEdges = [Edge("email", "notifier", null, "dashed", "triangle"), Edge("push", "notifier", null, "dashed", "triangle"), Edge("notifier", "queue", "held by", "solid", "diamond")]

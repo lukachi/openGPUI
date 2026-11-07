@@ -1,9 +1,11 @@
 // OpenUI's own component libraries, compiled from upstream source without React
 // (see scripts/upstream-plugin.ts). Names, zod schemas, descriptions, groups,
 // examples and rules are upstream's, so a model prompted from these writes the
-// same OpenUI Lang it would for OpenUI's React renderer.
+// same OpenUI Lang it would for OpenUI's React renderer. The one addition is
+// openGPUI's own Diagrams group (src/diagram/components.ts, docs/diagram.md).
 import { createLibrary, type Library, type PromptOptions } from "@openuidev/lang-core";
 import { openuiChatLibrary, openuiChatPromptOptions, openuiLibrary, openuiPromptOptions } from "openui-genui";
+import { withDiagrams } from "./diagram/components.ts";
 
 export interface LibrarySource {
   library: Required<Library>;
@@ -11,10 +13,10 @@ export interface LibrarySource {
 }
 
 export const libraries = {
-  /** The general library: dashboards, forms, tables, charts. Root: Stack. */
-  openui: { library: openuiLibrary, promptOptions: openuiPromptOptions },
-  /** The chat library: conversational cards, follow-ups, lists. */
-  chat: { library: openuiChatLibrary, promptOptions: openuiChatPromptOptions },
+  /** The general library: dashboards, forms, tables, charts, diagrams. Root: Stack. */
+  openui: withDiagrams({ library: openuiLibrary, promptOptions: openuiPromptOptions }),
+  /** The chat library: conversational cards, follow-ups, lists, diagrams. */
+  chat: withDiagrams({ library: openuiChatLibrary, promptOptions: openuiChatPromptOptions }),
 } satisfies Record<string, LibrarySource>;
 
 export type LibraryName = keyof typeof libraries;

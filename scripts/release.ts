@@ -24,11 +24,12 @@ export function assembleMod(to: string): void {
     if (!part.includes(".")) rmSync(join(to, part), { recursive: true, force: true });
     cpSync(join(built, part), join(to, part), { recursive: true });
   }
-  // openGPUI's license, OpenUI's, and lucide's (its icons are in shared.js); Inter's travels in fonts/.
+  // openGPUI's license, OpenUI's, lucide's (its icons are in shared.js) and elkjs's (in the CLI);
+  // Inter's travels in fonts/.
   rmSync(join(to, "licenses"), { recursive: true, force: true });
   mkdirSync(join(to, "licenses"));
   cpSync(join(root, "LICENSE"), join(to, "licenses", "opengpui.txt"));
-  for (const name of ["openui", "lucide"]) cpSync(join(root, "licenses", `${name}.txt`), join(to, "licenses", `${name}.txt`));
+  for (const name of ["openui", "lucide", "elkjs"]) cpSync(join(root, "licenses", `${name}.txt`), join(to, "licenses", `${name}.txt`));
 }
 
 if (import.meta.main) {

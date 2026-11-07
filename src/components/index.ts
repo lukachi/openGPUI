@@ -34,6 +34,9 @@ import { CheckBoxGroup, CheckBoxItem, ChipItem, Chips, RadioGroup, RadioItem, Sw
 import { BoldText, Callout, Icon, Label, MarkDownRenderer, Tag, Text, TextContent } from "./content.ts";
 import { DatePicker } from "./datepicker.ts";
 import { Accordion, AccordionItem, Steps, StepsItem, TabItem, Tabs } from "./disclosure.ts";
+import { Diagram, DiagramPart } from "./diagram.ts";
+import { Sequence } from "./sequence.ts";
+import { Timeline, TimelinePart } from "./timeline.ts";
 import { EditableTable } from "./editable-table.ts";
 import { Form, FormControl, Input, TextArea } from "./forms.ts";
 import { Image, ImageBlock, ImageGallery, ImageText, ImageTextLarge } from "./images.ts";
@@ -163,4 +166,18 @@ export const components: Components = {
   Button,
   Buttons,
   IconButton,
+  // Diagrams (openGPUI's own: docs/diagram.md)
+  Diagram: view(Diagram),
+  Node: DiagramPart,
+  Entity: DiagramPart,
+  Field: DiagramPart,
+  Group: DiagramPart,
+  Edge: DiagramPart,
+  DiagramStep: DiagramPart,
+  Sequence: view(Sequence),
+  Participant: DiagramPart,
+  Message: DiagramPart,
+  Block: DiagramPart,
+  Timeline: view(Timeline),
+  Task: TimelinePart,
 };

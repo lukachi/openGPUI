@@ -1,0 +1,9 @@
+root = Stack([shop, empty])
+shop = Diagram(shopNodes, shopEdges, shopSteps)
+shopNodes = [Node("user", "Customer", "actor"), server, Node("db", "Orders DB", "store", "Postgres"), Node("api", "Public API")]
+server = Group("server", "App server", [Node("api", "API"), Node("worker", "Worker")])
+shopEdges = [Edge("user", "api", "POST /order"), Edge("api", "dbb", "writes"), Edge("api", "server"), Edge("api", "worker", "enqueues"), Edge("api", "worker", "wakes")]
+shopSteps = [step1, step2]
+step1 = DiagramStep("The order is sent", "The API checks the order and writes it.", ["user>api", "workr"])
+step2 = DiagramStep("Work happens later", "The worker finishes the job.", ["worker>api", "server"])
+empty = Diagram([], [])

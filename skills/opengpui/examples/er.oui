@@ -1,0 +1,9 @@
+root = Stack([header, model])
+header = CardHeader("Shop data model", "Entities with their fields; the edge label carries the cardinality.")
+model = Diagram(tables, relations)
+tables = [customer, order, item, product]
+customer = Entity("customer", "customer", [Field("id", "uuid", "pk"), Field("email", "text"), Field("created_at", "timestamptz")])
+order = Entity("order", "order", [Field("id", "uuid", "pk"), Field("customer_id", "uuid", "fk"), Field("status", "text"), Field("total", "numeric")])
+item = Entity("item", "order_item", [Field("order_id", "uuid", "fk"), Field("product_id", "uuid", "fk"), Field("quantity", "int")])
+product = Entity("product", "product", [Field("id", "uuid", "pk"), Field("name", "text"), Field("price", "numeric")])
+relations = [Edge("customer", "order", "1..n", "solid", "none"), Edge("order", "item", "1..n", "solid", "none"), Edge("product", "item", "1..n", "solid", "none")]

@@ -7,7 +7,7 @@
 // line is streaming, as in Herdr.
 import type { ActionEvent, OpenUIError } from "@openuidev/lang-core";
 import { div, View, type Context } from "gpui-kit";
-import { clock, emit, fonts, job, response } from "oui-harness";
+import { clock, emit, fonts, job, layout, response } from "oui-harness";
 import { components, isStreamingResponse, openuiFonts, resolveTokens, selectLibrary, Session, Surface, textStyle, typography } from "../../../src/index.ts";
 import { harnessIcons, harnessImages } from "./images.ts";
 
@@ -41,6 +41,8 @@ export default class Harness extends View {
       tokens: resolveTokens(j.mode, { fonts: openuiFonts((family) => installed.has(family)) }),
       icons: harnessIcons(j.scratch),
       images: harnessImages(j.base, j.home, j.scratch),
+      // The host runs the built `opengpui layout`, as Herdr's layouter does through exec.
+      layout: async (graph) => JSON.parse(layout(JSON.stringify(graph))),
     });
     // As Herdr's status file does (herdr/src/main.ts): shot.ts flags a file that settled busy.
     this.surface.onIdle = (idle) => emit(JSON.stringify({ type: "idle", idle }));

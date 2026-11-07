@@ -201,6 +201,8 @@ const outcomes = await Promise.all(
       width,
       height,
       scratch,
+      // Diagrams are laid out by the CLI this run just built, as Herdr runs the installed mod's.
+      layout: [join(root, "herdr", "mods", "opengpui", "cli", "opengpui"), "layout"],
       ...(quiet != null ? { quietMs: Number(quiet) } : {}),
       sharedVm,
       heap,

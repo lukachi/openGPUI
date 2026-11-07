@@ -27,6 +27,7 @@ d3-scale 4.0.2 and d3-shape 3.2.0.
 | `src/render/` | `Surface`: draws a session with gpui-kit as retained nested views (the root, each costly or stateful component, each overlay) and redraws only the views a change touches (`invalidate.ts`); owns the pump task that creates them and the retained native state (inputs, timers) outside `render`. `Tokens`: OpenUI's own design tokens, compiled from the pinned theme and resolved to gpui values. `fonts.ts`: the Inter cuts and how a stack resolves to them. `icons.ts`/`lucide.ts`: upstream's lucide lookup and the icons' SVG markup a host writes to files. |
 | `src/markdown/` | Markdown as react-ui draws it: react-markdown's own pipeline (unified, remark, the plugins each renderer passes) into an HTML tree, drawn with react-ui's markdown styles; code blocks highlighted by the same Prism grammars and themes. |
 | `src/components/` | One renderer per OpenUI component. `charts/` holds the chart renderers and their shared foundation (its `index.ts` documents the API). |
+| `src/diagram/` | openGPUI's own diagram components ([diagrams](diagram.md)): `Diagram`, `Sequence`, `Timeline`, their lang-core definitions, models, validators, the in-pane layouts of Sequence and Timeline, and the ELK layout the CLI runs for Diagram (`elk.ts`, never in the pane's bundles). The renderers are `src/components/{diagram,sequence,timeline}.ts`, on the canvas they share, `src/components/diagram/canvas.ts` (its header documents the API). |
 | `src/library.ts` | OpenUI's `openui` and `chat` libraries; `subsetLibrary()` to prompt only what is implemented, `selectLibrary()` for a host's choice of library and component subset. |
 | `src/upstream/` | Stubs and shims that let upstream's code compile and run without React or the DOM. |
 | `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js` and `shared.js`); `contract.ts`: the events path rule and event shape the mod and the CLI share; `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
@@ -88,6 +89,11 @@ The drawing comes from `tools/harness/host`, a Rust host on GPUI's headless app 
 (simulated clock, Metal offscreen renderer) pinned to the herdr-app tag of the installed Herdr.
 It refuses to run when Herdr's `~/.config/herdr-app/gpui-kit.d.ts` says Herdr's runtime has
 moved (see its `Cargo.toml`).
+
+The host has no `exec`, so a Diagram's layout goes through a host function of its own, `layout`:
+it runs the built CLI's `layout` command synchronously (`shot.ts` hands it the command) and
+returns the result, without Herdr's cache. A call blocks the script for the whole run, about
+0.2–0.3 s per graph.
 
 ## Herdr-only checks: preview and poke
 

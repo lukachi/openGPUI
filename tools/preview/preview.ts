@@ -150,7 +150,8 @@ try {
       // The host writes its idle state next to the events, under the events file's name.
       const statusPath = join(home, "opengpui", "status", `${modName}-${stem}.json`);
       rmSync(statusPath, { force: true });
-      const props = { src: file, events, look, title: `${modName}: ${stem}`, ...(library ? { library } : {}) };
+      // `cli`: the launcher Diagrams lay out with (the preview mod has no cli/ of its own).
+      const props = { src: file, events, look, title: `${modName}: ${stem}`, cli: join(from, "cli", "opengpui"), ...(library ? { library } : {}) };
       tab = herdr("tab.new", { name: `${stem} (${modName})`, mod: modName, props }).tab;
       writeFileSync(countPath, String(count() + 1));
       mkdirSync(join(out, ".."), { recursive: true });

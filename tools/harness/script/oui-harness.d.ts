@@ -25,4 +25,10 @@ declare module "oui-harness" {
   export function clock(): number;
   /** One JSON line for the harness's stdout. */
   export function emit(line: string): void;
+  /**
+   * Lays a sized graph (JSON text) out with the command shot.ts names (`opengpui layout`) and
+   * returns the layout as JSON text; throws with the command's stderr when it fails. Blocks,
+   * but the harness's simulated clock doesn't move meanwhile.
+   */
+  export function layout(graph: string): string;
 }

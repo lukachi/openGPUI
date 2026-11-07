@@ -1,6 +1,6 @@
 {
   "name": "opengpui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "OpenUI Lang rendered with native gpui-kit elements",
   "license": "MIT",
@@ -20,6 +20,7 @@
     "d3-scale": "4.0.2",
     "d3-shape": "3.2.0",
     "date-fns": "4.4.0",
+    "elkjs": "0.12.1",
     "html-url-attributes": "3.0.1",
     "react-day-picker": "9.14.0",
     "react-syntax-highlighter": "16.1.1",

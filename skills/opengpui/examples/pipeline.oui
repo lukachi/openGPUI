@@ -1,0 +1,6 @@
+root = Stack([header, pipe])
+header = CardHeader("Nightly analytics pipeline", "Left to right reads well for a few stages; it gets wide fast.")
+pipe = Diagram(pipeNodes, pipeEdges, null, "right")
+pipeNodes = [sources, Node("ingest", "Ingest", "process", "Airbyte"), Node("lake", "Raw lake", "store", "S3"), Node("transform", "Transform", "process", "dbt"), Node("warehouse", "Warehouse", "store", "BigQuery"), Node("dash", "Dashboards", "ui", "Looker")]
+sources = Group("sources", "Sources", [Node("app", "App DB", "store"), Node("events", "Events", "event", "Segment")])
+pipeEdges = [Edge("app", "ingest"), Edge("events", "ingest"), Edge("ingest", "lake", "raw JSON"), Edge("lake", "transform"), Edge("transform", "warehouse", "models"), Edge("warehouse", "dash", "queries")]

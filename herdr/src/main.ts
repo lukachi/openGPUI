@@ -11,6 +11,7 @@
 //   components  only these components of the library (its root always stays)
 //   title       header text
 //   look        "herdr" (default) or "openui": whose colors to draw with
+//   cli         the `opengpui` launcher that lays diagrams out (default: the installed mod's, layout.ts)
 import type { ActionEvent, OpenUIError } from "@openuidev/lang-core";
 import { h_flex, v_flex } from "gpui-base";
 import { div, View, type Context } from "gpui-kit";
@@ -22,6 +23,7 @@ import { eventsPath, replyText, statusPath, type PaneEvent } from "./contract.ts
 import { DEMO } from "./demo.ts";
 import { herdrIcons } from "./icons.ts";
 import { herdrImages } from "./images.ts";
+import { herdrLayout } from "./layout.ts";
 import { herdrTokens, type Look } from "./theme.ts";
 
 interface SurfaceProps {
@@ -34,6 +36,8 @@ interface SurfaceProps {
   title?: string;
   /** "herdr" (default): OpenUI's tokens in the Herdr theme's colors; "openui": OpenUI's own theme. */
   look?: Look;
+  /** The `opengpui` launcher `show` ran from: the pane runs its `layout` command for diagrams. */
+  cli?: string;
 }
 
 /** A tools-file entry. `description`, `inputSchema` and `outputSchema` are for `opengpui prompt --tools`; the pane runs `command`. */
@@ -108,6 +112,8 @@ export default class OpenGpui extends View {
       icons: herdrIcons,
       // Remote and data: images are cached under the Herdr home; relative ones resolve against the .oui's folder.
       images: herdrImages(this.srcPath ? dirname(this.srcPath) : null),
+      // Diagrams are laid out by the mod's CLI and cached under the Herdr home (layout.ts).
+      layout: herdrLayout(this.p.cli ? expand(this.p.cli) : undefined),
     });
     this.surface.onIdle = (idle) => this.reportIdle(idle);
 

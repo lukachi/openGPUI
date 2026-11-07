@@ -1,0 +1,7 @@
+root = Stack([header, login])
+header = CardHeader("Signing in", "A sequence diagram: who sends what to whom, top to bottom.")
+login = Sequence(people, messages, loginSteps, blocks)
+people = [Participant("user", "User", "actor"), Participant("app", "App", "ui"), Participant("api", "API", "service"), Participant("db", "Users DB", "store")]
+messages = [Message("user", "app", "enters email and password"), Message("app", "api", "POST /login"), Message("api", "db", "find user by email"), Message("db", "api", "user row", "reply"), Message("api", "api", "check password hash"), Message("api", "app", "session token", "reply"), Message("app", "api", "track login", "async"), Message("app", "user", "home screen", "reply")]
+blocks = [Block("only when the user exists", 4, 6)]
+loginSteps = [DiagramStep("The request", "The app sends the credentials to the API.", ["1", "2"]), DiagramStep("The check", "The API loads the user and compares the hash.", ["3", "4", "5"]), DiagramStep("The answer", "A session token comes back; tracking doesn't block it.", ["6", "7", "8"])]

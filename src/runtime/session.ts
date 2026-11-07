@@ -16,6 +16,7 @@ import {
   evaluate,
   evaluateRoot,
   extractToolResult,
+  isElementNode,
   resolveStateField,
   ToolNotFoundError,
   validate,
@@ -35,6 +36,10 @@ import {
   type StreamParser,
   type ToolProvider,
 } from "@openuidev/lang-core";
+import { diagramModel } from "../diagram/model.ts";
+import { validateDiagram } from "../diagram/validate.ts";
+import { sequenceModel, validateSequence } from "../diagram/sequence.ts";
+import { timelineModel, validateTimeline } from "../diagram/timeline.ts";
 import { parseResponseBundle, type ResponseBundle } from "./response.ts";
 
 /** Query/Mutation tools: a map of async functions, or an MCP client. */
@@ -90,6 +95,24 @@ function toToolProvider(input: Tools | null | undefined): ToolProvider | null {
       return fn(args);
     },
   };
+}
+
+/** The diagram validators' problems (src/diagram/validate.ts, sequence.ts, timeline.ts) for every diagram in an evaluated tree. */
+function diagramErrors(root: ElementNode | null): OpenUIError[] {
+  const errors: OpenUIError[] = [];
+  const seen = new Set<unknown>();
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) value.forEach(walk);
+    else if (isElementNode(value) && !seen.has(value)) {
+      seen.add(value);
+      if (value.typeName === "Diagram") errors.push(...validateDiagram(diagramModel(value.props, false), value.statementId));
+      else if (value.typeName === "Sequence") errors.push(...validateSequence(sequenceModel(value.props, false), value.statementId));
+      else if (value.typeName === "Timeline") errors.push(...validateTimeline(timelineModel(value.props, false), value.statementId));
+      else Object.values(value.props).forEach(walk);
+    }
+  };
+  walk(root);
+  return errors;
 }
 
 export interface FieldRegistration {
@@ -381,7 +404,7 @@ export class Session {
     if (this.result?.meta.errors.length) {
       errors.push(...enrichErrors(this.result.meta.errors, this.schema, Object.keys(this.library.components)));
     }
-    errors.push(...this.runtimeErrors, ...this.renderErrors);
+    errors.push(...this.runtimeErrors, ...diagramErrors(this.root), ...this.renderErrors);
     this.renderErrors = [];
     errors.push(...(this.queryManager.getSnapshot().__openui_errors ?? []));
     this.errors = errors;

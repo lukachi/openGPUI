@@ -3,6 +3,13 @@
 // tools (prompt generation, checks) and for the tests.
 export { libraries, selectLibrary, subsetLibrary, type LibraryName, type LibrarySource } from "./library.ts";
 export * as dateLogic from "./components/date-logic.ts";
+export { diagramModel } from "./diagram/model.ts";
+export { validateDiagram, type DiagramErrorCode } from "./diagram/validate.ts";
+export type { DiagramModel } from "./diagram/types.ts";
+export { sequenceModel, validateSequence, type SequenceErrorCode, type SequenceModel } from "./diagram/sequence.ts";
+export { sequenceLayout, type SequenceLayout, type SequenceMetrics } from "./diagram/sequenceLayout.ts";
+export { parseWhen, timelineModel, validateTimeline, type TimelineErrorCode, type TimelineModel } from "./diagram/timeline.ts";
+export { timelineLayout, type TimelineLayout, type TimelineMetrics } from "./diagram/timelineLayout.ts";
 export * as editableTableModel from "./components/editable-table-model.ts";
 export { MarkdownParse, markdownCuts, parseMarkdown, plainParagraph, runPipeline, type MarkdownProfile } from "./markdown/parse.ts";
 export { interFace, openuiFonts, type Face, type FontResolver } from "./render/fonts.ts";

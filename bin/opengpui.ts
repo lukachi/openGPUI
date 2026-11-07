@@ -1,7 +1,7 @@
 // opengpui: the agent's side of the Herdr surface. The contract it implements (commands,
 // events, replies, exit codes) is docs/agent-contract.md; keep the two in step.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,7 @@ import { selectLibrary } from "../src/library.ts";
 import { isStreamingResponse, parseResponseBundle } from "../src/runtime/response.ts";
 import { Session } from "../src/runtime/session.ts";
 import SKILL from "../skills/opengpui/SKILL.md" with { type: "text" };
+import { EXAMPLES } from "./examples.ts";
 import { version } from "../package.json";
 
 const USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's actions back
@@ -35,6 +36,8 @@ const USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's a
       close the pane or tab \`show\` opened
   opengpui skill
       print the agent skill: how to use opengpui and the pane
+  opengpui examples [name]
+      list the worked diagram examples, or print one (OpenUI Lang)
   opengpui --version
 
 Exit codes: 0 ok, 1 check found problems or wait timed out, 2 bad usage,
@@ -58,6 +61,12 @@ const HERDR_HOME = process.env.HERDR_APP_HOME ?? join(homedir(), ".config", "her
  * installed under another name (Herdr renames a mod whose name is taken) opens itself.
  */
 const MOD = basename(dirname(dirname(fileURLToPath(import.meta.url))));
+
+/** The launcher next to this CLI (`cli/opengpui`): `show` hands it to the pane, which runs `layout` with it. */
+const LAUNCHER = join(dirname(fileURLToPath(import.meta.url)), "opengpui");
+
+/** Set by commands that load elkjs, which keeps Bun's event loop alive after the work is done. */
+let exitWhenDone = false;
 
 const args = process.argv.slice(2);
 
@@ -327,6 +336,7 @@ async function main(): Promise<void> {
         ...(only ? { components: only } : {}),
         ...(tools ? { tools } : {}),
         ...(look ? { look } : {}),
+        ...(existsSync(LAUNCHER) ? { cli: LAUNCHER } : {}),
       };
       // One pane per file: two would append to one log and both answer.
       const earlier = readShown(events);
@@ -396,6 +406,46 @@ async function main(): Promise<void> {
       noMoreArgs();
       process.stdout.write(SKILL);
       return;
+    case "examples": {
+      const [name] = args.splice(0, 1);
+      noMoreArgs();
+      if (!name) {
+        const width = Math.max(...EXAMPLES.map((e) => e.name.length));
+        for (const e of EXAMPLES) console.log(`${e.name.padEnd(width)}  ${e.about}`);
+        console.log(`\nopengpui examples <name> prints one.`);
+        return;
+      }
+      const example = EXAMPLES.find((e) => e.name === name);
+      if (!example) throw usage(`no example "${name}"; there are: ${EXAMPLES.map((e) => e.name).join(", ")}`);
+      process.stdout.write(example.source);
+      return;
+    }
+    // Internal (docs/agent-contract.md): the pane lays a Diagram out through it, not the agent.
+    case "layout": {
+      const [input, output] = args.splice(0, 2);
+      noMoreArgs();
+      if (!input || !output) throw new CliError(2, "layout <in.json> <out.json>");
+      let graph;
+      try {
+        graph = JSON.parse(readFileSync(input, "utf8")) as unknown;
+      } catch (e) {
+        throw new CliError(2, `can't read a sized graph from ${input}: ${e instanceof Error ? e.message : e}`);
+      }
+      exitWhenDone = true;
+      // Loaded only here (the bundle evaluates it lazily): elkjs is 3 MB of script no other command needs.
+      const { layoutGraph, parseSizedGraph } = await import("../src/diagram/elk.ts");
+      let layout;
+      try {
+        layout = await layoutGraph(parseSizedGraph(graph));
+      } catch (e) {
+        throw new CliError(2, `${input}: ${(e instanceof Error ? e.message : String(e)).split("\n")[0]}`);
+      }
+      // Through a file of its own, so a pane reading `output` never sees half of it.
+      const partial = `${output}.${process.pid}.tmp`;
+      writeFileSync(partial, JSON.stringify(layout));
+      renameSync(partial, output);
+      return;
+    }
     case "--version":
       noMoreArgs();
       console.log(`opengpui ${version}`);
@@ -418,3 +468,4 @@ try {
   console.error(`opengpui: ${e.message}`);
   process.exitCode = e.code;
 }
+if (exitWhenDone) process.exit();

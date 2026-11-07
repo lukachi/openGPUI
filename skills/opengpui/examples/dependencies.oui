@@ -1,0 +1,8 @@
+root = Stack([header, plan])
+header = CardHeader("Plan for the auth rewrite", "Tasks grouped by phase; an arrow means 'needed before'.")
+plan = Diagram(planNodes, planEdges)
+planNodes = [design, build, ship]
+design = Group("design", "Design", [Node("spec", "Write the spec", "task"), Node("threat", "Threat model", "task")])
+build = Group("build", "Build", [Node("tokens", "Token service", "task"), Node("sessions", "Session store", "task"), Node("ui", "Login screens", "task")])
+ship = Group("ship", "Ship", [Node("migrate", "Migrate users", "task"), Node("launch", "Launch", "end")])
+planEdges = [Edge("spec", "tokens"), Edge("spec", "sessions"), Edge("threat", "tokens"), Edge("spec", "ui"), Edge("tokens", "migrate"), Edge("sessions", "migrate"), Edge("ui", "launch"), Edge("migrate", "launch")]

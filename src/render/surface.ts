@@ -29,7 +29,7 @@
 // (invalidate.ts) and notifies each view whose node now differs by value from the one
 // it last drew; ancestors differ too and gpui redraws them first, so each parent hands
 // its children their new node before they draw. What else a render reads is tracked
-// per view (fields, validation errors, streaming, the viewport height, images; see
+// per view (fields, validation errors, streaming, the viewport height, images, layouts; see
 // RenderContext.watch) and compared on every pump resume. Work a render defers
 // (after, wake, timers in deferred work) redraws the view that asked.
 import type { ElementNode } from "@openuidev/lang-core";
@@ -47,6 +47,7 @@ import {
   type Timer,
   type ViewClass,
 } from "gpui-kit";
+import type { DiagramLayouter, LayoutState, SizedGraph } from "../diagram/types.ts";
 import type { FieldRegistration, FormValidation, Session } from "../runtime/session.ts";
 import { highlightPending } from "../markdown/code.ts";
 import { markdownPending } from "../markdown/budget.ts";
@@ -142,6 +143,13 @@ export interface FormAccess {
 const STABLE_MS = 150;
 /** What a src that waits for its string to settle draws as. */
 const WAITING: ImageState = { status: "loading" };
+/** What a graph that waits for its statement to settle draws as. */
+const LAYOUT_WAITING: LayoutState = { status: "loading" };
+/**
+ * Part of every layout key: bump it when the layout a host returns for the same graph changes
+ * (src/diagram/elk.ts's options), so hosts stop serving layouts cached under the old key.
+ */
+export const LAYOUT_VERSION = 1;
 /** How long one pump resume runs deferred work before leaving the rest to the next (a resume is interrupted at about 300–600 ms). */
 const DEFERRED_MS = 150;
 /** How often the pump looks whether it was asked to run: one resume per tick while idle. */
@@ -209,6 +217,38 @@ export class ViewRecord {
   ) {}
 }
 
+/** JSON with object keys sorted (and undefined members left out): one text per graph however it was built. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map((v) => (v === undefined ? "null" : canonicalJson(v))).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * A sized graph's layout key: 64-bit FNV-1a over the UTF-16 code units of LAYOUT_VERSION and the
+ * graph's canonical JSON, as 16 hex digits. The surface keys its layout states by it; hosts may
+ * name cached layouts by it (herdr/src/layout.ts).
+ */
+export function layoutKey(graph: SizedGraph): string {
+  const text = `${LAYOUT_VERSION}:${canonicalJson(graph)}`;
+  // The 64-bit state as two 32-bit halves; the prime 2^40 + 0x1b3 multiplies as h·0x1b3 + (h << 40).
+  let hi = 0xcbf29ce4;
+  let lo = 0x84222325;
+  for (let i = 0; i < text.length; i++) {
+    lo ^= text.charCodeAt(i);
+    const low = (lo >>> 0) * 0x1b3;
+    const carry = Math.floor(low / 0x100000000);
+    hi = ((hi >>> 0) * 0x1b3 + carry + ((lo << 8) >>> 0)) >>> 0;
+    lo = low >>> 0;
+  }
+  return (hi >>> 0).toString(16).padStart(8, "0") + (lo >>> 0).toString(16).padStart(8, "0");
+}
+
 /** Views by id, for RecordView: gpui hands a nested view only its props. */
 const records = new Map<number, { surface: Surface; record: ViewRecord }>();
 
@@ -237,6 +277,10 @@ export class Surface {
   /** @internal */ readonly imageLoader: ImageLoader | null;
   /** @internal */ readonly images = new Map<string, ImageState>();
   /** @internal */ readonly imagesWaiting = new Map<string, { revision: number; settled: boolean }>(); // first asked while streaming
+  /** @internal */ readonly layouter: DiagramLayouter | null;
+  /** @internal layoutKey(graph) → its state; a view that asked notes `layout:<key>` among its images. */
+  readonly layouts = new Map<string, LayoutState>();
+  /** @internal */ readonly layoutsWaiting = new Map<string, { revision: number; settled: boolean }>(); // first asked while streaming
   /** @internal */ retainedEntries = new Map<string, RetainedEntry<any, any>>();
   /** @internal */ deferred: { fn: (cx: Context) => void; owner: ViewRecord }[] = [];
   /** @internal */ local = new Map<string, object>();
@@ -251,7 +295,7 @@ export class Surface {
   private hostSeen: unknown = null;
   /**
    * Called when the surface becomes idle (true: nothing left to draw for what the session
-   * holds now; no view waits for a parse, a highlight, an image or deferred work) and when it
+   * holds now; no view waits for a parse, a highlight, an image, a layout or deferred work) and when it
    * stops being idle. A host may report it, e.g. so a screenshot waits for it.
    */
   onIdle: ((idle: boolean) => void) | null = null;
@@ -268,13 +312,15 @@ export class Surface {
    * `tokens`: see resolveTokens(); OpenUI's light theme when omitted.
    * `icons`: writes a lucide icon's SVG to a file `svg()` draws (render/lucide.ts); omitted, icons are not drawn.
    * `images`: turns an image `src` into a local asset (render/images.ts); omitted, images fail.
+   * `layout`: lays a Diagram's sized graph out (diagram/types.ts); omitted, diagrams fail.
    */
-  constructor(options: { session: Session; components: Components; tokens?: Tokens; icons?: IconWriter; images?: ImageLoader }) {
+  constructor(options: { session: Session; components: Components; tokens?: Tokens; icons?: IconWriter; images?: ImageLoader; layout?: DiagramLayouter }) {
     this.session = options.session;
     this.components = options.components;
     this.tokens = options.tokens ?? resolveTokens("light");
     this.iconWriter = options.icons ?? null;
     this.imageLoader = options.images ?? null;
+    this.layouter = options.layout ?? null;
   }
 
   /** New tokens redraw every view (the host draws first, so they read the new ones). */
@@ -441,12 +487,14 @@ export class Surface {
       entry.state?.release?.();
       this.retainedEntries.delete(key);
     }
-    // Image states no view asked for go too (a failed one is retried when asked again;
-    // the host's cache keeps reloads cheap).
+    // Image and layout states no view asked for go too (a failed one is retried when asked
+    // again; the host's cache keeps reloads cheap).
     const seen = new Set<string>();
     for (const rec of this.liveRecords()) for (const src of rec.images) seen.add(src);
     for (const src of this.images.keys()) if (!seen.has(src)) this.images.delete(src);
     for (const src of this.imagesWaiting.keys()) if (!seen.has(src)) this.imagesWaiting.delete(src);
+    for (const key of this.layouts.keys()) if (!seen.has(`layout:${key}`)) this.layouts.delete(key);
+    for (const key of this.layoutsWaiting.keys()) if (!seen.has(`layout:${key}`)) this.layoutsWaiting.delete(key);
 
     // The keyboard follows the topmost overlay that has a focus handle: to it when
     // it opens, back to the one below when it closes.
@@ -511,11 +559,13 @@ export class Surface {
     return false;
   }
 
-  /** Background work this surface's views wait for: icon writes, image loads, markdown parses, code highlighting, queries. */
+  /** Background work this surface's views wait for: icon writes, image loads, layouts, markdown parses, code highlighting, queries. */
   private working(): boolean {
     for (const state of this.icons.values()) if (state.status === "loading") return true;
     for (const state of this.images.values()) if (state.status === "loading") return true;
     for (const waiting of this.imagesWaiting.values()) if (!waiting.settled) return true;
+    for (const state of this.layouts.values()) if (state.status === "loading") return true;
+    for (const waiting of this.layoutsWaiting.values()) if (!waiting.settled) return true;
     return markdownPending(this.session) || highlightPending(this.session) || this.session.isQueryLoading;
   }
 
@@ -607,7 +657,7 @@ export class Surface {
     this.wake();
   }
 
-  /** @internal An image state changed: the views that asked for it redraw. */
+  /** @internal An image (or icon, or `layout:<key>`) state changed: the views that asked for it redraw. */
   imageChanged(src: string): void {
     for (const rec of this.liveRecords()) if (rec.images.has(src)) rec.dirty = true;
     this.wake();
@@ -1043,6 +1093,66 @@ export class RenderContext {
         if (surface.images.get(src) !== loading) return;
         surface.images.set(src, next);
         surface.imageChanged(src);
+      });
+    });
+    return loading;
+  }
+
+  /**
+   * A Diagram's sized graph as the host laid it out (`layout` option): "loading" until the
+   * host answers, then "ready" with the layout, or "failed" with why (also when the host lays
+   * nothing out). Keyed by layoutKey(graph), so views asking for the same graph share one
+   * layout, and the views that asked redraw when it changes. A state lives while renders ask
+   * for it. While the model is still writing, a new graph is laid out only once a later chunk
+   * still gives it or it stayed unchanged for STABLE_MS (the trailing statement grows a node
+   * at a time); a finished response lays out at once.
+   */
+  layout(graph: SizedGraph): LayoutState {
+    const surface = this.surface;
+    const key = layoutKey(graph);
+    const asked = `layout:${key}`;
+    this.view.images.add(asked);
+    const known = surface.layouts.get(key);
+    if (known) return known;
+    const layouter = surface.layouter;
+    if (!layouter) {
+      const failed: LayoutState = { status: "failed", error: "the host lays out no diagrams" };
+      surface.layouts.set(key, failed);
+      return failed;
+    }
+    const session = this.session;
+    if (session.isStreaming) {
+      const revision = this.track(() => session.revision, session.revision);
+      const waiting = surface.layoutsWaiting.get(key);
+      if (!waiting) {
+        const entry = { revision, settled: false };
+        surface.layoutsWaiting.set(key, entry);
+        this.after((cx) =>
+          cx.timer.after(STABLE_MS, () => {
+            entry.settled = true;
+            surface.imageChanged(asked);
+          }),
+        );
+        return LAYOUT_WAITING;
+      }
+      if (waiting.revision === revision && !waiting.settled) return LAYOUT_WAITING;
+    }
+    surface.layoutsWaiting.delete(key);
+    const loading: LayoutState = { status: "loading" };
+    surface.layouts.set(key, loading);
+    // Promises only advance inside a task, so the layout starts from the pump's cx.
+    this.after((cx) => {
+      cx.spawn(async () => {
+        let next: LayoutState;
+        try {
+          next = { status: "ready", layout: await layouter(graph) };
+        } catch (e) {
+          next = { status: "failed", error: e instanceof Error ? e.message : String(e) };
+        }
+        // Dropped meanwhile (no render asks for it): a later ask lays it out again.
+        if (surface.layouts.get(key) !== loading) return;
+        surface.layouts.set(key, next);
+        surface.imageChanged(asked);
       });
     });
     return loading;

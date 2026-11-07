@@ -1,0 +1,12 @@
+root = Stack([header, shop, note])
+header = CardHeader("How an order is placed", "Pick a step to light up its part; click a box to ask about it.")
+shop = Diagram(shopNodes, shopEdges, shopSteps)
+shopNodes = [Node("user", "Customer", "actor"), web, server, Node("db", "Orders DB", "store", "Postgres"), Node("pay", "Payments", "external", "Stripe")]
+web = Group("web", "Browser", [Node("app", "Shop app", "ui", "React")])
+server = Group("server", "App server", [Node("api", "API", "service"), Node("queue", "Job queue", "queue"), Node("worker", "Worker", "process")])
+shopEdges = [Edge("user", "app", "orders"), Edge("app", "api", "POST /orders"), Edge("api", "db", "writes order"), Edge("api", "queue", "enqueues"), Edge("queue", "worker", "delivers"), Edge("worker", "pay", "charges"), Edge("worker", "db", "marks paid")]
+shopSteps = [step1, step2, step3]
+step1 = DiagramStep("The order is sent", "The app posts the cart; the API checks it and writes the order.", ["user>app", "app>api", "api>db"])
+step2 = DiagramStep("Payment happens later", "The API answers at once and leaves the charge to a job.", ["api>queue", "queue>worker"])
+step3 = DiagramStep("The worker charges", "It calls Stripe and marks the order paid.", ["worker>pay", "worker>db"])
+note = TextCallout("neutral", "Kinds", "A node's kind picks its icon: actor, ui, service, queue, process, store, external, and more.")

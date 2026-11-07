@@ -1,0 +1,6 @@
+root = Stack([header, states])
+header = CardHeader("Lifecycle of a pull request", "States and the events that move between them; cycles are fine.")
+states = Diagram(stateNodes, stateEdges, stateSteps)
+stateNodes = [Node("new", "Opened", "start"), Node("draft", "Draft", "task"), Node("review", "In review", "task"), Node("changes", "Changes requested", "task"), Node("approved", "Approved", "task"), Node("merged", "Merged", "end"), Node("closed", "Closed", "end")]
+stateEdges = [Edge("new", "draft", "as draft"), Edge("new", "review", "ready"), Edge("draft", "review", "mark ready"), Edge("review", "changes", "request changes"), Edge("changes", "review", "push", "dashed"), Edge("review", "approved", "approve"), Edge("approved", "merged", "merge"), Edge("review", "closed", "close"), Edge("approved", "review", "new commit", "dashed")]
+stateSteps = [DiagramStep("The happy path", "Opened, reviewed, approved, merged.", ["new>review", "review>approved", "approved>merged"]), DiagramStep("The review loop", "Requested changes come back to review after a push.", ["review>changes", "changes>review"])]

@@ -1,0 +1,5 @@
+root = Stack([header, flow])
+header = CardHeader("Deploying a change", "A flowchart: decisions branch, both branches meet again.")
+flow = Diagram(flowNodes, flowEdges)
+flowNodes = [Node("start", "Merge to main", "start"), Node("ci", "Run CI", "process"), Node("green", "Tests pass?", "decision"), Node("fix", "Fix and push", "task"), Node("stage", "Deploy to staging", "process"), Node("ok", "Staging healthy?", "decision"), Node("rollback", "Roll back", "task"), Node("prod", "Deploy to production", "process"), Node("done", "Live", "end")]
+flowEdges = [Edge("start", "ci"), Edge("ci", "green"), Edge("green", "stage", "yes"), Edge("green", "fix", "no"), Edge("fix", "ci", "retry"), Edge("stage", "ok"), Edge("ok", "prod", "yes"), Edge("ok", "rollback", "no"), Edge("rollback", "fix"), Edge("prod", "done")]

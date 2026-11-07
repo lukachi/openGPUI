@@ -34,8 +34,8 @@ Options, given the same way to `prompt`, `check` and `show`:
    your home folder (Herdr mods read only there), under 1 MiB, `root = …` first.
 2. `opengpui check ui/review.oui`: parses it as the pane will. It prints each
    problem (unknown component, wrong argument, a name used but never defined, a
-   statement root never reaches, an unclosed bracket) and exits 1; fix until it
-   prints `ok:`.
+   statement root never reaches, an unclosed bracket, a Diagram id that matches
+   nothing) and exits 1; fix until it prints `ok:`.
 3. `opengpui show ui/review.oui --title "Deploy review"` opens the pane right of
    your terminal (`--down` below, `--tab` a new tab; `--look openui` for OpenUI's own
    colors instead of Herdr's). Show once: afterwards just rewrite the file. Showing a
@@ -88,6 +88,31 @@ If the file has errors once complete, the pane lists them and sends an event of
 Fix the file; the pane redraws.
 
 `opengpui close ui/review.oui` closes the pane when you're done with it.
+
+## Diagrams
+
+When a picture says it better than text (how something works, a flow, states, a plan, a data
+model, who calls whom), draw it. The manual lists three diagram components; the pane lays each
+out itself and lets the person pan, zoom and expand it:
+
+- `Diagram`: boxes and arrows (`Node`, `Group`, `Edge`, and `Entity` for boxes with fields).
+  Architecture, flowcharts (`decision`, `start`, `end` kinds), state machines, pipelines,
+  dependency graphs, trees, data models (ER) and class diagrams.
+- `Sequence`: who sends what to whom, in order (`Participant`, `Message`, `Block`).
+- `Timeline`: tasks on a time axis (`Task` with dates or numbers, lanes, dependencies).
+
+`opengpui examples` lists worked examples, one per common kind of diagram;
+`opengpui examples <name>` prints one. Read the closest before writing your own and adapt it:
+they are starting points, not templates to fill in.
+
+- Several small diagrams beat one big one: keep each under about 20 boxes, 12 participants or
+  40 tasks. `Tabs` (a tab per diagram) work well for a big picture plus its parts.
+- `DiagramStep`s are optional. Add 3–7 when you walk the person through something in order;
+  each step lights the ids it talks about.
+- When you rewrite the file, keep items in the same order, or the layout jumps.
+- A click on a box, a message or a task, or a step's ask button, sends `Tell me more about …`
+  with `{diagram, …}` in `params.context`. Answer by adding a diagram (a tab), a step, or text
+  beside it, rather than starting over.
 
 ## Tools (Query / Mutation)
 

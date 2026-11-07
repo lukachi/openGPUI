@@ -34,7 +34,7 @@ use gpui::{
     ScrollWheelEvent, SharedString, Window, point, px, size,
 };
 use gpui_base::test_support;
-use gpui_shell::{AppAssets, Capabilities, HostModule, HostValue, ScriptView, ShellRoot, ShellRuntime};
+use gpui_shell::{AppAssets, Capabilities, HostError, HostModule, HostValue, ScriptView, ShellRoot, ShellRuntime};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -63,6 +63,10 @@ struct Job {
     height: f32,
     /// Where data: images are decoded to.
     scratch: PathBuf,
+    /// The command that lays a diagram out, before its `<in> <out>` arguments: the built
+    /// `opengpui layout` (shot.ts). The script's `layout()` runs it; without one it throws.
+    #[serde(default)]
+    layout: Vec<String>,
     #[serde(default = "default_quiet")]
     quiet_ms: u64,
     #[serde(default = "default_max")]
@@ -190,7 +194,7 @@ fn run() -> Result<()> {
         Ok(cx.text_system().all_font_names())
     })?;
 
-    gpui_shell::export_module(host_module(families, cx.background_executor().clone()))
+    gpui_shell::export_module(host_module(families, cx.background_executor().clone(), job.layout.clone(), job.scratch.clone()))
         .map_err(|e| anyhow!(e.message().to_owned()))?;
     let home = std::env::var("HOME").unwrap_or_default();
     let viewport = size(px(job.width), px(job.height));
@@ -445,8 +449,12 @@ thread_local! {
 /// `clock` is how far the simulated clock has run, in ms: the script adds it to
 /// `Date.now()`, so code that times itself by the wall clock (watchdogs that
 /// restart a stalled task, redraw throttles) sees simulated sleeps pass.
-fn host_module(families: Vec<String>, executor: gpui::BackgroundExecutor) -> HostModule {
+/// `layout` runs the job's layout command on a sized graph (JSON text) and returns the
+/// layout's JSON text, synchronously: the simulated clock doesn't move meanwhile, so the
+/// wait costs the view no frames, unlike Herdr's `exec`.
+fn host_module(families: Vec<String>, executor: gpui::BackgroundExecutor, layout: Vec<String>, scratch: PathBuf) -> HostModule {
     let start = executor.now();
+    let runs = std::cell::Cell::new(0u32);
     HostModule::new("oui-harness")
         .function("job", |_| Ok(CURRENT.with_borrow(|current| current.job.clone().unwrap_or(HostValue::Null))))
         .function("response", |_| {
@@ -458,6 +466,33 @@ fn host_module(families: Vec<String>, executor: gpui::BackgroundExecutor) -> Hos
             let line = arguments.string(0)?;
             emit(serde_json::from_str(line).unwrap_or_else(|_| json!({ "type": "message", "text": line })));
             Ok(HostValue::Null)
+        })
+        .function("layout", move |arguments| {
+            let graph = arguments.string(0)?;
+            let Some((program, fixed)) = layout.split_first() else {
+                return Err(HostError::new("the harness was given no layout command"));
+            };
+            runs.set(runs.get() + 1);
+            // Parallel harness processes share the scratch folder.
+            let stem = scratch.join(format!("layout-{}-{}", std::process::id(), runs.get()));
+            let (input, output) = (stem.with_extension("in.json"), stem.with_extension("json"));
+            let result = (|| {
+                std::fs::write(&input, graph).map_err(|e| format!("writing {}: {e}", input.display()))?;
+                let run = std::process::Command::new(program)
+                    .args(fixed)
+                    .arg(&input)
+                    .arg(&output)
+                    .output()
+                    .map_err(|e| format!("can't run {program}: {e}"))?;
+                if !run.status.success() {
+                    let stderr = String::from_utf8_lossy(&run.stderr).trim().to_owned();
+                    return Err(if stderr.is_empty() { format!("{program} exited with {}", run.status) } else { stderr });
+                }
+                std::fs::read_to_string(&output).map_err(|e| format!("reading {}: {e}", output.display()))
+            })();
+            let _ = std::fs::remove_file(&input);
+            let _ = std::fs::remove_file(&output);
+            result.map(HostValue::Str).map_err(HostError::new)
         })
 }
 

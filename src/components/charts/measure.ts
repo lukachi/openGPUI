@@ -70,6 +70,11 @@ export class Measurer {
     return this.missingChars.size === 0;
   }
 
+  /** Every wanted string has been measured whole: widths are final (a layout needs no refinement). */
+  get ready(): boolean {
+    return this.missingChars.size === 0 && this.missingStrings.size === 0;
+  }
+
   width(text: string): number {
     return textWidth(this.widths, text, this.style.size * 0.55);
   }
