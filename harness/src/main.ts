@@ -9,7 +9,7 @@ import type { ActionEvent, OpenUIError } from "@openuidev/lang-core";
 import { div, View, type Context } from "gpui-kit";
 import { clock, emit, fonts, job, response } from "oui-harness";
 import { components, isStreamingResponse, openuiFonts, resolveTokens, selectLibrary, Session, Surface, textStyle, typography } from "../../src/index.ts";
-import { harnessImages } from "./images.ts";
+import { harnessIcons, harnessImages } from "./images.ts";
 
 // The harness runs time on a simulated clock: sleeps and timers return at once
 // with the clock moved on. The core also times itself by Date.now() (watchdogs
@@ -39,7 +39,7 @@ export default class Harness extends View {
       session: this.session,
       components,
       tokens: resolveTokens(j.mode, { fonts: openuiFonts((family) => installed.has(family)) }),
-      icons: (file) => `icons/${file}.svg`,
+      icons: harnessIcons(j.scratch),
       images: harnessImages(j.base, j.home, j.scratch),
     });
     // As Herdr's status file does (herdr/src/main.ts): scripts/shot.ts flags a file that settled busy.

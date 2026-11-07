@@ -96,6 +96,12 @@ is Herdr's and leaves a Modal open. Percent sizes (`90vw`, `85vh`) are of the pa
 - An overlay is a view of its own; a host mounts the views `surface.renderOverlays()` returns
   over its area after `renderContent()`. A host that doesn't shows no modals.
 
+## Icons
+
+gpui draws SVGs only from files, so the host writes each lucide icon a pane draws to a file the
+first time (Herdr under `~/.config/herdr-app/opengpui/icons/`). Until that write lands, about a
+frame, the icon is an empty box of its size.
+
 ## Images
 
 gpui draws only local files, so the host turns a `src` into a cached file first (Herdr downloads

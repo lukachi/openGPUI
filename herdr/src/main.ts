@@ -20,6 +20,7 @@ import { dirname, join } from "path";
 import { components, isStreamingResponse, selectLibrary, Session, Surface, textStyle, typography, type LibraryName } from "../../src/index.ts";
 import { eventsPath, replyText, statusPath, type PaneEvent } from "./contract.ts";
 import { DEMO } from "./demo.ts";
+import { herdrIcons } from "./icons.ts";
 import { herdrImages } from "./images.ts";
 import { herdrTokens, type Look } from "./theme.ts";
 
@@ -103,8 +104,8 @@ export default class OpenGpui extends View {
       session: this.session,
       components,
       tokens: herdrTokens(this.p.look ?? "herdr"),
-      // Asset paths are relative to the Herdr home; scripts/build.ts copies the SVGs here.
-      icons: (file) => `mods/opengpui/icons/${file}.svg`,
+      // Each lucide icon a pane draws is written once under the Herdr home (icons.ts).
+      icons: herdrIcons,
       // Remote and data: images are cached under the Herdr home; relative ones resolve against the .oui's folder.
       images: herdrImages(this.srcPath ? dirname(this.srcPath) : null),
     });

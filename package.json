@@ -11,7 +11,8 @@
     "build": "bun scripts/build.ts",
     "test": "bun scripts/build.ts && bun test",
     "check": "bun run typecheck && bun run build && herdr-app check herdr/mods/opengpui",
-    "install-herdr": "bun scripts/build.ts && bun scripts/install-herdr.ts"
+    "install-herdr": "bun scripts/build.ts && bun scripts/install-herdr.ts",
+    "release": "bun scripts/build.ts && bun scripts/release.ts"
   },
   "dependencies": {
     "d3-scale": "4.0.2",

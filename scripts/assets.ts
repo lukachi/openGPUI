@@ -1,9 +1,13 @@
-// Fetch, verify and build what the Herdr mod ships, into .upstream/assets:
+// Fetch, verify and build what the mod ships, into .upstream/assets:
 //   fonts/          static Inter cuts at OpenUI's (optical size, weight) pairs,
 //                   tracked -1% (src/render/fonts.ts says which), plus the OFL
-//   icons/          lucide SVGs at the version react-ui depends on, plus the ISC license
-//   lucide-map.js   lucide-react's icon name → file table, which upstream's
-//                   icon resolver (components/_shared/icons) is compiled against
+//   lucide/         the lucide icons at the version react-ui depends on, as data the
+//                   bundle carries (src/render/lucide.ts):
+//     svgs.json       icon file name → the SVG's inner markup (every lucide SVG has the
+//                     same root element, which lucide.ts writes back)
+//     map.js          lucide-react's icon name → file table, which upstream's icon
+//                     resolver (components/_shared/icons) is compiled against
+//     LICENSE.txt     lucide's ISC license
 // Pins are upstream.json "assets". Font cutting runs fontTools' command-line
 // tools through `uvx` (https://docs.astral.sh/uv/). Work is skipped when the
 // output already matches the pins.
@@ -12,7 +16,10 @@ import { $ } from "bun";
 import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { INTER_CUTS, INTER_ITALIC_CUTS, INTER_TRACKING_EM, interFamily } from "../src/render/fonts.ts";
-import { LUCIDE_STROKE_WIDTHS, lucideFile } from "../src/render/lucide.ts";
+
+/** The root element every lucide SVG shares, but for its class (src/render/lucide.ts writes it back). */
+const LUCIDE_ROOT =
+  'xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
 
 const root = join(import.meta.dir, "..");
 const out = join(root, ".upstream", "assets");
@@ -78,9 +85,11 @@ async function icons(): Promise<void> {
   const lockIntegrity = new RegExp(`\\n  lucide-react@${version.replace(/\./g, "\\.")}:\\n    resolution: \\{integrity: (\\S+)\\}`).exec(lock)?.[1];
   if (!lockIntegrity) throw new Error(`lucide-react@${version} is not in upstream's pnpm-lock.yaml`);
 
-  const stamp = { version, strokes: LUCIDE_STROKE_WIDTHS, v: 1 };
-  const dir = join(out, "icons");
-  if (!(await stale(dir, stamp)) && existsSync(join(out, "lucide-map.js"))) return;
+  const stamp = { version, v: 2 };
+  const dir = join(out, "lucide");
+  if (!(await stale(dir, stamp))) return;
+  rmSync(join(out, "icons"), { recursive: true, force: true }); // the per-file layout before v2
+  rmSync(join(out, "lucide-map.js"), { force: true });
 
   const reactTgz = await fetchPinned(
     `https://registry.npmjs.org/lucide-react/-/lucide-react-${version}.tgz`,
@@ -103,27 +112,29 @@ async function icons(): Promise<void> {
   const source = await Bun.file(join(work, "react", "package", "dist", "esm", "dynamicIconImports.js")).text();
   const entries = [...source.matchAll(/"([^"]+)": \(\) => import\('\.\/icons\/([^']+)\.js'\)/g)].map((m) => [m[1]!, m[2]!] as const);
   if (entries.length < 1000) throw new Error(`lucide-react ${version}: unexpected dynamicIconImports.js (${entries.length} icons)`);
-  const files = new Set(entries.map(([, file]) => file));
-  for (const file of files) {
-    const svg = join(work, "static", "package", "icons", `${file}.svg`);
-    if (!existsSync(svg)) throw new Error(`lucide-static ${version} has no ${file}.svg`);
-    const source = await Bun.file(svg).text();
-    if (!source.includes(`stroke-width="2"`)) throw new Error(`${file}.svg: no stroke-width="2" to restyle`);
-    for (const stroke of LUCIDE_STROKE_WIDTHS) {
-      await Bun.write(join(dir, `${lucideFile(file, stroke)}.svg`), source.replace(`stroke-width="2"`, `stroke-width="${stroke}"`));
+  const svgs: Record<string, string> = {};
+  for (const file of new Set(entries.map(([, file]) => file))) {
+    const path = join(work, "static", "package", "icons", `${file}.svg`);
+    if (!existsSync(path)) throw new Error(`lucide-static ${version} has no ${file}.svg`);
+    const text = (await Bun.file(path).text()).replace(/<!--[\s\S]*?-->\s*/g, "");
+    const svg = /^<svg([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(text);
+    if (!svg || svg[1]!.replace(/class="[^"]*"/, "").split(/\s+/).filter(Boolean).join(" ") !== LUCIDE_ROOT) {
+      throw new Error(`${file}.svg: not the root element every lucide SVG shares`);
     }
+    svgs[file] = svg[2]!.split("\n").map((line) => line.trim()).join("");
   }
-  await Bun.write(join(dir, "LICENSE-lucide.txt"), Bun.file(join(work, "static", "package", "LICENSE")));
+  await Bun.write(join(dir, "svgs.json"), JSON.stringify(svgs));
+  await Bun.write(join(dir, "LICENSE.txt"), Bun.file(join(work, "static", "package", "LICENSE")));
   // Upstream's resolver only asks whether a name has an import thunk; here the
   // thunk answers the SVG's file name instead of importing a React component.
   const map = entries.map(([name, file]) => `  ${JSON.stringify(name)}: () => ${JSON.stringify(file)},`).join("\n");
   await Bun.write(
-    join(out, "lucide-map.js"),
+    join(dir, "map.js"),
     `// Generated by scripts/assets.ts from lucide-react ${version} dynamicIconImports.\nexport default {\n${map}\n};\n`,
   );
   rmSync(work, { recursive: true, force: true });
   await stampDone(dir, stamp);
-  console.log(`icons    ${files.size} lucide ${version} SVGs × strokes ${LUCIDE_STROKE_WIDTHS.join(", ")}, ${entries.length} names`);
+  console.log(`icons    ${Object.keys(svgs).length} lucide ${version} SVGs, ${entries.length} names`);
 }
 
 // ── Fonts ──

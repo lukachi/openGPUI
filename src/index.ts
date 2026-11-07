@@ -3,7 +3,7 @@
 //   const source = subsetLibrary(libraries.openui, Object.keys(components));
 //   const session = new Session({ library: source.library, onAction });
 //   const surface = new Surface({ session, components, tokens, icons, images });
-//   // icons:  lucide file → asset path (render/lucide.ts); omitted, no icons
+//   // icons:  (name, svg) → Promise<path>: write a lucide icon where svg() draws it (render/lucide.ts); omitted, no icons
 //   // images: src → Promise<{ path, width, height }> (render/images.ts); omitted, images fail
 //   // view init:   surface.attach(cx); session.setResponse(text)
 //   // view render: content = surface.renderContent() (the root's view), then
@@ -30,6 +30,7 @@ export {
 } from "./render/surface.ts";
 export { interFace, interFamily, INTER_CUTS, openuiFonts, type Face, type FontResolver } from "./render/fonts.ts";
 export { fitImage, fitRect, type FitRect, type ImageLoader, type ImageState, type LoadedImage, type ObjectFit } from "./render/images.ts";
+export type { IconWriter } from "./render/lucide.ts";
 export { readImageHeader, type ImageFormat, type ImageHeader } from "./render/imageHeader.ts";
 export {
   alpha,

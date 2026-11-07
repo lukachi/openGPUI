@@ -2,10 +2,10 @@
 //   dist/opengpui.js               the library (gpui-kit and gpui-base stay host imports)
 //   herdr/mods/opengpui/main.js    the Herdr mod: opengpui's own code, loaded once per tab
 //   herdr/mods/opengpui/shared.js  the packages it imports, loaded once per Herdr engine (bundleSplit)
-//   herdr/mods/opengpui/{fonts,icons}  the assets it ships (bun scripts/assets.ts)
+//   herdr/mods/opengpui/fonts/     the Inter cuts it ships (bun scripts/assets.ts)
 //   herdr/mods/opengpui/cli/opengpui.mjs  the agent CLI, for Node 18+ or Bun (cli/opengpui runs it)
-//   harness/app/{main,shared}.js   the headless harness's script (tools/oui-harness), split the same
-//                                  way, with its icons
+//   harness/app/{main,shared}.js   the headless harness's script (tools/oui-harness), split the same way
+// lucide icons travel inside shared.js as data (src/render/lucide.ts).
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import type { BunPlugin } from "bun";
@@ -14,18 +14,13 @@ import { upstreamPlugin } from "./upstream-plugin.ts";
 const root = join(import.meta.dir, "..");
 
 function copyAssets(): void {
-  const copies: [string, string][] = [
-    ["fonts", join("herdr", "mods", "opengpui", "fonts")],
-    ["icons", join("herdr", "mods", "opengpui", "icons")],
-    ["icons", join("harness", "app", "icons")],
-  ];
-  for (const [dir, dest] of copies) {
-    const from = join(root, ".upstream", "assets", dir);
-    if (!existsSync(join(from, ".stamp.json"))) throw new Error(`.upstream/assets/${dir} is missing: run \`bun run sync\``);
-    const to = join(root, dest);
-    rmSync(to, { recursive: true, force: true });
-    cpSync(from, to, { recursive: true, filter: (src) => !src.endsWith(".stamp.json") });
-  }
+  const from = join(root, ".upstream", "assets", "fonts");
+  if (!existsSync(join(from, ".stamp.json"))) throw new Error(".upstream/assets/fonts is missing: run `bun run sync`");
+  const to = join(root, "herdr", "mods", "opengpui", "fonts");
+  rmSync(to, { recursive: true, force: true });
+  cpSync(from, to, { recursive: true, filter: (src) => !src.endsWith(".stamp.json") });
+  // Icon folders of builds before icons became data.
+  for (const old of [join("herdr", "mods", "opengpui", "icons"), join("harness", "app", "icons")]) rmSync(join(root, old), { recursive: true, force: true });
 }
 
 // gpui-shell throws on browser timers. Upstream React renderers (genui-lib

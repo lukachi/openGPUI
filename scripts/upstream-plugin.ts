@@ -3,7 +3,8 @@
 // examples stay exactly upstream's, while everything React (renderers, hooks,
 // react itself) becomes an inert stub that is never called. Upstream's lucide
 // icon-name resolver compiles for real, against the name → SVG file table
-// scripts/assets.ts generates in place of lucide-react's import map.
+// scripts/assets.ts generates in place of lucide-react's import map, and the
+// icons themselves come in as data (`openui-lucide-svgs`).
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -16,7 +17,8 @@ const REACT_UI = join(UP, "react-ui", "src");
 const GENUI = join(REACT_UI, "genui-lib");
 const THEME = join(REACT_UI, "components", "ThemeProvider");
 const ICONS = join(REACT_UI, "components", "_shared", "icons");
-const LUCIDE_MAP = join(root, ".upstream", "assets", "lucide-map.js");
+const LUCIDE_MAP = join(root, ".upstream", "assets", "lucide", "map.js");
+const LUCIDE_SVGS = join(root, ".upstream", "assets", "lucide", "svgs.json");
 const SHIM = join(root, "src", "upstream");
 const CHARTS = join(REACT_UI, "components", "Charts");
 // react-ui chart modules that are plain TypeScript (no React, no DOM at call
@@ -73,7 +75,7 @@ function iconAliases(path: string, source: string): Promise<Record<string, strin
 
 export function upstreamPlugin(): BunPlugin {
   if (!existsSync(GENUI)) throw new Error("Run `bun run sync` first: .upstream/openui is missing");
-  if (!existsSync(LUCIDE_MAP)) throw new Error("Run `bun run sync` first: .upstream/assets/lucide-map.js is missing");
+  if (!existsSync(LUCIDE_MAP) || !existsSync(LUCIDE_SVGS)) throw new Error("Run `bun run sync` first: .upstream/assets/lucide/ is missing");
   return {
     name: "opengpui-upstream",
     setup(build) {
@@ -87,6 +89,13 @@ export function upstreamPlugin(): BunPlugin {
       // Lucide icon lookup by name, with upstream's fuzzy matching and category fallbacks.
       build.onResolve({ filter: /^openui-icons$/ }, () => ({ path: join(ICONS, "dynamicIconImports.ts") }));
       build.onResolve({ filter: /^openui-icon-fallbacks$/ }, () => ({ path: join(ICONS, "categoryFallbacks.ts") }));
+      // Every lucide icon's SVG markup (scripts/assets.ts), drawn through src/render/lucide.ts. One object
+      // literal: as a JSON module Bun would declare a variable per key, and lucide has a `key` icon.
+      build.onResolve({ filter: /^openui-lucide-svgs$/ }, () => ({ path: LUCIDE_SVGS, namespace: "opengpui-lucide" }));
+      build.onLoad({ filter: /.*/, namespace: "opengpui-lucide" }, (args) => ({
+        contents: `export default ${readFileSync(args.path, "utf8")};\n`,
+        loader: "js",
+      }));
       // The remark plugin react-ui's markdown renderers share (citation markers).
       build.onResolve({ filter: /^openui-remark-citations$/ }, () => ({
         path: join(REACT_UI, "components", "_shared", "remark", "remarkCitations.ts"),

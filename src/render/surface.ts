@@ -54,7 +54,7 @@ import { withScheduler, type Scheduler } from "../upstream/timers.ts";
 import { iconFile } from "./icons.ts";
 import type { ImageLoader, ImageState } from "./images.ts";
 import { indexTree, sameValue, type CompareMemo, type TreeIndex } from "./invalidate.ts";
-import { ICON_SIZE, lucideFile, type IconPath, type StrokeWidth } from "./lucide.ts";
+import { ICON_SIZE, lucideSvg, type IconWriter, type StrokeWidth } from "./lucide.ts";
 import { resolveTokens, type Tokens } from "./tokens.ts";
 
 /** What a renderer returns: an element, a nested view, text, several of them, or nothing. */
@@ -231,7 +231,9 @@ export class Surface {
   readonly session: Session;
   tokens: Tokens;
   readonly components: Components;
-  /** @internal */ readonly iconPath: IconPath | null;
+  /** @internal */ readonly iconWriter: IconWriter | null;
+  /** @internal lucide icon file name (lucideSvg) → where the host wrote it. */
+  readonly icons = new Map<string, { status: "loading" } | { status: "ready"; path: string } | { status: "failed" }>();
   /** @internal */ readonly imageLoader: ImageLoader | null;
   /** @internal */ readonly images = new Map<string, ImageState>();
   /** @internal */ readonly imagesWaiting = new Map<string, { revision: number; settled: boolean }>(); // first asked while streaming
@@ -264,14 +266,14 @@ export class Surface {
 
   /**
    * `tokens`: see resolveTokens(); OpenUI's light theme when omitted.
-   * `icons`: where the host keeps lucide's SVGs; omitted, icons are not drawn.
+   * `icons`: writes a lucide icon's SVG to a file `svg()` draws (render/lucide.ts); omitted, icons are not drawn.
    * `images`: turns an image `src` into a local asset (render/images.ts); omitted, images fail.
    */
-  constructor(options: { session: Session; components: Components; tokens?: Tokens; icons?: IconPath; images?: ImageLoader }) {
+  constructor(options: { session: Session; components: Components; tokens?: Tokens; icons?: IconWriter; images?: ImageLoader }) {
     this.session = options.session;
     this.components = options.components;
     this.tokens = options.tokens ?? resolveTokens("light");
-    this.iconPath = options.icons ?? null;
+    this.iconWriter = options.icons ?? null;
     this.imageLoader = options.images ?? null;
   }
 
@@ -509,8 +511,9 @@ export class Surface {
     return false;
   }
 
-  /** Background work this surface's views wait for: image loads, markdown parses, code highlighting, queries. */
+  /** Background work this surface's views wait for: icon writes, image loads, markdown parses, code highlighting, queries. */
   private working(): boolean {
+    for (const state of this.icons.values()) if (state.status === "loading") return true;
     for (const state of this.images.values()) if (state.status === "loading") return true;
     for (const waiting of this.imagesWaiting.values()) if (!waiting.settled) return true;
     return markdownPending(this.session) || highlightPending(this.session) || this.session.isQueryLoading;
@@ -953,14 +956,35 @@ export class RenderContext {
   /**
    * A lucide icon by name, as upstream's IconWrapper draws it: `size` px, in the
    * surrounding text color, at a stroke width react-ui uses. Null when the host
-   * has no icons.
+   * has no icons. The first time a surface draws an icon, the host writes its SVG
+   * to a file; until then (a frame or so) it is an empty box of its size.
    */
   icon(name: string, options: { category?: string; size?: number; stroke?: StrokeWidth } = {}): Element | null {
-    const path = this.surface.iconPath;
-    if (!path) return null;
-    return svg(path(lucideFile(iconFile(name, options.category), options.stroke)))
-      .size(options.size ?? ICON_SIZE)
-      .flex_none();
+    const surface = this.surface;
+    const writer = surface.iconWriter;
+    const icon = writer ? lucideSvg(iconFile(name, options.category), options.stroke) : null;
+    if (!writer || !icon) return null;
+    const key = `icon:${icon.name}`;
+    this.view.images.add(key);
+    let state = surface.icons.get(icon.name);
+    if (!state) {
+      const loading = { status: "loading" } as const;
+      state = loading;
+      surface.icons.set(icon.name, loading);
+      // Promises only advance inside a task, so the write starts from the pump's cx.
+      this.after((cx) => {
+        cx.spawn(async () => {
+          try {
+            surface.icons.set(icon.name, { status: "ready", path: await writer(icon.name, icon.svg) });
+          } catch (e) {
+            console.log(`[opengpui] icon ${icon.name}: ${e instanceof Error ? e.message : e}`);
+            surface.icons.set(icon.name, { status: "failed" });
+          }
+          surface.imageChanged(key);
+        });
+      });
+    }
+    return (state.status === "ready" ? svg(state.path) : div()).size(options.size ?? ICON_SIZE).flex_none();
   }
 
   /**

@@ -20,10 +20,11 @@ mkdirSync(to, { recursive: true });
 for (const file of ["mod.json", "shared.js", "main.js"]) cpSync(join(from, file), join(to, file));
 const hadFonts = existsSync(join(to, "fonts")) && readdirSync(join(to, "fonts")).some((f) => f.endsWith(".ttf"));
 const fontsChanged = !sameFiles(join(from, "fonts"), join(to, "fonts"));
-for (const dir of ["fonts", "icons", "cli"]) {
+for (const dir of ["fonts", "cli"]) {
   rmSync(join(to, dir), { recursive: true, force: true });
   cpSync(join(from, dir), join(to, dir), { recursive: true });
 }
+rmSync(join(to, "icons"), { recursive: true, force: true }); // icons travel in shared.js now
 console.log(`mod      -> ${to}`);
 
 if (fontsChanged) {

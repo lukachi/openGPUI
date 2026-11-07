@@ -28,6 +28,12 @@ declare module "openui-icon-fallbacks" {
   export function getFallbackIconName(category?: string): string;
 }
 
+// Every lucide icon: SVG file name → the markup inside its <svg> root (scripts/assets.ts).
+declare module "openui-lucide-svgs" {
+  const svgs: Record<string, string>;
+  export default svgs;
+}
+
 // react-ui components/_shared/remark/remarkCitations.ts: `[1][2]` → citation spans.
 declare module "openui-remark-citations" {
   import type { Root } from "mdast";

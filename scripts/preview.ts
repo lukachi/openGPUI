@@ -135,12 +135,10 @@ try {
     rmSync(carrier, { recursive: true, force: true });
     cpSync(from, carrier, { recursive: true });
   }
-  // Install this build as its own mod, asset paths rewritten as Herdr's mod.clone does.
+  // Install this build as its own mod (icons travel in shared.js; the carrier has the fonts).
   mkdirSync(to, { recursive: true });
-  for (const file of ["mod.json", "shared.js"]) cpSync(join(from, file), join(to, file));
-  writeFileSync(join(to, "main.js"), readFileSync(join(from, "main.js"), "utf8").replaceAll("mods/opengpui/", `mods/${modName}/`));
-  rmSync(join(to, "icons"), { recursive: true, force: true });
-  cpSync(join(from, "icons"), join(to, "icons"), { recursive: true });
+  for (const file of ["mod.json", "shared.js", "main.js"]) cpSync(join(from, file), join(to, file));
+  rmSync(join(to, "icons"), { recursive: true, force: true }); // from builds before icons became data
   run(["herdr-app", "check", to]);
 
   for (const mode of modes) {

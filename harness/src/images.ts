@@ -1,15 +1,30 @@
-// The harness's image loader. Shots must not depend on the network, so only
-// local files and data: URIs load; http(s) images fail the way an offline
-// Herdr pane's would. `image()` gets an absolute path, which the harness's
-// asset source serves from disk.
+// The harness's image loader and icon writer. Shots must not depend on the network, so
+// only local files and data: URIs load; http(s) images fail the way an offline Herdr
+// pane's would. `image()` and `svg()` get absolute paths, which the harness's asset
+// source serves from disk; icons are written to the scratch folder, as Herdr writes
+// them under its home.
 //
 //   file://, /abs, ~/, relative (to the .oui file's folder)   read in place
 //   data:                     decoded into the harness's scratch folder
 import { Buffer } from "buffer";
 import { createHash } from "crypto";
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { exists, mkdir, readFile, writeFile } from "fs/promises";
 import { join, resolve } from "path";
-import { readImageHeader, type ImageLoader, type LoadedImage } from "../../src/index.ts";
+import { readImageHeader, type IconWriter, type ImageLoader, type LoadedImage } from "../../src/index.ts";
+
+/** The Surface `icons` option: each icon's SVG goes into `scratch`/icons, which parallel harness processes share. */
+export function harnessIcons(scratch: string): IconWriter {
+  return async (name, svg) => {
+    const path = join(scratch, "icons", `${name}.svg`);
+    if (await exists(path)) return path;
+    await mkdir(join(scratch, "icons"), { recursive: true });
+    // Another process writing the same icon at once can make this write fail after its own landed.
+    await writeFile(path, svg).catch(async (e) => {
+      if (!(await exists(path))) throw e;
+    });
+    return path;
+  };
+}
 
 function sized(path: string, bytes: Uint8Array, src: string): LoadedImage {
   const header = readImageHeader(bytes);

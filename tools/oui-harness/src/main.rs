@@ -228,7 +228,8 @@ fn run() -> Result<()> {
         // the test platform's own, never the person's.
         gpui_shell::set_capabilities(
             Capabilities::new()
-                .read_roots([app.clone(), base.clone(), PathBuf::from(&home)])
+                // The scratch folder too: the icon writer checks what is already there, as Herdr's does in its home.
+                .read_roots([app.clone(), base.clone(), PathBuf::from(&home), job.scratch.clone()])
                 .write_roots([job.scratch.clone()])
                 .clipboard_read(true)
                 .clipboard_write(true),

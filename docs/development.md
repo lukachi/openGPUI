@@ -37,8 +37,8 @@ d3-scale 4.0.2 and d3-shape 3.2.0.
 
 Outputs:
 
-- `herdr/mods/opengpui/`: the mod as it is installed: `main.js`, `shared.js`, `fonts/`, `icons/`,
-  and the CLI in `cli/`.
+- `herdr/mods/opengpui/`: the mod as it is installed: `main.js`, `shared.js` (with the lucide
+  icons), `fonts/`, and the CLI in `cli/`.
 - `dist/opengpui.js`: the library for gpui-shell hosts (`gpui-kit` and `gpui-base` stay imports).
 - `dist/opengpui-headless.js`: libraries, prompts and `Session` without gpui, for Bun/Node.
 
@@ -128,8 +128,8 @@ later tabs of the same build use that copy (about 24 MiB once).
 running every promise job already queued, in the new tab's scope. When loads follow each other
 without a frame between, a job the previous tab's `init` queued runs as the new tab's.
 
-The mod also ships `fonts/` and `icons/`, copied from `.upstream/assets` at build (see
-[Fonts](#fonts) and [Icons](#icons)).
+The mod also ships `fonts/`, copied from `.upstream/assets` at build (see [Fonts](#fonts)); the
+icons travel in `shared.js` (see [Icons](#icons)).
 
 Markdown dependencies are pinned to the versions upstream's lockfile resolves (unified 11,
 remark-parse 11, remark-gfm 4, remark-math 6, remark-breaks 4, remark-rehype 11, refractor 5,
@@ -168,10 +168,19 @@ installer says so). A host without the cuts keeps its own UI font.
 
 ## Icons
 
-lucide SVGs at the version react-ui depends on, checked against upstream's lockfile and
-`upstream.json`, also made by `scripts/assets.ts` into `.upstream/assets/icons/`. Names resolve
-through upstream's own lookup (fuzzy matching, category fallbacks), compiled from the pin. There
-is one SVG set per stroke width react-ui gives icons (`LUCIDE_STROKE_WIDTHS`).
+lucide's icons at the version react-ui depends on, checked against upstream's lockfile and
+`upstream.json`. `scripts/assets.ts` turns them into `.upstream/assets/lucide/`: `svgs.json` (each
+icon's markup inside the `<svg>` root they all share, about 340 KB), `map.js` (lucide-react's name
+table, which upstream's own lookup with fuzzy matching and category fallbacks is compiled against)
+and lucide's license.
+
+The markup goes into `shared.js` as data (`src/render/lucide.ts`), so no build ships a file per
+icon. gpui's `svg()` draws only files, so a host passes the Surface an `icons` writer: the first
+time a surface draws an icon, `lucideSvg()` makes its SVG (at stroke width 2, or 2.5 where
+react-ui's scss restyles it) and the writer puts it where `svg()` can draw it, named after its
+content. Herdr writes them under `~/.config/herdr-app/opengpui/icons/` (`herdr/src/icons.ts`), the
+harness into its scratch folder. Until the write lands, about a frame, the icon is an empty box
+of its size.
 
 ## Updating OpenUI
 
@@ -195,9 +204,9 @@ under `.upstream/openui/packages/react-ui/src/`:
 1. Read all three. `Tokens` keeps upstream's token names, so scss reads across directly:
    `cssUtils.$space-s` → `t.spaceS`, `$border-default` → `t.borderDefault`,
    `@include typography(body, small)` → `textStyle(el, typography(t, "body", "small"))`. A
-   lucide icon is `ctx.icon("ChevronLeft", { size: 16 })`; an scss `stroke-width` other than 2
-   is `stroke`, listed in `LUCIDE_STROKE_WIDTHS`. A new type size and weight pair needs its cut
-   in `INTER_CUTS`.
+   lucide icon is `ctx.icon("ChevronLeft", { size: 16 })`; an scss `stroke-width` of 2.5 is
+   `stroke: 2.5` (another width needs a `StrokeWidth` in `src/render/lucide.ts`). A new type size
+   and weight pair needs its cut in `INTER_CUTS`.
 2. Write the `Component` in `src/components/`, register it in `src/components/index.ts`, and
    name the upstream files it was ported from in the file header.
 3. Where gpui can't do what the scss does, keep the closest gpui form and add the difference to
