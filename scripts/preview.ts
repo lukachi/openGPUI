@@ -10,7 +10,7 @@
 //     --wait <ms>           the longest a tab may take to settle before its shot (default 15000)
 //     --settle <ms>         without an idle signal (a build that writes none): how long the window
 //                           must stay unchanged to count as settled (default 3000: code
-//                           highlighting starts ~2 s after a window loads the mod)
+//                           highlighting starts well under a second after a window loads the mod)
 //     --out <file.png>      one file and one mode only; default tmp/preview/<file>-<look>-<mode>.png
 //     --keep                leave the tab open (for a person to click through); one file and mode
 //     --mod <name>          mod folder to install as (default opengpui-<checkout folder>)

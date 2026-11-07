@@ -231,8 +231,9 @@ sources under `.upstream/openui/packages/react-ui/src/`:
   shows it until KaTeX loads; KaTeX isn't ported. A task list's checkbox
   imitates the browser's native one. Code highlighting needs refractor's ~300
   grammars, which gpui-shell can't register at load: the first code block starts
-  registering them in 40 ms slices of a task, and code shows unhighlighted for about
-  2 s in a fresh window.
+  registering them in 40 ms slices of a task, and code shows unhighlighted until they
+  are in (about 0.35 s in the headless harness). refractor's `reason` grammar can't be
+  registered under gpui-shell's frozen `Object.prototype` and is skipped.
 - **Long markdown and long code:** a long block is a scroll region as tall as the
   pane's content area, with its own scrollbar; a long CodeBlock's box is as tall as
   its code or the pane, whichever is less. The wheel scrolls the region and, at its
