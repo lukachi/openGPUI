@@ -1,0 +1,8 @@
+#!/bin/sh
+# opengpui: runs the CLI next to this file with Node.js 18+ or Bun. Link it into PATH:
+#   ln -s ~/.config/herdr-app/mods/opengpui/cli/opengpui ~/.local/bin/opengpui
+here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+if command -v node >/dev/null 2>&1; then exec node "$here/opengpui.mjs" "$@"; fi
+if command -v bun >/dev/null 2>&1; then exec bun "$here/opengpui.mjs" "$@"; fi
+echo "opengpui: needs Node.js 18+ or Bun on PATH" >&2
+exit 2

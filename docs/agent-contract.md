@@ -4,8 +4,9 @@ What an agent, a skill author or an integrator can rely on. Stable means it chan
 a note here; [Internal](#internal) may change at any time. The agent-facing summary is the
 skill, [`skills/opengpui/SKILL.md`](../skills/opengpui/SKILL.md).
 
-`opengpui` is `bin/opengpui` (the built `dist/opengpui-cli.js`); `bun run install-herdr` links
-it into `~/.local/bin`.
+`opengpui` ships inside the mod, at `mods/opengpui/cli/opengpui`: a launcher that runs the CLI
+next to it with Node.js 18+ or Bun. Link it into PATH; `bun run install-herdr` links it into
+`~/.local/bin`.
 
 ## Commands
 
@@ -17,6 +18,10 @@ it into `~/.local/bin`.
 | `opengpui wait <file> [--timeout S]` | Prints every event `wait` hasn't printed since `show`, as JSONL, blocking until there is one (default 110 s, under the 2-minute limit common agent shell tools set; `0` no limit). Exit 1 on timeout: run it again, nothing is lost. Events between `show` and `wait` are not lost either. |
 | `opengpui events <file>` | Prints every event since `show`. |
 | `opengpui close <file>` | Closes what `show` opened. |
+| `opengpui skill` | Prints the agent skill (`skills/opengpui/SKILL.md`), for an agent harness to install. |
+
+`show` opens the mod the CLI ships in, by its folder name, so a copy installed under another name
+(Herdr renames a mod whose name is taken) opens itself.
 
 A file is named by its real path (symlinks resolved, relative to the current folder), so
 `wait`, `events` and `close` find a file `show` opened under another name for it.

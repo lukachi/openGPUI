@@ -1,14 +1,17 @@
 // opengpui: the agent's side of the Herdr surface. The contract it implements (commands,
 // events, replies, exit codes) is docs/agent-contract.md; keep the two in step.
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createParser, type OpenUIError, type PromptOptions } from "@openuidev/lang-core";
 import { eventsPath } from "../herdr/src/contract.ts";
 import { components } from "../src/components/index.ts";
 import { selectLibrary } from "../src/library.ts";
 import { isStreamingResponse, parseResponseBundle } from "../src/runtime/response.ts";
 import { Session } from "../src/runtime/session.ts";
+import SKILL from "../skills/opengpui/SKILL.md" with { type: "text" };
 
 const USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's actions back
 
@@ -29,6 +32,8 @@ const USAGE = `opengpui: show OpenUI Lang in a Herdr pane and get the person's a
       print every event since \`show\` (JSONL)
   opengpui close <file.oui>
       close the pane or tab \`show\` opened
+  opengpui skill
+      print the agent skill: how to use opengpui and the pane
 
 Exit codes: 0 ok, 1 check found problems or wait timed out, 2 bad usage,
 3 Herdr failed (not installed, not running, or the opengpui mod missing).`;
@@ -45,6 +50,12 @@ class CliError extends Error {
 const usage = (message: string) => new CliError(2, `${message}\n\n${USAGE}`);
 
 const HERDR_HOME = process.env.HERDR_APP_HOME ?? join(homedir(), ".config", "herdr-app");
+
+/**
+ * The mod `show` opens: the folder this CLI ships in (`mods/<name>/cli/opengpui.mjs`), so a copy
+ * installed under another name (Herdr renames a mod whose name is taken) opens itself.
+ */
+const MOD = basename(dirname(dirname(fileURLToPath(import.meta.url))));
 
 const args = process.argv.slice(2);
 
@@ -141,22 +152,22 @@ function underHome(path: string, what: string): void {
   if (!path.startsWith(`${home}/`)) throw new CliError(2, `${what} ${path} is outside your home folder: Herdr mods read only under ${home}`);
 }
 
+/** Runs herdr-app; a CliError (exit 3) when it isn't on PATH. */
+function herdrApp(argv: string[]): { code: number | null; out: string; err: string } {
+  const proc = spawnSync("herdr-app", argv, { encoding: "utf8" });
+  if (proc.error) throw new CliError(3, "herdr-app is not on PATH: opengpui shows UI in the Herdr app (https://herdr.dev)");
+  return { code: proc.status, out: proc.stdout.trim(), err: proc.stderr.trim() };
+}
+
 /** Runs a Herdr command; its JSON answer, or a CliError with Herdr's own words. */
 function herdr(command: string, payload: Record<string, unknown>): Record<string, unknown> {
-  let proc;
-  try {
-    proc = Bun.spawnSync(["herdr-app", "do", command, JSON.stringify(payload)], { stdout: "pipe", stderr: "pipe" });
-  } catch {
-    throw new CliError(3, "herdr-app is not on PATH: opengpui shows UI in the Herdr app (https://herdr.dev)");
-  }
-  const out = proc.stdout.toString().trim();
-  const err = proc.stderr.toString().trim();
+  const { code, out, err } = herdrApp(["do", command, JSON.stringify(payload)]);
   let answer: Record<string, unknown> = {};
   try {
     answer = out ? JSON.parse(out) : {};
   } catch {}
-  if (proc.exitCode !== 0 || typeof answer.error === "string") {
-    const why = (typeof answer.error === "string" ? answer.error : err || out) || `exit ${proc.exitCode}`;
+  if (code !== 0 || typeof answer.error === "string") {
+    const why = (typeof answer.error === "string" ? answer.error : err || out) || `exit ${code}`;
     throw new CliError(3, `herdr-app do ${command} failed: ${why}`);
   }
   return answer;
@@ -166,8 +177,7 @@ function herdr(command: string, payload: Record<string, unknown>): Record<string
 function agentPane(terminal: string | undefined): { space: string; pane: string } | null {
   if (!terminal) return null;
   try {
-    const ls = Bun.spawnSync(["herdr-app", "ls"], { stdout: "pipe", stderr: "pipe" });
-    const { spaces } = JSON.parse(ls.stdout.toString()) as { spaces: { id: string; tabs: { terminals: { terminal: string; pane: string }[] }[] }[] };
+    const { spaces } = JSON.parse(herdrApp(["ls"]).out) as { spaces: { id: string; tabs: { terminals: { terminal: string; pane: string }[] }[] }[] };
     for (const space of spaces)
       for (const tab of space.tabs) for (const t of tab.terminals) if (t.terminal === terminal) return { space: space.id, pane: t.pane };
   } catch {}
@@ -334,8 +344,8 @@ async function main(): Promise<void> {
       const near = agentPane(process.env.HC_TERMINAL_ID);
       const opened =
         place === "tab"
-          ? herdr("tab.new", { name: title ?? basename(file), mod: "opengpui", props, ...(near ? { space: near.space } : {}) })
-          : herdr("pane.split", { direction: place, mod: "opengpui", props, ...(near ? { pane: near.pane } : {}) });
+          ? herdr("tab.new", { name: title ?? basename(file), mod: MOD, props, ...(near ? { space: near.space } : {}) })
+          : herdr("pane.split", { direction: place, mod: MOD, props, ...(near ? { pane: near.pane } : {}) });
       const target = place === "tab" ? opened.tab : opened.pane;
       if (typeof target !== "string" || !target) throw new CliError(3, `herdr-app answered without a ${place === "tab" ? "tab" : "pane"} id: ${JSON.stringify(opened)}`);
       writeFileSync(shownPath(events), JSON.stringify({ place, target }));
@@ -367,7 +377,7 @@ async function main(): Promise<void> {
           return;
         }
         if (seconds > 0 && Date.now() - started > seconds * 1000) throw new CliError(1, `no event within ${seconds}s; run wait again`);
-        await Bun.sleep(250);
+        await new Promise((done) => setTimeout(done, 250));
       }
     }
     case "close": {
@@ -380,6 +390,10 @@ async function main(): Promise<void> {
       console.log(`closed ${file}`);
       return;
     }
+    case "skill":
+      noMoreArgs();
+      process.stdout.write(SKILL);
+      return;
     case undefined:
     case "help":
     case "--help":

@@ -3,6 +3,7 @@
 //   herdr/mods/opengpui/main.js    the Herdr mod: opengpui's own code, loaded once per tab
 //   herdr/mods/opengpui/shared.js  the packages it imports, loaded once per Herdr engine (bundleSplit)
 //   herdr/mods/opengpui/{fonts,icons}  the assets it ships (bun scripts/assets.ts)
+//   herdr/mods/opengpui/cli/opengpui.mjs  the agent CLI, for Node 18+ or Bun (cli/opengpui runs it)
 //   harness/app/{main,shared}.js   the headless harness's script (tools/oui-harness), split the same
 //                                  way, with its icons
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
@@ -67,7 +68,7 @@ const runtimeBuiltins: BunPlugin = {
 async function bundle(
   entry: string,
   out: string,
-  options: { external?: string[]; target?: "browser" | "bun"; plugins?: BunPlugin[] },
+  options: { external?: string[]; target?: "browser" | "bun" | "node"; plugins?: BunPlugin[] },
 ): Promise<number> {
   const result = await Bun.build({
     entrypoints: [join(root, entry)],
@@ -82,7 +83,8 @@ async function bundle(
     throw new Error(`build of ${entry} failed`);
   }
   const code = await result.outputs[0]!.text();
-  assertNoBrowserTimers(code, out);
+  // The CLI runs under Node or Bun, outside gpui-shell.
+  if (options.target !== "node") assertNoBrowserTimers(code, out);
   mkdirSync(join(root, out, ".."), { recursive: true });
   await Bun.write(join(root, out), code);
   return code.length;
@@ -244,7 +246,7 @@ const sizes = {
   ...prefixed("herdr/mods/opengpui", await bundleSplit("herdr/src/main.ts", "herdr/mods/opengpui", [...gpui, "herdr"])),
   ...prefixed("harness/app", await bundleSplit("harness/src/main.ts", "harness/app", [...gpui, "oui-harness"])),
   "dist/opengpui-headless.js": await bundle("src/headless.ts", "dist/opengpui-headless.js", { target: "bun" }),
-  "dist/opengpui-cli.js": await bundle("bin/opengpui.ts", "dist/opengpui-cli.js", { target: "bun", plugins: [hostStubs] }),
+  "herdr/mods/opengpui/cli/opengpui.mjs": await bundle("bin/opengpui.ts", "herdr/mods/opengpui/cli/opengpui.mjs", { target: "node", plugins: [hostStubs] }),
 };
 for (const [file, size] of Object.entries(sizes)) console.log(`${file} ${(size / 1024).toFixed(0)} KiB`);
 copyAssets();

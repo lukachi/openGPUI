@@ -9,7 +9,8 @@ import { join } from "node:path";
 import { eventsPath } from "../herdr/src/contract.ts";
 import { selectLibrary } from "./lib.ts";
 
-const CLI = join(import.meta.dir, "..", "dist", "opengpui-cli.js");
+// The launcher a person links into PATH: it runs the built CLI with Node (or Bun without Node).
+const CLI = join(import.meta.dir, "..", "herdr", "mods", "opengpui", "cli", "opengpui");
 
 describe("eventsPath", () => {
   test("files of one name in two folders keep separate logs", () => {
@@ -27,7 +28,7 @@ describe("opengpui check", () => {
   const check = (name: string, text: string, ...flags: string[]) => {
     const file = join(dir, `${name}.oui`);
     writeFileSync(file, text);
-    const run = Bun.spawnSync(["bun", CLI, "check", file, ...flags]);
+    const run = Bun.spawnSync([CLI, "check", file, ...flags]);
     return { code: run.exitCode, out: run.stdout.toString() };
   };
 
@@ -73,7 +74,7 @@ describe("show and wait", () => {
   chmodSync(join(bin, "herdr-app"), 0o755);
   const env = { ...process.env, HOME: home, HERDR_APP_HOME: herdrHome, PATH: `${bin}:${process.env.PATH}`, HC_TERMINAL_ID: "" };
   const cli = (...args: string[]) => {
-    const run = Bun.spawnSync(["bun", CLI, ...args], { env });
+    const run = Bun.spawnSync([CLI, ...args], { env });
     return { code: run.exitCode, out: run.stdout.toString(), err: run.stderr.toString() };
   };
   const file = join(home, "review.oui");

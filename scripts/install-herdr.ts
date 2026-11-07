@@ -1,4 +1,5 @@
-// Install the built mod into Herdr and put the `opengpui` CLI on PATH.
+// Install the built mod into Herdr and put its `opengpui` CLI on PATH, as a person who adds the
+// mod from herdr.dev does.
 //   bun run build && bun scripts/install-herdr.ts
 // Herdr hot-reloads the mod in place; open surfaces pick up the new build.
 // Herdr loads a mod's fonts at start and on a look change, so new fonts are
@@ -19,7 +20,7 @@ mkdirSync(to, { recursive: true });
 for (const file of ["mod.json", "shared.js", "main.js"]) cpSync(join(from, file), join(to, file));
 const hadFonts = existsSync(join(to, "fonts")) && readdirSync(join(to, "fonts")).some((f) => f.endsWith(".ttf"));
 const fontsChanged = !sameFiles(join(from, "fonts"), join(to, "fonts"));
-for (const dir of ["fonts", "icons"]) {
+for (const dir of ["fonts", "icons", "cli"]) {
   rmSync(join(to, dir), { recursive: true, force: true });
   cpSync(join(from, dir), join(to, dir), { recursive: true });
 }
@@ -38,7 +39,7 @@ const binDir = process.env.OPENGPUI_BIN_DIR ?? join(homedir(), ".local", "bin");
 const link = join(binDir, "opengpui");
 mkdirSync(binDir, { recursive: true });
 if (existsSync(link) || isSymlink(link)) unlinkSync(link);
-symlinkSync(join(root, "bin", "opengpui"), link);
+symlinkSync(join(to, "cli", "opengpui"), link);
 console.log(`opengpui -> ${link}`);
 
 function sameFiles(a: string, b: string): boolean {

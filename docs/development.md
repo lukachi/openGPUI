@@ -2,8 +2,9 @@
 
 ## Setup
 
-Needs [Bun](https://bun.sh), [uv](https://docs.astral.sh/uv/) (`uvx` runs fontTools to cut the
-fonts), herdr-app for the mod, and a Rust toolchain (`cargo`) on macOS for the headless harness.
+Needs [Bun](https://bun.sh), [uv](https://docs.astral.sh/uv/) (only to cut the fonts, see
+[Fonts](#fonts)), herdr-app for the mod, and a Rust toolchain (`cargo`) on macOS for the headless
+harness.
 
 ```sh
 bun install
@@ -30,15 +31,16 @@ d3-scale 4.0.2 and d3-shape 3.2.0.
 | `herdr/` | The Herdr mod (`herdr/src/main.ts` → `herdr/mods/opengpui/main.js` and `shared.js`); `contract.ts`: the events path rule and event shape the mod and the CLI share; `theme.ts` maps the Herdr theme onto OpenUI's color tokens. |
 | `harness/` | The headless harness's script (`harness/src/main.ts` → `harness/app/main.js` and `shared.js`): the mod's content area without Herdr, for `scripts/shot.ts`. |
 | `tools/` | `oui-harness` (Rust): runs the harness script offscreen on Herdr's gpui-shell. `oui-poke` (Swift): input for a Herdr preview window. |
-| `bin/opengpui.ts` | The agent CLI ([agent contract](agent-contract.md)). |
+| `bin/opengpui.ts` | The agent CLI ([agent contract](agent-contract.md)), built for Node 18+ or Bun into the mod's `cli/opengpui.mjs`, next to its launcher `cli/opengpui`. The skill is built into it (`opengpui skill`). |
 | `skills/opengpui/` | Agent skill: how an agent uses the CLI and the pane. |
 | `scripts/` | Upstream sync, assets (Inter cuts, lucide SVGs), build (a Bun plugin that compiles upstream without React), install, and the tools below. |
 
-Outputs (`dist/`):
+Outputs:
 
-- `opengpui.js`: the library for gpui-shell hosts (`gpui-kit` and `gpui-base` stay imports).
-- `opengpui-headless.js`: libraries, prompts and `Session` without gpui, for Bun/Node.
-- `opengpui-cli.js`: the CLI.
+- `herdr/mods/opengpui/`: the mod as it is installed: `main.js`, `shared.js`, `fonts/`, `icons/`,
+  and the CLI in `cli/`.
+- `dist/opengpui.js`: the library for gpui-shell hosts (`gpui-kit` and `gpui-base` stay imports).
+- `dist/opengpui-headless.js`: libraries, prompts and `Session` without gpui, for Bun/Node.
 
 ## Looking at UI: the headless harness
 
@@ -126,25 +128,50 @@ later tabs of the same build use that copy (about 24 MiB once).
 running every promise job already queued, in the new tab's scope. When loads follow each other
 without a frame between, a job the previous tab's `init` queued runs as the new tab's.
 
-The mod also ships `fonts/` and `icons/` (copied from `.upstream/assets` at build):
-
-- **Fonts:** OpenUI draws Inter as a variable font: its `wght` axis is set per style, its
-  optical size follows the font size, and text is tracked −1%. gpui applies no variable axes and
-  has no letter spacing, so `scripts/assets.ts` cuts static Inter fonts: one per (optical size,
-  weight) pair OpenUI's typography uses (`INTER_CUTS`, and `INTER_ITALIC_CUTS` for `em` and
-  blockquotes, in `src/render/fonts.ts`), with the tracking baked into the glyph advances,
-  subset to Latin, Greek and Cyrillic. Herdr loads a mod's fonts at start and on a look change;
-  `install-herdr` reloads the look when they change. gpui keeps the faces it first found for a
-  family, so changed cuts of an installed font need a Herdr restart (the installer says so).
-- **Icons:** lucide SVGs at the version react-ui depends on, checked against upstream's lockfile
-  and `upstream.json`. Names resolve through upstream's own lookup (fuzzy matching, category
-  fallbacks), compiled from the pin. There is one SVG set per stroke width react-ui gives icons
-  (`LUCIDE_STROKE_WIDTHS`).
+The mod also ships `fonts/` and `icons/`, copied from `.upstream/assets` at build (see
+[Fonts](#fonts) and [Icons](#icons)).
 
 Markdown dependencies are pinned to the versions upstream's lockfile resolves (unified 11,
 remark-parse 11, remark-gfm 4, remark-math 6, remark-breaks 4, remark-rehype 11, refractor 5,
 react-syntax-highlighter 16 for its two Prism themes), so a markdown string parses to the tree
 react-ui renders.
+
+## Fonts
+
+OpenUI draws Inter as a variable font: its `wght` axis is set per style, its optical size follows
+the font size, and text is tracked −1%. gpui applies no variable axes and has no letter spacing,
+so the mod ships static cuts of Inter instead, made by `scripts/assets.ts`:
+
+1. Download the pinned Inter release (`upstream.json` `assets.inter`, checked by sha256) into
+   `.upstream/assets/cache/`.
+2. For each (optical size, weight) pair OpenUI's typography uses (`INTER_CUTS`, and
+   `INTER_ITALIC_CUTS` for `em` and blockquotes, in `src/render/fonts.ts`), run fontTools:
+   `varLib.instancer` fixes `wght` and `opsz`, `subset` keeps Latin, Greek and Cyrillic, and `ttx`
+   bakes the −1% tracking into the glyph advances and names the face.
+3. Write the cuts and Inter's license to `.upstream/assets/fonts/`, with a stamp of everything
+   that went in (Inter and fontTools versions, the cut lists, tracking, the character set).
+
+fontTools runs through `uvx` at the version `upstream.json` pins (`assets.fonttools`), so it needs
+[uv](https://docs.astral.sh/uv/) and nothing installed into Python. `bun run sync` runs the
+script; it cuts again only when the stamp no longer matches, so uv is needed on the first sync
+and after one of these changes:
+
+- a new Inter release or fontTools version in `upstream.json`;
+- a type size and weight pair added to `INTER_CUTS` or `INTER_ITALIC_CUTS` (a new pair in a
+  component's typography needs one, or text falls back to the nearest cut);
+- the tracking or the character set in `src/render/fonts.ts` / `scripts/assets.ts`.
+
+`bun run build` copies the cuts into the mod's `fonts/`. Herdr loads a mod's fonts at start and
+on a look change; `install-herdr` reloads the look when they change. gpui keeps the faces it
+first found for a family, so changed cuts of an installed font need a Herdr restart (the
+installer says so). A host without the cuts keeps its own UI font.
+
+## Icons
+
+lucide SVGs at the version react-ui depends on, checked against upstream's lockfile and
+`upstream.json`, also made by `scripts/assets.ts` into `.upstream/assets/icons/`. Names resolve
+through upstream's own lookup (fuzzy matching, category fallbacks), compiled from the pin. There
+is one SVG set per stroke width react-ui gives icons (`LUCIDE_STROKE_WIDTHS`).
 
 ## Updating OpenUI
 

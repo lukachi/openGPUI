@@ -57,9 +57,9 @@ opengpui wait review.oui    # blocks until the person clicks, then prints the ev
 {"at":"…","src":"/…/review.oui","type":"continue_conversation","message":"Deploy","params":{},"formName":"deploy","formState":{"deploy":{"note":"ship it"}}}
 ```
 
-To let an agent do this on its own, give it the skill in
-[`skills/opengpui/SKILL.md`](skills/opengpui/SKILL.md). `opengpui prompt` prints the language
-manual for it.
+To let an agent do this on its own, give it the skill: `opengpui skill` prints it
+([`skills/opengpui/SKILL.md`](skills/opengpui/SKILL.md)), and `opengpui prompt` prints the
+language manual.
 
 ## How it works
 
