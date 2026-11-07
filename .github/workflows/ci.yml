@@ -31,12 +31,18 @@ jobs:
           node-version: 18
 
       # herdr-app: `types` writes the gpui-kit/herdr declarations, `check` loads the mod.
+      # It links the desktop libraries a window needs even when it opens none.
       - name: Herdr
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libxkbcommon-x11-0 libxkbcommon0 libxcb1 libx11-xcb1 libwayland-client0 libvulkan1 libfontconfig1 libfreetype6
           curl -fsSL "https://releases.herdr.dev/app/$HERDR_VERSION/herdr-app-linux-x86_64.tar.gz" -o "$RUNNER_TEMP/herdr.tgz"
           echo "$HERDR_SHA256  $RUNNER_TEMP/herdr.tgz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/herdr.tgz" -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/herdr-app" >> "$GITHUB_PATH"
+          missing=$(ldd "$RUNNER_TEMP/herdr-app/herdr-app" | grep 'not found' || true)
+          if [ -n "$missing" ]; then echo "$missing"; exit 1; fi
+          "$RUNNER_TEMP/herdr-app/herdr-app" --version
 
       - uses: actions/cache@v4
         with:
