@@ -11,9 +11,9 @@
 //
 // refractor/all registers its ~300 grammars at import; gpui-shell's engine
 // interrupts that while loading a mod. They are registered in the same order
-// (a grammar may extend earlier ones), one per resume, by the task of a view
-// that shows a code block; until all are in (about 5 s in a fresh Herdr window),
-// code shows unhighlighted, then redraws. A grammar whose registration the engine
+// (a grammar may extend earlier ones), WARM_SLICE_MS of them per resume, by the task
+// of a view that shows a code block; until all are in (about 2 s in a fresh Herdr
+// window), code shows unhighlighted, then redraws. A grammar whose registration the engine
 // interrupted is skipped, and a watchdog redraws a view whose task died, which
 // starts another. refractor itself costs about 13 ms per kilobyte there (30 with
 // drawing): code up to INLINE_CHARS is highlighted where it is drawn (past
@@ -37,6 +37,8 @@ import { CODE_GROUP_CHARS, CODE_GROUP_LINES, lineGroups } from "./blocks.ts";
 import { edge, lazyRows } from "./lazy.ts";
 
 let registered = 0;
+/** How long one resume of the warming task registers grammars before it yields (a resume is interrupted at a few hundred ms). */
+const WARM_SLICE_MS = 40;
 
 type Spawned = Parameters<Parameters<Context["spawn"]>[0]>[0];
 
@@ -46,13 +48,14 @@ const warming = new WeakMap<RenderContext["session"], number>();
 let attempted = -1;
 
 /**
- * Register refractor/all's next grammars, in its order, one per resume, until all are in;
+ * Register refractor/all's next grammars, in its order, WARM_SLICE_MS per resume, until all are in;
  * then redraw the view. Every waiting view's task takes part through the shared count, so a
  * view that closes doesn't strand the others. gpui-shell interrupts a resume that runs too
  * long and the task dies with it: a grammar whose registration was interrupted (`tsx`, which
  * clones two large grammars, was in the engine) is skipped by the next task.
  */
 async function warm(task: Spawned, session: RenderContext["session"], redraw: () => void): Promise<void> {
+  let slice = Date.now();
   while (registered < syntaxes.length) {
     warming.set(session, Date.now());
     if (attempted === registered) {
@@ -63,7 +66,10 @@ async function warm(task: Spawned, session: RenderContext["session"], redraw: ()
     attempted = registered;
     refractor.register(syntaxes[registered]!);
     registered++;
-    await task.sleep(16);
+    if (Date.now() - slice >= WARM_SLICE_MS) {
+      await task.sleep(16);
+      slice = Date.now();
+    }
   }
   warming.delete(session);
   redraw();

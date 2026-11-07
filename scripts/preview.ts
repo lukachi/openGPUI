@@ -7,7 +7,7 @@
 //     --library openui|chat
 //     --wait <ms>           the longest a tab may take to settle before its shot (default 15000)
 //     --settle <ms>         how long the window must stay unchanged to count as settled (default
-//                           3500: code highlighting starts ~3 s after a window loads the mod)
+//                           3000: code highlighting starts ~2 s after a window loads the mod)
 //     --out <file.png>      one file and one mode only; default tmp/preview/<file>-<look>-<mode>.png
 //     --keep                leave the tab open (for a person to click through); one file and mode
 //     --mod <name>          mod folder to install as (default opengpui-<checkout folder>)
@@ -30,6 +30,8 @@ import { basename, join, resolve } from "node:path";
 
 const RESTART_EVERY = 2;
 const SHOT_EVERY_MS = 250;
+const pokeApp = join(homedir(), "Applications", "OuiPoke.app");
+let nudgeAt: [number, number] | null | undefined;
 
 const root = join(import.meta.dir, "..");
 const checkout = basename(root).toLowerCase().replace(/[^a-z0-9-]+/g, "-");
@@ -56,7 +58,7 @@ const look = option("--look") ?? "openui";
 const modes = (option("--mode") ?? "light").split(",");
 const library = option("--library");
 const waitMs = Number(option("--wait") ?? 15_000);
-const settleMs = Number(option("--settle") ?? 3500);
+const settleMs = Number(option("--settle") ?? 3000);
 const outOption = option("--out");
 const modName = option("--mod") ?? `opengpui-${checkout}`;
 const keep = flag("--keep");
@@ -163,12 +165,43 @@ function count(): number {
   return existsSync(countPath) ? Number(readFileSync(countPath, "utf8")) || 0 : 0;
 }
 
+/**
+ * gpui stops drawing a window that is fully covered (its display link follows the
+ * occlusion state), and a background preview window usually is: its last frame then
+ * stays in `herdr-app shot` while the view changes underneath (seen: "Loading…" for
+ * 10 s over a page that had long drawn). A click makes gpui draw a frame; a hover or a
+ * key does not. So before each shot this clicks the status bar's empty middle through
+ * scripts/poke.ts (OuiPoke.app, which needs Accessibility). Without OuiPoke a covered
+ * window's shots may be stale.
+ */
+function nudge(): void {
+  if (nudgeAt === null || !existsSync(pokeApp)) return;
+  const poke = (argv: string[]) =>
+    Bun.spawnSync(["bun", join(root, "scripts", "poke.ts"), ...argv], {
+      env: { ...process.env, OPENGPUI_PREVIEW_HOME: home },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+  if (nudgeAt === undefined) {
+    const info = poke(["info"]);
+    if (info.exitCode !== 0) {
+      nudgeAt = null;
+      console.log(`note   no poke (${info.stderr.toString().trim().split("\n").pop()}); shots of a covered window may be stale`);
+      return;
+    }
+    const { width, height } = JSON.parse(info.stdout.toString()) as { width: number; height: number };
+    nudgeAt = [Math.round(width * 0.6), height - 8];
+  }
+  poke(["click", String(nudgeAt[0]), String(nudgeAt[1])]);
+}
+
 /** Shoots until the window has looked the same for settleMs (or waitMs passed); keeps the last shot. */
 async function shootSettled(out: string): Promise<string> {
   const begin = Date.now();
   let last = "";
   let sameSince = Date.now();
   for (;;) {
+    nudge();
     run(["herdr-app", "shot", out]);
     const hash = createHash("sha1").update(readFileSync(out)).digest("hex");
     const now = Date.now();
