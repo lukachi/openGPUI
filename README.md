@@ -29,15 +29,29 @@ It needs no browser and no web server, and the agent's own harness stays as it i
 - **Fits Herdr.** The pane draws in Herdr's theme colors, or in OpenUI's own light and dark
   look.
 
-## Quick start
+## Install
 
-You need Herdr, [Bun](https://bun.sh) and [uv](https://docs.astral.sh/uv/).
+You need [Herdr](https://herdr.dev) and Node.js 18+ (or [Bun](https://bun.sh)) for the CLI. Ask
+your agent, in a Herdr terminal:
+
+> Read ~/.config/herdr-app/AGENTS.md, then add this mod: herdr.dev/mods/lukachi/opengpui
+
+It copies the mod into `~/.config/herdr-app/mods/opengpui`. Then put the CLI on your PATH:
 
 ```sh
-git clone https://github.com/lukachi/openGPUI && cd openGPUI
-bun install && bun run sync
-bun run install-herdr      # installs the mod and links `opengpui` into ~/.local/bin
+ln -s ~/.config/herdr-app/mods/opengpui/cli/opengpui ~/.local/bin/opengpui
 ```
+
+Or by hand, from [the latest release](https://github.com/lukachi/openGPUI/releases/latest):
+
+```sh
+tar -xzf opengpui-v*.tar.gz -C ~/.config/herdr-app/mods
+ln -s ~/.config/herdr-app/mods/opengpui/cli/opengpui ~/.local/bin/opengpui
+```
+
+To build from source, see [Development](docs/development.md).
+
+## Try it
 
 From a terminal inside Herdr:
 
